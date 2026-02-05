@@ -1,0 +1,58 @@
+****** The Expected File Tree *******
+
+tunisia-weather-forecast/
+├── backend/                        # FastAPI (Python) - prediction + API
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                 # FastAPI app entry (uvicorn app.main:app)
+│   │   ├── api/
+│   │   │   └── routes.py           # endpoints: /predict, /health, /regions
+│   │   ├── core/
+│   │   │   ├── config.py           # settings, env vars
+│   │   │   └── security.py         # optional API key
+│   │   ├── models/
+│   │   │   ├── ml_model.py         # load/train/predict logic (XGBoost, Prophet, LSTM…)
+│   │   │   └── schemas.py          # Pydantic models (PredictRequest, PredictResponse)
+│   │   ├── services/
+│   │   │   └── data_service.py     # merge scraped + csv, feature engineering
+│   │   └── utils/
+│   │       └── helpers.py          # date utils, temp conversion…
+│   ├── models/                     # saved ML models
+│   │   └── xgboost_tunis_v1.pkl
+│   ├── data/                       # local data (git ignored or small samples)
+│   │   ├── historical/             # initial CSVs (NOAA, Visual Crossing…)
+│   │   └── scraped/                # appended recent data
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env                        # DB creds, etc. (gitignore)
+│
+├── frontend/                       # React app
+│   ├── public/
+│   │   └── index.html
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── RegionSelector.tsx  # dropdown: Tunis, Ariana, Sousse…
+│   │   │   ├── WeatherChart.tsx
+│   │   │   └── ForecastCard.tsx
+│   │   ├── pages/
+│   │   │   └── Dashboard.tsx
+│   │   ├── services/
+│   │   │   └── api.ts              # axios calls to FastAPI / n8n webhook
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── package.json
+│   ├── vite.config.ts              # or next.config if using Next.js
+│   ├── tsconfig.json
+│   └── Dockerfile                  # or use nginx static serve
+│
+├── n8n/                            # n8n workflows (exported JSON or volume mount)
+│   └── workflows/
+│       └── weather-scrape-predict.json   # exported workflow (optional)
+│
+├── docker-compose.yml              # ← heart of everything
+├── .env                            # global env (POSTGRES_PASSWORD, etc.)
+├── .gitignore
+├── README.md
+└── docker/                         # optional extra configs
+    └── nginx.conf                  # if serving React via nginx
