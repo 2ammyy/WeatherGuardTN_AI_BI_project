@@ -76,4 +76,3 @@ The system forecasts the probability of **dangerous conditions** including:
 Made with ❤️ in Tunis  
 For Tunisians — by a Tunisian
 
-Any feedback, additional data sources, or collaboration welcome!
