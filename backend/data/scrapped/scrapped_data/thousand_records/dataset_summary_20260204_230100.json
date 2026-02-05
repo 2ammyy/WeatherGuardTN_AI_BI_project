@@ -1,0 +1,23 @@
+{
+  "dataset_info": {
+    "total_records": 1000,
+    "target_records": 1000,
+    "batches": 60,
+    "collection_start": "2026-02-04T21:35:59.764032",
+    "collection_end": "2026-02-04T23:01:00.276451",
+    "duration_minutes": 85.01,
+    "records_per_minute": 11.76,
+    "achieved_target": true
+  },
+  "sources_summary": {
+    "bbc_weather": 480,
+    "openweather_api": 360,
+    "forecast_generated": 100,
+    "meteo_tn": 60
+  },
+  "files": {
+    "main_csv": "data\\thousand_records\\weather_1000plus_20260204_230100.csv",
+    "json_file": "data\\thousand_records\\weather_1000plus_20260204_230100.json",
+    "directory": "data\\thousand_records"
+  }
+}

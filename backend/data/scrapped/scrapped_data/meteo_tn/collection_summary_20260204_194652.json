@@ -1,0 +1,26 @@
+{
+  "collection_date": "2026-02-04T19:46:52.640090",
+  "total_records": 2592,
+  "sources_scraped": [
+    "alerts",
+    "observations",
+    "forecasts",
+    "marine",
+    "beach",
+    "climate",
+    "seasonal",
+    "world",
+    "home"
+  ],
+  "files_created": {
+    "csv": "data\\meteo_tn\\meteo_comprehensive_20260204_194652.csv",
+    "json": "data\\meteo_tn\\meteo_comprehensive_20260204_194652.json"
+  },
+  "record_types": {
+    "historical_synthetic": 2562,
+    "forecast_synthetic": 21,
+    "forecast": 7,
+    "alerts": 1,
+    "observations": 1
+  }
+}
