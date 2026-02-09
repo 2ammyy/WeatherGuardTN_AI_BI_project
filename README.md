@@ -1,4 +1,6 @@
 # WeatherGuardTN : Tunisia Weather Danger & Vigilance Predictor
+**Protecting lives, students, delivery workers, fishermen, vulnerable people — and helping authorities prepare in advance**
+
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)
@@ -6,7 +8,6 @@
 ![Machine Learning](https://img.shields.io/badge/ML-XGBoost%20%7C%20Prophet-FF6F00?style=for-the-badge&logo=scikit-learn&logoColor=white)
 
 
-**Protecting lives, students, delivery workers, fishermen, vulnerable people — and helping authorities prepare in advance**
 
 
 ## Objectives
