@@ -1,108 +1,140 @@
-# backend/app/api/routes.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from datetime import datetime
 from ..utils.mlflow_loader import best_model, model_type
 import numpy as np
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["predictions"])
 
 class PredictRequest(BaseModel):
     city: str
-    date: Optional[str] = None  # YYYY-MM-DD, default today
-    temp_max: Optional[float] = None
-    precip_daily: Optional[float] = None
-    wind_speed_kmh: Optional[float] = None
-    humidity_percent: Optional[float] = None
-    # Add more features if needed
-
+    date: Optional[str] = None
+    temp_max_fb: Optional[float] = None  # Changed from temp_max
+    temp_min_fb: Optional[float] = None  # Changed from temp_min
+    humidity_percent_hist_fb: Optional[float] = None  # Changed from humidity
+    wind_speed_kmh_hist_fb: Optional[float] = None  # Changed from wind_speed
+    
 class PredictResponse(BaseModel):
-    risk_level: str          # green / yellow / orange / red
-    probability: float       # 0-1
+    risk_level: str
+    probability: float
     recommendation: str
     model_used: str
     details: Dict
 
-@router.get("/health")
-def health_check():
-    return {"status": "healthy", "model": model_type}
+# City encoding mapping (you should load this from your training data)
+# This is a placeholder - you should save and load the actual encoder
+CITY_ENCODING = {
+    "tunis": 1, "ariana": 2, "ben arous": 3, "bizerte": 4,
+    "sousse": 5, "sfax": 6, "nabeul": 7, "monastir": 8,
+    "kairouan": 9, "gabes": 10, "gafsa": 11, "jendouba": 12,
+    "kasserine": 12, "kebili": 13, "le kef": 14, "mahdia": 15,
+    "manouba": 16, "medenine": 17, "sidi bouzid": 18, "siliana": 19,
+    "tataouine": 20, "tozeur": 21, "zaghouan": 22
+}
 
-@router.get("/regions")
-def get_regions():
-    # Hardcoded for now - later load from data
-    return ["Tunis", "Ariana", "Sousse", "Sfax", "Bizerte", "Gabes", "Monastir", "Nabeul"]
+@router.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    model_status = "loaded" if best_model is not None else "not_loaded"
+    return {
+        "status": "healthy",
+        "model": model_status,
+        "model_type": model_type
+    }
+
+@router.get("/governorates")
+async def get_governorates():
+    """List all Tunisian governorates"""
+    return sorted([
+        "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa", "Jendouba",
+        "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia", "Manouba",
+        "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid", "Siliana",
+        "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
+    ])
 
 @router.post("/predict", response_model=PredictResponse)
-def predict_risk(request: PredictRequest):
+async def predict_danger(request: PredictRequest):
     try:
-        # Default to today if no date
+        # Check if model is loaded
+        if best_model is None:
+            raise HTTPException(status_code=503, detail="Model not loaded")
+        
+        # Parse date if provided
         pred_date = datetime.strptime(request.date, "%Y-%m-%d") if request.date else datetime.now()
-
-        # Prepare feature vector (must match training order)
-        # Update this list to match your training features
-        features_order = [
-            'temp_max', 'temp_min', 'temp_hist', 'temp_scraped',
-            'feels_like_c_hist', 'feels_like_c_scraped',
-            'humidity_percent_hist', 'humidity_percent_scraped',
-            'precip_daily', 'precipprob_hist', 'precipprob_scraped',
-            'wind_speed_kmh_hist', 'wind_speed_kmh_scraped', 'wind_speed_mps',
-            'city_encoded', 'temp_max_lag1', 'precip_daily_lag1'
-        ]
-
-        # Dummy values if not provided (in production, fetch real forecast)
-        input_data = {
-            'temp_max': request.temp_max or 25.0,
-            'precip_daily': request.precip_daily or 0.0,
-            'wind_speed_kmh': request.wind_speed_kmh or 15.0,
-            'humidity_percent_hist': 60.0,
-            # ... fill defaults for all required features
-        }
-
-        # Encode city (use same LabelEncoder as training or load from pickle)
-        # For simplicity, assume city_encoded = hash or fixed mapping
-        input_data['city_encoded'] = hash(request.city) % 100  # placeholder!
-
-        # Create array in correct order
-        X = np.array([[input_data.get(f, 0.0) for f in features_order]])
-
-        # Predict
-        if model_type == "xgboost" or model_type == "randomforest":
-            prob = best_model.predict_proba(X)[0][1]  # probability of danger (class 1)
-            pred = 1 if prob > 0.5 else 0
-        elif model_type == "prophet":
-            # Prophet needs special handling - here we assume precip forecast
-            prob = 0.5  # placeholder - implement proper prophet forecast
-            pred = 1 if prob > 0.5 else 0
+        
+        # Encode city (case-insensitive)
+        city_lower = request.city.lower()
+        city_encoded = CITY_ENCODING.get(city_lower, 0)
+        
+        # Use provided values or reasonable defaults
+        # IMPORTANT: Use the exact feature names from training with _fb suffix
+        temp_max_fb = request.temp_max if request.temp_max is not None else 25.0
+        temp_min_fb = request.temp_min if request.temp_min is not None else 18.0
+        humidity_percent_hist_fb = request.humidity if request.humidity is not None else 60.0
+        wind_speed_kmh_hist_fb = request.wind_speed if request.wind_speed is not None else 15.0
+        
+        # Create feature array with EXACT order from training
+        # Order: temp_max_fb, temp_min_fb, humidity_percent_hist_fb, wind_speed_kmh_hist_fb, city_encoded
+        features = np.array([[
+            temp_max_fb,                    # temp_max_fb
+            temp_min_fb,                     # temp_min_fb
+            humidity_percent_hist_fb,         # humidity_percent_hist_fb
+            wind_speed_kmh_hist_fb,           # wind_speed_kmh_hist_fb
+            city_encoded                      # city_encoded
+        ]], dtype=np.float32)
+        
+        logger.info(f"Prediction features: {features}")
+        logger.info(f"Feature names: ['temp_max_fb', 'temp_min_fb', 'humidity_percent_hist_fb', 'wind_speed_kmh_hist_fb', 'city_encoded']")
+        
+        # Make prediction
+        if hasattr(best_model, "predict_proba"):
+            proba = best_model.predict_proba(features)[0]
+            # Get probability of positive class (danger)
+            probability = float(proba[1]) if len(proba) > 1 else float(proba[0])
         else:
-            raise ValueError("Unknown model type")
-
-        # Map to color levels
-        if prob < 0.2:
+            # If no predict_proba, use predict and convert to probability
+            pred = best_model.predict(features)[0]
+            probability = 1.0 if pred == 1 else 0.0
+        
+        logger.info(f"Prediction probability: {probability}")
+        
+        # Map probability to risk levels
+        if probability < 0.2:
             level = "green"
-            rec = "Safe conditions - normal activities"
-        elif prob < 0.5:
+            rec = "Conditions normales - aucune mesure particulière"
+        elif probability < 0.4:
             level = "yellow"
-            rec = "Be aware - minor precautions"
-        elif prob < 0.8:
+            rec = "Soyez vigilant - conditions potentiellement dangereuses"
+        elif probability < 0.6:
             level = "orange"
-            rec = "High risk - avoid outdoor activities, prepare"
+            rec = "Risque élevé - limitez les déplacements non essentiels"
+        elif probability < 0.8:
+            level = "orange_red"
+            rec = "Risque très élevé - préparez-vous à des mesures d'urgence"
         else:
             level = "red"
-            rec = "Extreme danger - stay home, follow authorities"
-
+            rec = "DANGER EXTRÊME - suivez les instructions des autorités"
+        
         return PredictResponse(
             risk_level=level,
-            probability=round(float(prob), 3),
+            probability=round(probability, 3),
             recommendation=rec,
             model_used=model_type,
             details={
                 "city": request.city,
                 "date": str(pred_date.date()),
-                "raw_prob": prob,
-                "prediction": pred
+                "temperature_max_fb": temp_max_fb,
+                "temperature_min_fb": temp_min_fb,
+                "humidity_percent_hist_fb": humidity_percent_hist_fb,
+                "wind_speed_kmh_hist_fb": wind_speed_kmh_hist_fb,
+                "city_encoded": city_encoded,
+                "raw_probability": probability
             }
         )
-
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur de prédiction: {str(e)}")
