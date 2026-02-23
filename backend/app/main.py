@@ -5,14 +5,14 @@ from .api.routes import router
 
 app = FastAPI(
     title="WeatherGuardTN API",
-    description="Early weather danger prediction for Tunisia",
+    description="Early weather danger & vigilance prediction for Tunisia",
     version="1.0.0"
 )
 
-# Allow React frontend (update origins later)
+# Allow React frontend (Vite default port 5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "*"],  # Vite default port
+    allow_origins=["http://localhost:5173", "*"],  # Change to your React URL later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,4 +22,4 @@ app.include_router(router)
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to WeatherGuardTN API"}
+    return {"message": "WeatherGuardTN API is running"}
