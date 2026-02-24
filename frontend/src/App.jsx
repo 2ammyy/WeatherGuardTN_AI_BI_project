@@ -24,11 +24,11 @@ export default function App() {
           <div style={{ backgroundColor: '#2563eb', padding: '10px', borderRadius: '12px' }}>
             <Shield size={24} />
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-1px' }}>GUARDIA-TN</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-1px' }}>WeatherGuard.TN</h1>
         </div>
 
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', letterSpacing: '2px', marginBottom: '20px' }}>ALERTES ACTIVES</p>
+          <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', letterSpacing: '2px', marginBottom: '20px' }}>Active Alerts</p>
           {cities.map(c => (
             <div key={c.id} style={{ padding: '15px', borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.05)', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
               <span style={{ fontWeight: '600' }}>{c.name}</span>
@@ -78,9 +78,9 @@ export default function App() {
         {/* HUD - Interface Supérieure */}
         <div style={{ position: 'absolute', top: '30px', left: '30px', zIndex: 1000, pointerEvents: 'none' }}>
           <div style={{ backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}>
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '900', fontStyle: 'italic' }}>SATELLITE <span style={{ color: '#3b82f6' }}>AI MONITOR</span></h2>
+            {/* <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '900', fontStyle: 'italic' }}>Tunisia <span style={{ color: '#3b82f6' }}>MAP</span></h2> */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '10px', marginTop: '5px', fontWeight: 'bold' }}>
-              <Activity size={14} /> FLUX DE DONNÉES EN DIRECT
+              <Activity size={14} /> Real-time data stream
             </div>
           </div>
         </div>
@@ -89,9 +89,9 @@ export default function App() {
         {active && (
           <div style={{ position: 'absolute', bottom: '40px', right: '40px', zIndex: 1000, width: '280px', backgroundColor: 'rgba(11, 17, 32, 0.9)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', padding: '25px', borderRadius: '32px' }}>
             <h3 style={{ margin: '0 0 5px 0', fontSize: '22px' }}>{active.name}</h3>
-            <p style={{ color: '#3b82f6', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '20px' }}>ANALYSE BIOCLIMATIQUE</p>
+            <p style={{ color: '#3b82f6', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '20px' }}>BIOCLIMATIC ANALYSIS</p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: '12px' }}>Niveau de risque</span>
+              <span style={{ color: '#64748b', fontSize: '12px' }}>Risk Level</span>
               <span style={{ fontWeight: 'bold', color: active.danger > 70 ? '#ef4444' : '#3b82f6' }}>{active.danger}%</span>
             </div>
             <div style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px', marginTop: '10px', overflow: 'hidden' }}>
