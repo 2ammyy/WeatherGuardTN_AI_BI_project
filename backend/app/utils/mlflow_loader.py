@@ -1,91 +1,95 @@
-import os
+# backend/app/utils/mlflow_loader.py - Update to load refined model
+
+import mlflow
 import joblib
-import logging
+import os
 from pathlib import Path
-import glob
+import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_latest_model_path():
-    """Find the most recent model.pkl file in mlruns directory"""
-    try:
-        # Search for all model.pkl files in mlruns
-        model_files = glob.glob("mlruns/**/artifacts/model.pkl", recursive=True)
+class ModelLoader:
+    def __init__(self, model_path=None, use_refined=True):
+        self.model_path = model_path or "../mlartifacts"
+        self.use_refined = use_refined
+        self.model = None
+        self.label_encoder = None
+        self.scaler = None
+        self.feature_names = ['temperature', 'wind_speed', 'precipitation', 'humidity', 'pressure']
         
-        if not model_files:
-            # Try alternative path with models subdirectory
-            model_files = glob.glob("mlruns/**/models/**/artifacts/model.pkl", recursive=True)
-        
-        if not model_files:
-            logger.error("No model.pkl files found in mlruns directory")
-            return None
-        
-        # Sort by modification time (most recent first)
-        model_files.sort(key=os.path.getmtime, reverse=True)
-        
-        logger.info(f"Found {len(model_files)} model files")
-        logger.info(f"Most recent: {model_files[0]} (modified: {os.path.getmtime(model_files[0])})")
-        
-        return model_files[0]
-        
-    except Exception as e:
-        logger.error(f"Error finding model: {e}")
-        return None
-
-def identify_model_type(model, model_path):
-    """Identify the model type based on the actual model class and file size"""
-    # Check the model class first
-    model_class = model.__class__.__name__
-    logger.info(f"Model class: {model_class}")
+    def load_model(self):
+        """Load the best model"""
+        try:
+            if self.use_refined:
+                # Load refined model
+                model_file = Path(self.model_path) / "refined_risk_model.pkl"
+                encoder_file = Path(self.model_path) / "label_encoder.pkl"
+                scaler_file = Path(self.model_path) / "scaler.pkl"
+                
+                if model_file.exists():
+                    self.model = joblib.load(model_file)
+                    self.label_encoder = joblib.load(encoder_file)
+                    self.scaler = joblib.load(scaler_file)
+                    logger.info(f"✅ Loaded refined model from {model_file}")
+                else:
+                    logger.warning("Refined model not found, falling back to original")
+                    self._load_original_model()
+            else:
+                self._load_original_model()
+                
+            return self.model is not None
+            
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            return False
     
-    if 'LGBMClassifier' in model_class:
-        return 'lightgbm'
-    elif 'XGBClassifier' in model_class:
-        return 'xgboost'
-    elif 'RandomForestClassifier' in model_class:
-        return 'randomforest'
-    else:
-        # Fallback to file size-based detection
-        file_size = os.path.getsize(model_path)
-        logger.info(f"Model file size: {file_size} bytes")
+    def _load_original_model(self):
+        """Load original model from MLflow"""
+        try:
+            import glob
+            # Find most recent model
+            model_files = glob.glob(f"{self.model_path}/**/model.pkl", recursive=True)
+            if model_files:
+                latest_model = max(model_files, key=os.path.getmtime)
+                self.model = joblib.load(latest_model)
+                logger.info(f"✅ Loaded original model from {latest_model}")
+            else:
+                logger.error("No model files found")
+        except Exception as e:
+            logger.error(f"Error loading original model: {e}")
+    
+    def predict(self, features):
+        """Make prediction"""
+        if self.model is None:
+            raise ValueError("Model not loaded")
         
-        if file_size > 50000:
-            return 'randomforest'
-        elif file_size > 20000:
-            return 'xgboost'  # or lightgbm
+        # Scale features if scaler exists
+        if self.scaler:
+            features_scaled = self.scaler.transform([features])
         else:
-            return 'unknown'
+            features_scaled = [features]
+        
+        # Predict
+        prediction = self.model.predict(features_scaled)[0]
+        
+        # Decode if label encoder exists
+        if self.label_encoder:
+            prediction = self.label_encoder.inverse_transform([prediction])[0]
+        
+        # Get probabilities
+        if hasattr(self.model, 'predict_proba'):
+            probabilities = self.model.predict_proba(features_scaled)[0]
+            return prediction, probabilities
+        else:
+            return prediction, None
 
-def load_best_model():
-    """Load the best model from mlruns"""
-    try:
-        model_path = get_latest_model_path()
-        
-        if model_path is None:
-            raise FileNotFoundError("No model found in mlruns directory")
-        
-        logger.info(f"Loading model from {model_path}")
-        model = joblib.load(model_path)
-        
-        # Identify model type based on actual class
-        model_type = identify_model_type(model, model_path)
-        logger.info(f"Identified model type: {model_type}")
-        
-        # Log additional model info
-        if hasattr(model, 'n_features_in_'):
-            logger.info(f"Model expects {model.n_features_in_} features")
-        
-        return model, model_type
-        
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        raise
+# Singleton instance
+_model_loader = None
 
-# Load model at module startup
-try:
-    best_model, model_type = load_best_model()
-    logger.info(f"Successfully loaded {model_type} model")
-except Exception as e:
-    logger.error(f"Failed to load model: {e}")
-    best_model, model_type = None, None
+def get_model_loader():
+    global _model_loader
+    if _model_loader is None:
+        _model_loader = ModelLoader(use_refined=True)
+        _model_loader.load_model()
+    return _model_loader
