@@ -12,10 +12,10 @@ router = APIRouter(prefix="/api", tags=["predictions"])
 class PredictRequest(BaseModel):
     city: str
     date: Optional[str] = None
-    temp_max_fb: Optional[float] = None  # Changed from temp_max
-    temp_min_fb: Optional[float] = None  # Changed from temp_min
-    humidity_percent_hist_fb: Optional[float] = None  # Changed from humidity
-    wind_speed_kmh_hist_fb: Optional[float] = None  # Changed from wind_speed
+    temp_max_fb: Optional[float] = None  
+    temp_min_fb: Optional[float] = None  
+    humidity_percent_hist_fb: Optional[float] = None  
+    wind_speed_kmh_hist_fb: Optional[float] = None  
     
 class PredictResponse(BaseModel):
     risk_level: str
