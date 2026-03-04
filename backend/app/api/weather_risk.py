@@ -431,6 +431,16 @@ def test_prediction():
     
     return {"test_results": results}
 
+#  debug function to fix what endpoints are available when the server starts
+@app.on_event("startup")
+async def startup_event():
+    print("\n" + "="*50)
+    print("REGISTERED ROUTES:")
+    for route in app.routes:
+        if hasattr(route, "methods"):
+            print(f"  {route.methods} {route.path}")
+    print("="*50 + "\n")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
