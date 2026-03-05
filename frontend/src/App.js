@@ -390,3 +390,26 @@ function App() {
 }
 
 export default App;
+
+const RiskDisplay = ({ prediction }) => {
+  const colors = {
+    'SAFE': '#4CAF50',
+    'CAUTION': '#FFC107',
+    'STAY HOME': '#F44336'
+  };
+  
+  return (
+    <div className="result-card" style={{backgroundColor: colors[prediction.risk_level]}}>
+      <h2>{prediction.risk_emoji} {prediction.risk_level}</h2>
+      <p>Confidence: {prediction.confidence}%</p>
+      
+      <div className="recommendations">
+        <h3>📋 Recommendations:</h3>
+        <p>🏫 Schools: {prediction.recommendations.schools}</p>
+        <p>📦 Delivery: {prediction.recommendations.delivery}</p>
+        <p>⚓ Fishing: {prediction.recommendations.fishing}</p>
+        <p>🏠 Public: {prediction.recommendations.public}</p>
+      </div>
+    </div>
+  );
+};
