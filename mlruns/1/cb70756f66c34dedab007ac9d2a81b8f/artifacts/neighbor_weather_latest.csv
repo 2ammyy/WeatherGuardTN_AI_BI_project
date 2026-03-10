@@ -1,0 +1,9 @@
+country,city,temperature,feels_like,humidity,pressure,wind_speed,wind_direction,weather_condition,weather_description,clouds,timestamp,collection_date
+algeria,annaba,12.9,12.7,94,1022,5.5,210,Clouds,broken clouds,75,2026-03-10T00:28:06.056590,2026-03-10
+algeria,algiers,10.9,9.6,61,1020,5.5,80,Clouds,scattered clouds,40,2026-03-10T00:28:07.593522,2026-03-10
+algeria,constantine,7.7,6.4,93,1022,7.4,170,Clouds,broken clouds,75,2026-03-10T00:28:09.128856,2026-03-10
+libya,tripoli,15.5,15.3,86,1017,26.9,87,Clear,clear sky,0,2026-03-10T00:28:10.665001,2026-03-10
+libya,benghazi,17.0,16.2,53,1018,38.3,114,Clouds,broken clouds,84,2026-03-10T00:28:12.200671,2026-03-10
+italy,palermo,12.5,11.9,80,1024,3.8,173,Clouds,overcast clouds,96,2026-03-10T00:28:13.738033,2026-03-10
+italy,lampedusa,15.8,15.5,82,1021,35.2,70,Clouds,scattered clouds,40,2026-03-10T00:28:15.220828,2026-03-10
+malta,valletta,15.3,15.2,88,1023,22.2,70,Clouds,few clouds,20,2026-03-10T00:28:16.706890,2026-03-10

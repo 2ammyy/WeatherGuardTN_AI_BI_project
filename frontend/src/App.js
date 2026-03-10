@@ -21,32 +21,23 @@ function App() {
   const [apiUrl, setApiUrl] = useState('');
   const [riskInfo, setRiskInfo] = useState(null);
   
-  // Map data state
-  const [mapData, setMapData] = useState(null);
-  const [loadingMap, setLoadingMap] = useState(false);
-
   // URLs à tester pour la connexion à l'API
   const possibleUrls = useMemo(() => {
-    // Récupérer l'URL depuis les variables d'environnement
     const envUrl = process.env.REACT_APP_API_URL;
     console.log('🔍 REACT_APP_API_URL from env:', envUrl);
     
     const urls = [];
     
-    // Ajouter l'URL du .env en premier (priorité)
     if (envUrl) {
       urls.push(envUrl);
     }
     
-    // Ajouter les URLs de fallback avec le nouveau port 8001
+    // Utiliser le port 8000 (backend)
     urls.push(
-      'http://localhost:8001',
-      'http://127.0.0.1:8001',
-      'http://localhost:8000',  // Ancien port (fallback)
-      'http://127.0.0.1:8000'    // Ancien port (fallback)
+      'http://localhost:8000',
+      'http://127.0.0.1:8000'
     );
     
-    // Supprimer les doublons
     const uniqueUrls = [...new Set(urls)];
     console.log('🔍 URLs to try:', uniqueUrls);
     return uniqueUrls;
@@ -60,7 +51,7 @@ function App() {
       try {
         console.log(`🔍 Trying to connect to ${url}/health...`);
         const response = await axios.get(`${url}/health`, { 
-          timeout: 3000  // Augmenté à 3 secondes
+          timeout: 3000
         });
         
         if (response.status === 200) {
@@ -85,8 +76,8 @@ function App() {
     if (!apiUrl) return;
     
     try {
-      console.log('📥 Fetching governorates from:', `${apiUrl}/api/governorates`);
-      const response = await axios.get(`${apiUrl}/api/governorates`);
+      console.log('📥 Fetching governorates from:', `${apiUrl}/governorates`);
+      const response = await axios.get(`${apiUrl}/governorates`);
       setGovernorates(response.data.governorates || response.data);
     } catch (err) {
       console.error('Error fetching governorates:', err);
@@ -105,36 +96,13 @@ function App() {
     if (!apiUrl) return;
     
     try {
-      console.log('📥 Fetching risk info from:', `${apiUrl}/api/risk-info`);
-      const response = await axios.get(`${apiUrl}/api/risk-info`);
+      console.log('📥 Fetching risk info from:', `${apiUrl}/risk-info`);
+      const response = await axios.get(`${apiUrl}/risk-info`);
       setRiskInfo(response.data);
     } catch (err) {
       console.error('Error fetching risk info:', err);
     }
   }, [apiUrl]);
-
-  // Générer des données de carte simulées
-  const generateMapData = useCallback(() => {
-    const governorateList = [
-      "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
-      "Bizerte", "Beja", "Jendouba", "Kef", "Siliana", "Sousse",
-      "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-      "Gabes", "Medenine", "Tataouine", "Gafsa", "Tozeur", "Kebili"
-    ];
-    
-    const mockData = {};
-    governorateList.forEach(gov => {
-      const rand = Math.random();
-      if (rand < 0.3) mockData[gov] = 'GREEN';
-      else if (rand < 0.55) mockData[gov] = 'YELLOW';
-      else if (rand < 0.75) mockData[gov] = 'ORANGE';
-      else if (rand < 0.9) mockData[gov] = 'RED';
-      else mockData[gov] = 'PURPLE';
-    });
-    
-    setMapData(mockData);
-    setLoadingMap(false);
-  }, []);
 
   // Debug: Log API URL changes
   useEffect(() => {
@@ -155,12 +123,6 @@ function App() {
     }
   }, [apiUrl, apiStatus, fetchGovernorates, fetchRiskInfo]);
 
-  // Generate map data
-  useEffect(() => {
-    setLoadingMap(true);
-    generateMapData();
-  }, [generateMapData]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForecastData(prev => ({ ...prev, [name]: value }));
@@ -173,10 +135,10 @@ function App() {
     setPrediction(null);
     
     try {
-      console.log('📤 Sending request to /api/forecast-by-date:', forecastData);
-      console.log('📤 Full URL:', `${apiUrl}/api/forecast-by-date`);
+      console.log('📤 Sending request to /forecast-by-date:', forecastData);
+      console.log('📤 Full URL:', `${apiUrl}/forecast-by-date`);
       
-      const response = await axios.post(`${apiUrl}/api/forecast-by-date`, {
+      const response = await axios.post(`${apiUrl}/forecast-by-date`, {
         date: forecastData.date,
         city: forecastData.city
       });
@@ -270,41 +232,6 @@ function App() {
   const handleNavClick = (page) => (e) => {
     e.preventDefault();
     setCurrentPage(page);
-  };
-
-  // Helper function to get risk level for a governorate
-  const getGovRisk = (govName) => {
-    if (mapData && mapData[govName]) {
-      return mapData[govName].toLowerCase();
-    }
-    // Default fallback with some variety
-    const defaults = {
-      'Tunis': 'yellow',
-      'Ariana': 'green',
-      'Ben Arous': 'green',
-      'Manouba': 'green',
-      'Nabeul': 'yellow',
-      'Zaghouan': 'green',
-      'Bizerte': 'yellow',
-      'Beja': 'orange',
-      'Jendouba': 'orange',
-      'Kef': 'yellow',
-      'Siliana': 'green',
-      'Sousse': 'green',
-      'Monastir': 'green',
-      'Mahdia': 'yellow',
-      'Sfax': 'orange',
-      'Kairouan': 'green',
-      'Kasserine': 'orange',
-      'Sidi Bouzid': 'yellow',
-      'Gabes': 'red',
-      'Medenine': 'orange',
-      'Tataouine': 'purple',
-      'Gafsa': 'yellow',
-      'Tozeur': 'green',
-      'Kebili': 'yellow'
-    };
-    return defaults[govName] || 'green';
   };
 
   return (
@@ -588,9 +515,6 @@ function App() {
               )}
             </div>
 
-            {/* Vigilance Map Card - Dynamic Version */}
-           {/* I have removed the dynamic vigilance map card  for the moment , It will be added back later  */}
-
             {/* Risk Info */}
             {riskInfo && (
               <div className="risk-info-card">
@@ -609,7 +533,7 @@ function App() {
 
             {/* Info Note */}
             <div className="info-note">
-              <p><i className="fas fa-cloud-sun"></i> Weather data provided by OpenWeatherMap · Model: LGBMClassifier</p>
+              <p><i className="fas fa-cloud-sun"></i> Weather data provided by OpenWeatherMap · Model: LGBMClassifier with 99.58% accuracy</p>
             </div>
           </div>
         ) : (
@@ -649,26 +573,3 @@ function App() {
 }
 
 export default App;
-
-const RiskDisplay = ({ prediction }) => {
-  const colors = {
-    'SAFE': '#4CAF50',
-    'CAUTION': '#FFC107',
-    'STAY HOME': '#F44336'
-  };
-  
-  return (
-    <div className="result-card" style={{backgroundColor: colors[prediction.risk_level]}}>
-      <h2>{prediction.risk_emoji} {prediction.risk_level}</h2>
-      <p>Confidence: {prediction.confidence}%</p>
-      
-      <div className="recommendations">
-        <h3>📋 Recommendations:</h3>
-        <p>🏫 Schools: {prediction.recommendations.schools}</p>
-        <p>📦 Delivery: {prediction.recommendations.delivery}</p>
-        <p>⚓ Fishing: {prediction.recommendations.fishing}</p>
-        <p>🏠 Public: {prediction.recommendations.public}</p>
-      </div>
-    </div>
-  );
-};
