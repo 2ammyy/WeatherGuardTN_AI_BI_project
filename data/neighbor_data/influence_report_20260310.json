@@ -1,0 +1,140 @@
+{
+  "collection_time": "2026-03-10T00:28:17.801170",
+  "total_locations": 8,
+  "countries": {
+    "algeria": 3,
+    "libya": 2,
+    "italy": 2,
+    "malta": 1
+  },
+  "regional_analysis": {
+    "northwest": {
+      "region": "northwest",
+      "governorates": [
+        "Jendouba",
+        "Beja",
+        "Kef",
+        "Siliana"
+      ],
+      "neighbor_influences": {
+        "algeria": {
+          "avg_temperature": 10.5,
+          "avg_wind_speed": 6.1,
+          "avg_humidity": 82.7,
+          "data_points": 3
+        }
+      },
+      "risk_factors": []
+    },
+    "northeast": {
+      "region": "northeast",
+      "governorates": [
+        "Bizerte",
+        "Tunis",
+        "Ariana",
+        "Ben Arous",
+        "Manouba",
+        "Nabeul",
+        "Zaghouan"
+      ],
+      "neighbor_influences": {
+        "italy": {
+          "avg_temperature": 14.2,
+          "avg_wind_speed": 19.5,
+          "avg_humidity": 81.0,
+          "data_points": 2
+        },
+        "malta": {
+          "avg_temperature": 15.3,
+          "avg_wind_speed": 22.2,
+          "avg_humidity": 88.0,
+          "data_points": 1
+        }
+      },
+      "risk_factors": []
+    },
+    "southwest": {
+      "region": "southwest",
+      "governorates": [
+        "Tozeur",
+        "Kebili",
+        "Tataouine",
+        "Gafsa"
+      ],
+      "neighbor_influences": {
+        "algeria": {
+          "avg_temperature": 10.5,
+          "avg_wind_speed": 6.1,
+          "avg_humidity": 82.7,
+          "data_points": 3
+        },
+        "libya": {
+          "avg_temperature": 16.2,
+          "avg_wind_speed": 32.6,
+          "avg_humidity": 69.5,
+          "data_points": 2
+        }
+      },
+      "risk_factors": []
+    },
+    "southeast": {
+      "region": "southeast",
+      "governorates": [
+        "Medenine",
+        "Gabes",
+        "Sfax"
+      ],
+      "neighbor_influences": {
+        "libya": {
+          "avg_temperature": 16.2,
+          "avg_wind_speed": 32.6,
+          "avg_humidity": 69.5,
+          "data_points": 2
+        }
+      },
+      "risk_factors": []
+    },
+    "coastal": {
+      "region": "coastal",
+      "governorates": [
+        "Sousse",
+        "Monastir",
+        "Mahdia",
+        "Sfax",
+        "Gabes"
+      ],
+      "neighbor_influences": {
+        "italy": {
+          "avg_temperature": 14.2,
+          "avg_wind_speed": 19.5,
+          "avg_humidity": 81.0,
+          "data_points": 2
+        },
+        "malta": {
+          "avg_temperature": 15.3,
+          "avg_wind_speed": 22.2,
+          "avg_humidity": 88.0,
+          "data_points": 1
+        }
+      },
+      "risk_factors": []
+    },
+    "central": {
+      "region": "central",
+      "governorates": [
+        "Kairouan",
+        "Kasserine",
+        "Sidi Bouzid"
+      ],
+      "neighbor_influences": {
+        "algeria": {
+          "avg_temperature": 10.5,
+          "avg_wind_speed": 6.1,
+          "avg_humidity": 82.7,
+          "data_points": 3
+        }
+      },
+      "risk_factors": []
+    }
+  }
+}
