@@ -3,571 +3,396 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  // UI State
-  const [currentPage, setCurrentPage] = useState('home');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  // Prediction Form State
-  const [forecastData, setForecastData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    city: 'Tunis'
-  });
-
-  const [prediction, setPrediction] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // State
+  const [selectedCities, setSelectedCities] = useState(['Tunis', 'Sfax', 'Bizerte']);
+  const [forecastData, setForecastData] = useState({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [governorates, setGovernorates] = useState([]);
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiUrl, setApiUrl] = useState('');
-  const [riskInfo, setRiskInfo] = useState(null);
-  
-  // URLs à tester pour la connexion à l'API
+  const [governorates, setGovernorates] = useState([]);
+  const [hoveredCity, setHoveredCity] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const API_URL = 'http://localhost:8001';
+
+  // Risk level configuration
+  const riskLevels = {
+    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '🔴', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
+  };
+
+  // Cities with coordinates for map (simplified)
+  const cityCoordinates = {
+    'Tunis': { x: 45, y: 35 },
+    'Sfax': { x: 52, y: 58 },
+    'Sousse': { x: 48, y: 45 },
+    'Bizerte': { x: 42, y: 18 },
+    'Jendouba': { x: 28, y: 25 },
+    'Nabeul': { x: 55, y: 40 },
+    'Gabes': { x: 52, y: 68 },
+    'Medenine': { x: 55, y: 78 },
+    'Kairouan': { x: 42, y: 48 },
+    'Monastir': { x: 50, y: 42 },
+    'Mahdia': { x: 52, y: 50 },
+    'Gafsa': { x: 32, y: 62 },
+    'Tozeur': { x: 25, y: 58 },
+    'Kebili': { x: 38, y: 72 },
+    'Tataouine': { x: 48, y: 88 },
+    'Kasserine': { x: 30, y: 48 },
+    'Beja': { x: 35, y: 25 },
+    'Kef': { x: 28, y: 32 },
+    'Siliana': { x: 38, y: 38 },
+    'Zaghouan': { x: 48, y: 32 },
+    'Ariana': { x: 44, y: 30 },
+    'Ben Arous': { x: 46, y: 32 },
+    'Manouba': { x: 42, y: 30 }
+  };
+
+  // URLs for API connection
   const possibleUrls = useMemo(() => {
     const envUrl = process.env.REACT_APP_API_URL;
-    console.log('🔍 REACT_APP_API_URL from env:', envUrl);
-    
     const urls = [];
-    
-    if (envUrl) {
-      urls.push(envUrl);
-    }
-    
-    // Utiliser le port 8000 (backend)
+    if (envUrl) urls.push(envUrl);
     urls.push(
+      'http://localhost:8001',
+      'http://127.0.0.1:8001',
       'http://localhost:8000',
       'http://127.0.0.1:8000'
     );
-    
-    const uniqueUrls = [...new Set(urls)];
-    console.log('🔍 URLs to try:', uniqueUrls);
-    return uniqueUrls;
+    return [...new Set(urls)];
   }, []);
 
-  // Fonction pour trouver l'URL de l'API qui fonctionne
+  // Find working API URL
   const findWorkingApiUrl = useCallback(async () => {
-    console.log('🔍 Starting API connection check...');
-    
     for (const url of possibleUrls) {
       try {
-        console.log(`🔍 Trying to connect to ${url}/health...`);
-        const response = await axios.get(`${url}/health`, { 
-          timeout: 3000
-        });
-        
+        const response = await axios.get(`${url}/health`, { timeout: 3000 });
         if (response.status === 200) {
-          console.log(`✅ Connected to ${url}`);
-          console.log('✅ Response data:', response.data);
           setApiUrl(url);
           setApiStatus('connected');
+          console.log(`✅ Connected to ${url}`);
           return url;
         }
       } catch (err) {
-        console.log(`❌ Failed to connect to ${url}:`, err.message);
+        console.log(`❌ Failed to connect to ${url}`);
       }
     }
-    
-    console.log('❌ All connection attempts failed');
     setApiStatus('disconnected');
     return null;
   }, [possibleUrls]);
 
-  // Fonction pour récupérer la liste des gouvernorats
-  const fetchGovernorates = useCallback(async () => {
-    if (!apiUrl) return;
-    
-    try {
-      console.log('📥 Fetching governorates from:', `${apiUrl}/governorates`);
-      const response = await axios.get(`${apiUrl}/governorates`);
-      setGovernorates(response.data.governorates || response.data);
-    } catch (err) {
-      console.error('Error fetching governorates:', err);
-      // Fallback governorates
-      setGovernorates([
-        "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
-        "Bizerte", "Beja", "Jendouba", "Kef", "Siliana", "Sousse",
-        "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-        "Gabes", "Medenine", "Tataouine", "Gafsa", "Tozeur", "Kebili"
-      ]);
-    }
-  }, [apiUrl]);
-
-  // Fonction pour récupérer les informations sur les risques
-  const fetchRiskInfo = useCallback(async () => {
-    if (!apiUrl) return;
-    
-    try {
-      console.log('📥 Fetching risk info from:', `${apiUrl}/risk-info`);
-      const response = await axios.get(`${apiUrl}/risk-info`);
-      setRiskInfo(response.data);
-    } catch (err) {
-      console.error('Error fetching risk info:', err);
-    }
-  }, [apiUrl]);
-
-  // Debug: Log API URL changes
+  // Fetch governorates
   useEffect(() => {
-    console.log('🔍 Current API URL:', apiUrl);
-    console.log('🔍 API Status:', apiStatus);
-  }, [apiUrl, apiStatus]);
+    const fetchGovernorates = async () => {
+      if (!apiUrl) return;
+      try {
+        const response = await axios.get(`${apiUrl}/governorates`);
+        setGovernorates(response.data.governorates || response.data);
+      } catch (err) {
+        console.error('Error fetching governorates:', err);
+        setGovernorates(Object.keys(cityCoordinates));
+      }
+    };
+    fetchGovernorates();
+  }, [apiUrl]);
 
-  // Check API connection on load
+  // Fetch forecasts for selected cities
+  useEffect(() => {
+    const fetchForecasts = async () => {
+      if (selectedCities.length === 0 || apiStatus !== 'connected') return;
+      
+      setLoading(true);
+      const forecasts = {};
+      let hasError = false;
+      
+      for (const city of selectedCities) {
+        try {
+          const response = await axios.post(`${apiUrl}/forecast-by-date`, {
+            date: selectedDate,
+            city: city
+          });
+          forecasts[city] = response.data;
+        } catch (err) {
+          console.error(`Error fetching ${city}:`, err);
+          hasError = true;
+        }
+      }
+      
+      setForecastData(forecasts);
+      setLoading(false);
+      
+      if (hasError) {
+        setError('Some forecasts could not be loaded');
+      } else {
+        setError(null);
+      }
+    };
+
+    fetchForecasts();
+  }, [selectedCities, selectedDate, apiUrl, apiStatus]);
+
+  // Initial API connection
   useEffect(() => {
     findWorkingApiUrl();
   }, [findWorkingApiUrl]);
 
-  // Fetch governorates and risk info when API URL changes
-  useEffect(() => {
-    if (apiUrl && apiStatus === 'connected') {
-      fetchGovernorates();
-      fetchRiskInfo();
-    }
-  }, [apiUrl, apiStatus, fetchGovernorates, fetchRiskInfo]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForecastData(prev => ({ ...prev, [name]: value }));
+  const toggleCity = (city) => {
+    setSelectedCities(prev => 
+      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
+    );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setPrediction(null);
-    
-    try {
-      console.log('📤 Sending request to /forecast-by-date:', forecastData);
-      console.log('📤 Full URL:', `${apiUrl}/forecast-by-date`);
-      
-      const response = await axios.post(`${apiUrl}/forecast-by-date`, {
-        date: forecastData.date,
-        city: forecastData.city
-      });
-      
-      console.log('📥 Received response:', response.data);
-      setPrediction(response.data);
-      
-    } catch (err) {
-      console.error('❌ Full error object:', err);
-      
-      let errorMessage = 'Error getting forecast';
-      
-      if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
-        errorMessage = 'Cannot connect to backend server. Make sure it is running.';
-      } else if (err.response) {
-        console.log('❌ Error response status:', err.response.status);
-        console.log('❌ Error response data:', err.response.data);
-        console.log('❌ Tried to call:', err.config?.url);
+  const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#999';
+  const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '❓';
+
+  // Generate map SVG with risk colors
+  const renderMap = () => {
+    return (
+      <svg viewBox="0 0 100 100" className="tunisia-map">
+        {/* Tunisia simplified outline */}
+        <polygon
+          points="20,10 40,5 60,8 75,15 80,25 85,35 80,50 70,65 60,80 45,90 30,95 15,90 10,75 12,60 15,40 18,25 20,10"
+          fill="#f0f0f0"
+          stroke="#333"
+          strokeWidth="0.5"
+        />
         
-        if (err.response.status === 404) {
-          errorMessage = `No forecast available for ${forecastData.date} in ${forecastData.city}. Try a different date or city.`;
-        } else if (err.response.status === 400) {
-          errorMessage = err.response.data?.detail || 'Invalid request. Please check your input.';
-        } else if (err.response.status === 422) {
-          errorMessage = 'Date format error. Please use YYYY-MM-DD format.';
-        } else if (err.response.status === 502) {
-          errorMessage = 'Weather service unavailable. Please try again later.';
-        } else {
-          errorMessage = err.response.data?.detail || `Server error: ${err.response.status}`;
-        }
-      } else if (err.request) {
-        console.log('❌ Request made but no response received');
-        errorMessage = 'No response from server. Check if backend is running.';
-      } else {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getRiskColor = (riskLevel) => {
-    const colors = {
-      'GREEN': '#4CAF50',
-      'YELLOW': '#FFC107',
-      'ORANGE': '#FF9800',
-      'RED': '#F44336',
-      'PURPLE': '#9C27B0'
-    };
-    return colors[riskLevel] || '#999';
-  };
-
-  const getRiskEmoji = (riskLevel) => {
-    const emojis = {
-      'GREEN': '✅',
-      'YELLOW': '⚠️',
-      'ORANGE': '⚡',
-      'RED': '🔴',
-      'PURPLE': '🟣'
-    };
-    return emojis[riskLevel] || '❓';
-  };
-
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
-  const today = new Date();
-  const minDate = today.toISOString().split('T')[0];
-  const maxDate = new Date(today.setDate(today.getDate() + 5)).toISOString().split('T')[0];
-
-  const getPageSource = () => {
-    const basePath = '/eda_results/cross_border/';
-    switch(currentPage) {
-      case 'dashboard':
-        return `${basePath}dashboard.html`;
-      case 'scatter':
-        return `${basePath}interactive_scatter.html`;
-      case 'tempbars':
-        return `${basePath}temperature_bars.html`;
-      case 'weathermap':
-        return `${basePath}weather_map.html`;
-      default:
-        return '';
-    }
-  };
-
-  const handleNavClick = (page) => (e) => {
-    e.preventDefault();
-    setCurrentPage(page);
+        {/* City dots with risk colors */}
+        {Object.entries(cityCoordinates).map(([city, coords]) => {
+          const isSelected = selectedCities.includes(city);
+          const cityData = forecastData[city];
+          const riskLevel = cityData?.risk_level || 'GREEN';
+          const isHovered = hoveredCity === city;
+          
+          return (
+            <g key={city}>
+              <circle
+                cx={coords.x}
+                cy={coords.y}
+                r={isHovered ? 4 : isSelected ? 3 : 2}
+                fill={getRiskColor(riskLevel)}
+                stroke="white"
+                strokeWidth={isSelected ? 2 : 1}
+                opacity={isSelected ? 1 : 0.6}
+                onMouseEnter={() => setHoveredCity(city)}
+                onMouseLeave={() => setHoveredCity(null)}
+                onClick={() => toggleCity(city)}
+                style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+              />
+              {isHovered && (
+                <text
+                  x={coords.x + 5}
+                  y={coords.y - 5}
+                  fontSize="2"
+                  fill="black"
+                >
+                  {city}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    );
   };
 
   return (
-    <div className="app-wrapper">
-      {/* Sidebar */}
-      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-header">
-          <div className="logo-area">
-            <i className="fas fa-cloud-sun-rain logo-icon"></i>
-            {!sidebarCollapsed && <span className="logo-text">WeatherGuardTN</span>}
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div className="header-content">
+          <div className="logo">
+            <i className="fas fa-cloud-sun-rain"></i>
+            <h1>WeatherGuard<span>TN</span></h1>
           </div>
-          <button 
-            className="toggle-btn" 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            aria-label="Toggle sidebar"
-          >
-            <i className={`fas fa-chevron-${sidebarCollapsed ? 'right' : 'left'}`}></i>
-          </button>
+          <div className="date-selector">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              max={new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0]}
+            />
+          </div>
+          <div className={`api-status ${apiStatus}`}>
+            {apiStatus === 'connected' ? '🟢 Live' : '🔴 Offline'}
+          </div>
         </div>
+      </header>
 
-        <nav className="nav-menu">
-          <button 
-            className={`nav-item ${currentPage === 'home' ? 'active' : ''}`}
-            onClick={handleNavClick('home')}
-          >
-            <i className="fas fa-home"></i>
-            {!sidebarCollapsed && <span>Vigilance Home</span>}
-          </button>
-          <button 
-            className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-            onClick={handleNavClick('dashboard')}
-          >
-            <i className="fas fa-chart-pie"></i>
-            {!sidebarCollapsed && <span>Risk Dashboard</span>}
-          </button>
-          <button 
-            className={`nav-item ${currentPage === 'scatter' ? 'active' : ''}`}
-            onClick={handleNavClick('scatter')}
-          >
-            <i className="fas fa-dot-circle"></i>
-            {!sidebarCollapsed && <span>Multi-risk scatter</span>}
-          </button>
-          <button 
-            className={`nav-item ${currentPage === 'tempbars' ? 'active' : ''}`}
-            onClick={handleNavClick('tempbars')}
-          >
-            <i className="fas fa-chart-bar"></i>
-            {!sidebarCollapsed && <span>Temperature bars</span>}
-          </button>
-          <button 
-            className={`nav-item ${currentPage === 'weathermap' ? 'active' : ''}`}
-            onClick={handleNavClick('weathermap')}
-          >
-            <i className="fas fa-map-marked-alt"></i>
-            {!sidebarCollapsed && <span>Weather map</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <i className="fas fa-umbrella-beach"></i> 
-          {!sidebarCollapsed && <span>5‑level vigilance</span>}
+      {/* Error Message */}
+      {error && (
+        <div className="error-banner">
+          <i className="fas fa-exclamation-triangle"></i>
+          {error}
         </div>
-      </aside>
+      )}
 
-      {/* Main Content */}
-      <main className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
-        {currentPage === 'home' ? (
-          <div className="home-page">
-            <div className="hero-block">
-              <h1>Stay ahead of the storm</h1>
-              <div className="subhead">
-                Tunisia's first hyperlocal danger predictor — for people, authorities & fishermen
-              </div>
-            </div>
-
-            {/* API Status Indicator */}
-            <div className="api-status-container">
-              {apiStatus === 'connected' && (
-                <div className="status-success chip">
-                  <i className="fas fa-check-circle"></i> Connected to Weather Service
-                </div>
-              )}
-              {apiStatus === 'checking' && (
-                <div className="status-checking chip">
-                  <i className="fas fa-spinner fa-spin"></i> Checking connection...
-                </div>
-              )}
-              {apiStatus === 'disconnected' && (
-                <div className="status-error chip">
-                  <i className="fas fa-exclamation-triangle"></i> Cannot connect to backend. Please start the server.
-                </div>
-              )}
-            </div>
-
-            {/* User Chips */}
-            <div className="user-chips">
-              <span className="chip"><i className="fas fa-graduation-cap"></i> Students & Parents</span>
-              <span className="chip"><i className="fas fa-truck"></i> Delivery Drivers</span>
-              <span className="chip"><i className="fas fa-ship"></i> Fishermen & Mariners</span>
-              <span className="chip"><i className="fas fa-users"></i> General Population</span>
-              <span className="chip"><i className="fas fa-helmet-safety"></i> Civil Protection</span>
-            </div>
-
-            {/* Prediction Form Card */}
-            <div className="prediction-form-card">
-              <h2>
-                <i className="fas fa-cloud-sun-rain"></i> Get Personalized Risk Assessment
-              </h2>
-              
-              <form className="prediction-form" onSubmit={handleSubmit}>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label><i className="fas fa-calendar"></i> Select Date</label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={forecastData.date}
-                      onChange={handleInputChange}
-                      min={minDate}
-                      max={maxDate}
-                      required
-                    />
-                    <small className="field-hint">Up to 5 days ahead</small>
-                  </div>
-
-                  <div className="form-group">
-                    <label><i className="fas fa-map-marker-alt"></i> Select Governorate</label>
-                    <select 
-                      name="city" 
-                      value={forecastData.city} 
-                      onChange={handleInputChange}
-                      required
-                    >
-                      {governorates.map(city => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="predict-btn"
-                  disabled={loading || apiStatus !== 'connected'}
-                >
-                  {loading ? (
-                    <span><i className="fas fa-spinner fa-spin"></i> Getting Forecast...</span>
-                  ) : (
-                    <span><i className="fas fa-magic"></i> Get Risk Prediction</span>
-                  )}
-                </button>
-              </form>
-
-              {/* Loading State */}
-              {loading && (
-                <div className="loading-section">
-                  <div className="loading-spinner"></div>
-                  <p>Fetching weather data and predicting risk...</p>
-                </div>
-              )}
-
-              {/* Error Message */}
-              {error && (
-                <div className="error-message">
-                  <strong><i className="fas fa-exclamation-circle"></i> Error:</strong> {error}
-                </div>
-              )}
-
-              {/* Prediction Result */}
-              {prediction && !loading && (
-                <div className="prediction-result">
-                  <h3>Your Risk Assessment for {formatDate(prediction.forecast_date)}</h3>
-                  
-                  <div 
-                    className="risk-indicator"
-                    style={{ 
-                      backgroundColor: getRiskColor(prediction.risk_level) + '20',
-                      borderColor: getRiskColor(prediction.risk_level),
-                      borderWidth: '2px',
-                      borderStyle: 'solid'
-                    }}
+      {/* Main Dashboard Grid */}
+      <div className="dashboard-grid">
+        {/* Left Column - City Selector */}
+        <div className="city-panel">
+          <h3><i className="fas fa-map-marker-alt"></i> Governorates</h3>
+          <div className="city-list">
+            {governorates.map(city => (
+              <button
+                key={city}
+                className={`city-btn ${selectedCities.includes(city) ? 'selected' : ''}`}
+                onClick={() => toggleCity(city)}
+              >
+                <span className="city-name">{city}</span>
+                {forecastData[city] && (
+                  <span 
+                    className="city-risk"
+                    style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}
                   >
-                    <span className="risk-level">
-                      {getRiskEmoji(prediction.risk_level)} {prediction.risk_level}
-                    </span>
-                    <span className="risk-probability">Confidence: {prediction.confidence}%</span>
-                  </div>
+                    {getRiskEmoji(forecastData[city].risk_level)}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                  <div className="weather-details">
-                    <h4>🌡️ Weather Conditions in {prediction.city}:</h4>
-                    <div className="weather-grid">
-                      <div className="weather-item">
-                        <span className="weather-label">Max Temperature:</span>
-                        <span className="weather-value">{prediction.weather.temp_max}°C</span>
-                      </div>
-                      <div className="weather-item">
-                        <span className="weather-label">Min Temperature:</span>
-                        <span className="weather-value">{prediction.weather.temp_min}°C</span>
-                      </div>
-                      <div className="weather-item">
-                        <span className="weather-label">Average Temperature:</span>
-                        <span className="weather-value">{prediction.weather.temp_avg}°C</span>
-                      </div>
-                      <div className="weather-item">
-                        <span className="weather-label">Wind Speed:</span>
-                        <span className="weather-value">{prediction.weather.wind_speed} km/h</span>
-                      </div>
-                      <div className="weather-item">
-                        <span className="weather-label">Humidity:</span>
-                        <span className="weather-value">{prediction.weather.humidity}%</span>
-                      </div>
-                    </div>
-                  </div>
+        {/* Center - Vigilance Map */}
+        <div className="map-panel">
+          <h3><i className="fas fa-map"></i> Vigilance Map</h3>
+          <div className="map-container">
+            {renderMap()}
+            <div className="map-legend">
+              {Object.entries(riskLevels).map(([level, data]) => (
+                <div key={level} className="legend-item">
+                  <span className="legend-dot" style={{ backgroundColor: data.color }}></span>
+                  <span>{level} - {data.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                  {/* Probability Distribution */}
-                  <div className="probabilities">
-                    <h4>📊 Risk Probabilities:</h4>
-                    {Object.entries(prediction.probabilities).map(([risk, prob]) => (
-                      <div key={risk} className="probability-bar">
-                        <div className="probability-label">
-                          <span>{risk}</span>
-                          <span>{prob}%</span>
+        {/* Right Column - Risk Grid */}
+        <div className="risk-panel">
+          <h3><i className="fas fa-chart-line"></i> Risk Overview</h3>
+          {loading ? (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Loading forecasts...</p>
+            </div>
+          ) : (
+            <div className="risk-grid">
+              {selectedCities.map(city => (
+                <div key={city} className="risk-card">
+                  <div className="risk-card-header">
+                    <h4>{city}</h4>
+                    {forecastData[city] && (
+                      <span 
+                        className="risk-badge"
+                        style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}
+                      >
+                        {forecastData[city].risk_level}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {forecastData[city] ? (
+                    <>
+                      <div className="weather-icons">
+                        <div className="weather-icon" title="Temperature">
+                          <i className="fas fa-thermometer-half"></i>
+                          <span>{forecastData[city].weather?.temp_avg || 'N/A'}°C</span>
                         </div>
-                        <div className="bar-container">
+                        <div className="weather-icon" title="Wind Speed">
+                          <i className="fas fa-wind"></i>
+                          <span>{forecastData[city].weather?.wind_speed || 'N/A'} km/h</span>
+                        </div>
+                        <div className="weather-icon" title="Humidity">
+                          <i className="fas fa-tint"></i>
+                          <span>{forecastData[city].weather?.humidity || 'N/A'}%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="risk-probability">
+                        <div className="prob-bar">
                           <div 
-                            className="bar" 
+                            className="prob-fill"
                             style={{ 
-                              width: `${prob}%`,
-                              backgroundColor: getRiskColor(risk)
+                              width: `${forecastData[city].confidence || 0}%`,
+                              backgroundColor: getRiskColor(forecastData[city].risk_level)
                             }}
                           ></div>
                         </div>
+                        <span className="prob-text">{forecastData[city].confidence || 0}% confidence</span>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Action Recommendations */}
-                  <div className="recommendations">
-                    <h4>Recommended Actions:</h4>
-                    <ul>
-                      {prediction.risk_level === 'GREEN' && (
-                        <>
-                          <li><i className="fas fa-check-circle" style={{color: '#4CAF50'}}></i> Normal conditions - No action needed</li>
-                          <li><i className="fas fa-check-circle" style={{color: '#4CAF50'}}></i> Regular activities can continue</li>
-                        </>
-                      )}
-                      {prediction.risk_level === 'YELLOW' && (
-                        <>
-                          <li><i className="fas fa-exclamation-triangle" style={{color: '#FFC107'}}></i> Be aware of weather conditions</li>
-                          <li><i className="fas fa-exclamation-triangle" style={{color: '#FFC107'}}></i> Monitor local weather updates</li>
-                          <li><i className="fas fa-exclamation-triangle" style={{color: '#FFC107'}}></i> Plan outdoor activities with caution</li>
-                        </>
-                      )}
-                      {prediction.risk_level === 'ORANGE' && (
-                        <>
-                          <li><i className="fas fa-exclamation-circle" style={{color: '#FF9800'}}></i> Be prepared for possible disruptions</li>
-                          <li><i className="fas fa-exclamation-circle" style={{color: '#FF9800'}}></i> Secure outdoor objects</li>
-                          <li><i className="fas fa-exclamation-circle" style={{color: '#FF9800'}}></i> Avoid unnecessary travel</li>
-                          <li><i className="fas fa-exclamation-circle" style={{color: '#FF9800'}}></i> Stay informed about weather alerts</li>
-                        </>
-                      )}
-                      {prediction.risk_level === 'RED' && (
-                        <>
-                          <li><i className="fas fa-times-circle" style={{color: '#F44336'}}></i> Take action to protect life and property</li>
-                          <li><i className="fas fa-times-circle" style={{color: '#F44336'}}></i> Stay indoors if possible</li>
-                          <li><i className="fas fa-times-circle" style={{color: '#F44336'}}></i> Follow official instructions</li>
-                          <li><i className="fas fa-times-circle" style={{color: '#F44336'}}></i> Prepare for emergency supplies</li>
-                        </>
-                      )}
-                      {prediction.risk_level === 'PURPLE' && (
-                        <>
-                          <li><i className="fas fa-skull-crosswind" style={{color: '#9C27B0'}}></i> EMERGENCY - Immediate action required</li>
-                          <li><i className="fas fa-skull-crosswind" style={{color: '#9C27B0'}}></i> Seek shelter immediately</li>
-                          <li><i className="fas fa-skull-crosswind" style={{color: '#9C27B0'}}></i> Follow evacuation orders</li>
-                          <li><i className="fas fa-skull-crosswind" style={{color: '#9C27B0'}}></i> Stay tuned to emergency services</li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
+                    </>
+                  ) : (
+                    <div className="no-data">No forecast available</div>
+                  )}
+                </div>
+              ))}
+              
+              {selectedCities.length === 0 && (
+                <div className="empty-state">
+                  <i className="fas fa-hand-pointer"></i>
+                  <p>Select governorates to view risks</p>
                 </div>
               )}
             </div>
+          )}
+        </div>
+      </div>
 
-            {/* Risk Info */}
-            {riskInfo && (
-              <div className="risk-info-card">
-                <h4><i className="fas fa-info-circle"></i> Risk Levels Explained:</h4>
-                <div className="risk-levels-grid">
-                  {riskInfo.levels.map((level) => (
-                    <div key={level.code} className="risk-level-item">
-                      <span className="risk-color-dot" style={{ backgroundColor: getRiskColor(level.name) }}></span>
-                      <span className="risk-name">{level.name}</span>
-                      <span className="risk-description">{level.description}</span>
-                    </div>
-                  ))}
-                </div>
+      {/* Action Recommendations Grid */}
+      <div className="actions-grid">
+        <h2><i className="fas fa-clipboard-list"></i> Early Warning Actions</h2>
+        <div className="action-cards">
+          {['students', 'delivery', 'fishermen', 'civil'].map(persona => (
+            <div key={persona} className="action-card">
+              <div className="action-icon">
+                {persona === 'students' && '🎓'}
+                {persona === 'delivery' && '📦'}
+                {persona === 'fishermen' && '⚓'}
+                {persona === 'civil' && '🚒'}
               </div>
-            )}
+              <h4>
+                {persona === 'students' && 'Students & Parents'}
+                {persona === 'delivery' && 'Delivery Workers'}
+                {persona === 'fishermen' && 'Fishermen'}
+                {persona === 'civil' && 'Civil Protection'}
+              </h4>
+              <ul>
+                {selectedCities.slice(0, 3).map(city => {
+                  const risk = forecastData[city]?.risk_level || 'GREEN';
+                  return (
+                    <li key={city}>
+                      <span className="action-city">{city}:</span>
+                      <span className="action-risk" style={{ color: getRiskColor(risk) }}>
+                        {getRiskEmoji(risk)} {
+                          risk === 'GREEN' ? 'Normal' :
+                          risk === 'YELLOW' ? 'Caution' :
+                          risk === 'ORANGE' ? 'Prepare' :
+                          risk === 'RED' ? 'Take action' :
+                          risk === 'PURPLE' ? 'Emergency' : 'Unknown'
+                        }
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Info Note */}
-            <div className="info-note">
-              <p><i className="fas fa-cloud-sun"></i> Weather data provided by OpenWeatherMap · Model: LGBMClassifier with 99.58% accuracy</p>
-            </div>
-          </div>
-        ) : (
-          <iframe
-            src={getPageSource()}
-            className="page-iframe"
-            title={currentPage}
-            frameBorder="0"
-          />
-        )}
-
-        {/* Footer */}
-        <footer className="site-footer">
-          <h3><i className="fas fa-paper-plane"></i> Contact us · feedback</h3>
-          <form className="footer-form" onSubmit={(e) => e.preventDefault()}>
-            <div className="form-group">
-              <label><i className="far fa-user"></i> Name</label>
-              <input type="text" placeholder="Your name" />
-            </div>
-            <div className="form-group">
-              <label><i className="far fa-envelope"></i> Email</label>
-              <input type="email" placeholder="name@example.com" />
-            </div>
-            <div className="form-group">
-              <label><i className="far fa-comment"></i> Message</label>
-              <textarea placeholder="Your feedback / danger report..."></textarea>
-            </div>
-            <button type="submit"><i className="fas fa-feather-alt"></i> Send</button>
-          </form>
-          <p className="footer-note">
-            <i className="fas fa-heart" style={{ color: '#da7b44' }}></i> protecting lives – made in tunisia
-          </p>
-        </footer>
-      </main>
+      {/* Footer */}
+      <footer className="footer">
+        <p>
+          <i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy · Data: OpenWeatherMap
+        </p>
+      </footer>
     </div>
   );
 }
