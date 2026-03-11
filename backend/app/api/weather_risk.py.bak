@@ -1,0 +1,712 @@
+# backend/app/api/weather_risk.py
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+import joblib
+import numpy as np
+import pandas as pd
+from typing import List, Dict, Optional
+import os
+import traceback
+import requests
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+app = FastAPI(title="WeatherGuardTN API")
+
+# ✅ Add CORS middleware to allow React frontend to connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load the PROPER RAIN model at startup
+MODEL_PATH = "mlartifacts/proper_rain_model.pkl"
+SCALER_PATH = "mlartifacts/scaler_6features.pkl"  
+FEATURES_PATH = "mlartifacts/feature_cols_6.pkl" 
+ENCODER_PATH = "mlartifacts/label_encoder.pkl"
+
+print("📦 Loading model and preprocessors...")
+
+# The model expects 6 features including precipitation!
+EXPECTED_FEATURES = ['temp_max', 'temp_min', 'temp_avg', 'wind_speed', 'humidity', 'precipitation']
+
+try:
+    # Check if files exist
+    if not os.path.exists(MODEL_PATH):
+        print(f"❌ Model file not found: {MODEL_PATH}")
+    if not os.path.exists(SCALER_PATH):
+        print(f"❌ Scaler file not found: {SCALER_PATH}")
+    
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+    
+    # Try to load encoder and features if they exist (optional)
+    if os.path.exists(ENCODER_PATH):
+        encoder = joblib.load(ENCODER_PATH)
+    else:
+        encoder = None
+        
+    if os.path.exists(FEATURES_PATH):
+        feature_cols = joblib.load(FEATURES_PATH)
+    else:
+        feature_cols = EXPECTED_FEATURES
+    
+    print(f"✅ Model loaded successfully!")
+    print(f"📊 Model type: {type(model).__name__}")
+    print(f"📊 Features expected: {feature_cols}")
+    
+except Exception as e:
+    print(f"❌ Error loading model: {e}")
+    traceback.print_exc()
+    model = None
+    scaler = None
+    encoder = None
+    feature_cols = EXPECTED_FEATURES
+
+# Weather API configuration
+WEATHER_API_KEY = "139fef2236c773191352b491bd53a624"
+WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/forecast"
+
+# Influence zones for neighbor data
+influence_zones = {
+    'northwest': ['Jendouba', 'Beja', 'Kef', 'Siliana'],
+    'northeast': ['Bizerte', 'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan'],
+    'southwest': ['Tozeur', 'Kebili', 'Tataouine', 'Gafsa'],
+    'southeast': ['Medenine', 'Gabes', 'Sfax'],
+    'coastal': ['Sousse', 'Monastir', 'Mahdia', 'Sfax', 'Gabes'],
+    'central': ['Kairouan', 'Kasserine', 'Sidi Bouzid']
+}
+
+# Tunisian cities with their coordinates
+CITY_COORDINATES = {
+    "Tunis": {"lat": 36.8065, "lon": 10.1815},
+    "Sfax": {"lat": 34.7400, "lon": 10.7600},
+    "Sousse": {"lat": 35.8256, "lon": 10.6411},
+    "Bizerte": {"lat": 37.2744, "lon": 9.8739},
+    "Jendouba": {"lat": 36.5011, "lon": 8.7803},
+    "Gabes": {"lat": 33.8815, "lon": 10.0982},
+    "Ariana": {"lat": 36.8667, "lon": 10.2000},
+    "Ben Arous": {"lat": 36.7533, "lon": 10.2219},
+    "Manouba": {"lat": 36.8081, "lon": 10.0972},
+    "Nabeul": {"lat": 36.4561, "lon": 10.7378},
+    "Zaghouan": {"lat": 36.4029, "lon": 10.1429},
+    "Beja": {"lat": 36.7256, "lon": 9.1817},
+    "Kef": {"lat": 36.1741, "lon": 8.7049},
+    "Siliana": {"lat": 36.0849, "lon": 9.3708},
+    "Kairouan": {"lat": 35.6781, "lon": 10.0963},
+    "Kasserine": {"lat": 35.1676, "lon": 8.8365},
+    "Sidi Bouzid": {"lat": 35.0359, "lon": 9.4858},
+    "Monastir": {"lat": 35.7833, "lon": 10.8333},
+    "Mahdia": {"lat": 35.5047, "lon": 11.0622},
+    "Medenine": {"lat": 33.3549, "lon": 10.5055},
+    "Tataouine": {"lat": 32.9297, "lon": 10.4518},
+    "Gafsa": {"lat": 34.4250, "lon": 8.7842},
+    "Tozeur": {"lat": 33.9197, "lon": 8.1335},
+    "Kebili": {"lat": 33.7044, "lon": 8.9692}
+}
+
+# Define request model for manual weather input
+class WeatherData(BaseModel):
+    temp_max: float = Field(..., description="Maximum temperature in °C", example=35.0)
+    temp_min: float = Field(..., description="Minimum temperature in °C", example=24.0)
+    temp_avg: float = Field(..., description="Average temperature in °C", example=29.5)
+    wind_speed: float = Field(..., description="Wind speed in km/h", example=45.0)
+    humidity: float = Field(..., description="Humidity percentage (0-100)", example=60.0)
+    precipitation: Optional[float] = Field(0, description="Precipitation in mm", example=71.9)
+    city: str = Field("Unknown", description="City name", example="Tunis")
+
+# Request model for date-only input
+class DateForecastRequest(BaseModel):
+    date: str = Field(..., description="Date in YYYY-MM-DD format", example="2024-03-15")
+    city: str = Field(..., description="City name", example="Tunis")
+
+# Define nested weather info model for response
+class WeatherInfo(BaseModel):
+    """Weather data included in response"""
+    temp_max: float
+    temp_min: float
+    temp_avg: float
+    wind_speed: float
+    humidity: float
+    precipitation: Optional[float] = 0
+    city: str
+
+# Define response model
+class RiskResponse(BaseModel):
+    risk_level: str
+    risk_code: int
+    confidence: float
+    probabilities: Dict[str, float]
+    city: str
+    weather: WeatherInfo
+
+# Risk level mapping
+RISK_NAMES = {0: "GREEN", 1: "YELLOW", 2: "ORANGE", 3: "RED", 4: "PURPLE"}
+RISK_COLORS = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "🟣"}
+RISK_DESCRIPTIONS = {
+    "GREEN": "Normal conditions - No action needed",
+    "YELLOW": "Be aware - Monitor weather updates",
+    "ORANGE": "Be prepared - Possible disruptions",
+    "RED": "Take action - Protect life and property",
+    "PURPLE": "Emergency - Immediate response needed"
+}
+
+# ==================== ROOT ENDPOINTS ====================
+
+@app.get("/")
+@app.get("/api/")
+def root():
+    return {
+        "message": "WeatherGuardTN API",
+        "status": "active",
+        "model_loaded": model is not None,
+        "endpoints": {
+            "health": "/health or /api/health",
+            "governorates": "/governorates or /api/governorates",
+            "predict": "/predict or /api/predict",
+            "forecast": "/forecast-by-date or /api/forecast-by-date",
+            "stay-home": "/stay-home-risk or /api/stay-home-risk",
+            "neighbors": "/forecast-with-neighbors or /api/forecast-with-neighbors",
+            "risk-info": "/risk-info or /api/risk-info"
+        }
+    }
+
+# ==================== HEALTH ENDPOINTS ====================
+
+@app.get("/health")
+@app.get("/api/health")
+def health():
+    return {"status": "healthy", "model_loaded": model is not None}
+
+# ==================== GOVERNORATES ENDPOINTS ====================
+
+@app.get("/governorates")
+@app.get("/api/governorates")
+def get_governorates():
+    """List of Tunisian governorates"""
+    governorates = sorted([
+        "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
+        "Bizerte", "Beja", "Jendouba", "Kef", "Siliana", "Sousse",
+        "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
+        "Gabes", "Medenine", "Tataouine", "Gafsa", "Tozeur", "Kebili"
+    ])
+    return {"governorates": governorates}
+
+# ==================== RISK INFO ENDPOINTS ====================
+
+@app.get("/risk-info")
+@app.get("/api/risk-info")
+def get_risk_info():
+    """Information about risk levels"""
+    return {
+        "levels": [
+            {
+                "name": name,
+                "code": code,
+                "color": RISK_COLORS[code],
+                "description": RISK_DESCRIPTIONS[name]
+            }
+            for code, name in RISK_NAMES.items()
+        ]
+    }
+
+# ==================== PREDICT ENDPOINTS ====================
+
+@app.post("/predict", response_model=RiskResponse)
+@app.post("/api/predict", response_model=RiskResponse)
+async def predict_risk(weather: WeatherData):
+    """Predict weather risk level based on manually entered weather data"""
+    
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    try:
+        print(f"📥 Received request: {weather}")
+        
+        # Prepare features with 6 features including precipitation
+        features = np.array([[
+            float(weather.temp_max),
+            float(weather.temp_min),
+            float(weather.temp_avg),
+            float(weather.wind_speed),
+            float(weather.humidity),
+            float(weather.precipitation)  # 6th feature!
+        ]])
+        
+        print(f"📊 Features shape: {features.shape}")
+        print(f"📊 Features: {features}")
+        
+        # Scale features
+        features_scaled = scaler.transform(features)
+        print(f"📊 Scaled features shape: {features_scaled.shape}")
+        
+        # Predict
+        pred = model.predict(features_scaled)[0]
+        probabilities = model.predict_proba(features_scaled)[0]
+        
+        print(f"🎯 Prediction: {pred}")
+        print(f"📊 Probabilities: {probabilities}")
+        
+        # Get risk level
+        risk_code = int(pred)
+        risk_level = RISK_NAMES[risk_code]
+        confidence = float(max(probabilities) * 100)
+        
+        # Create probability dictionary
+        prob_dict = {}
+        for i in range(len(probabilities)):
+            prob_value = float(probabilities[i] * 100)
+            if prob_value > 0.1:
+                prob_dict[RISK_NAMES[i]] = round(prob_value, 2)
+        
+        # Create response
+        response = RiskResponse(
+            risk_level=risk_level,
+            risk_code=risk_code,
+            confidence=round(confidence, 2),
+            probabilities=prob_dict,
+            city=weather.city,
+            weather=WeatherInfo(
+                temp_max=round(weather.temp_max, 1),
+                temp_min=round(weather.temp_min, 1),
+                temp_avg=round(weather.temp_avg, 1),
+                wind_speed=round(weather.wind_speed, 1),
+                humidity=round(weather.humidity, 1),
+                precipitation=round(weather.precipitation, 1),
+                city=weather.city
+            )
+        )
+        
+        print(f"✅ Response prepared")
+        return response
+        
+    except Exception as e:
+        print(f"❌ Prediction error: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+# ==================== HELPER FUNCTION ====================
+
+async def get_weather_forecast(date: str, city: str):
+    """Helper function to fetch weather from OpenWeatherMap including precipitation"""
+    try:
+        print(f"🌤️ Fetching weather for {city} on {date}")
+        
+        # Get coordinates
+        if city not in CITY_COORDINATES:
+            raise HTTPException(status_code=400, detail=f"City '{city}' not found")
+        
+        coords = CITY_COORDINATES[city]
+        
+        # Call OpenWeatherMap API
+        params = {
+            "lat": coords["lat"],
+            "lon": coords["lon"],
+            "appid": WEATHER_API_KEY,
+            "units": "metric",
+            "cnt": 40
+        }
+        
+        response = requests.get(WEATHER_API_URL, params=params, timeout=10)
+        
+        if response.status_code != 200:
+            print(f"❌ API Error: {response.status_code}")
+            return None
+        
+        data = response.json()
+        
+        # Find forecast for requested date
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        day_forecasts = []
+        
+        for item in data["list"]:
+            item_date = datetime.fromtimestamp(item["dt"]).date()
+            if item_date == target_date:
+                day_forecasts.append(item)
+        
+        if not day_forecasts:
+            return None
+        
+        # Calculate daily averages including precipitation
+        temps_max = [f["main"]["temp_max"] for f in day_forecasts]
+        temps_min = [f["main"]["temp_min"] for f in day_forecasts]
+        wind_speeds = [f["wind"]["speed"] * 3.6 for f in day_forecasts]
+        humidities = [f["main"]["humidity"] for f in day_forecasts]
+        
+        # Get precipitation
+        precipitations = []
+        for f in day_forecasts:
+            if "rain" in f and "3h" in f["rain"]:
+                precipitations.append(f["rain"]["3h"])
+            else:
+                precipitations.append(0)
+        
+        weather = {
+            "temp_max": round(max(temps_max), 1),
+            "temp_min": round(min(temps_min), 1),
+            "temp_avg": round((max(temps_max) + min(temps_min)) / 2, 1),
+            "wind_speed": round(sum(wind_speeds) / len(wind_speeds), 1),
+            "humidity": round(sum(humidities) / len(humidities), 1),
+            "precipitation": round(sum(precipitations), 1),
+            "city": city,
+            "date": date
+        }
+        
+        print(f"✅ Weather data: {weather}")
+        return weather
+        
+    except Exception as e:
+        print(f"❌ Error in get_weather_forecast: {str(e)}")
+        return None
+
+# ==================== FORECAST BY DATE ENDPOINTS ====================
+
+@app.post("/forecast-by-date")
+@app.post("/api/forecast-by-date")
+async def forecast_by_date(request: DateForecastRequest):
+    """
+    Get weather forecast for a specific date and predict risk level
+    """
+    try:
+        print(f"📅 Processing forecast for {request.city} on {request.date}")
+        
+        # Validate city
+        if request.city not in CITY_COORDINATES:
+            raise HTTPException(status_code=400, detail=f"City '{request.city}' not found")
+        
+        # Get weather forecast with precipitation
+        weather_data = await get_weather_forecast(request.date, request.city)
+        
+        if weather_data is None:
+            # Get available dates for error message
+            coords = CITY_COORDINATES[request.city]
+            params = {
+                "lat": coords["lat"],
+                "lon": coords["lon"],
+                "appid": WEATHER_API_KEY,
+                "units": "metric",
+                "cnt": 40
+            }
+            response = requests.get(WEATHER_API_URL, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                available_dates = set()
+                for item in data["list"]:
+                    available_dates.add(datetime.fromtimestamp(item["dt"]).date())
+                available_dates_str = [d.strftime("%Y-%m-%d") for d in sorted(available_dates)][:5]
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No forecast for {request.date}. Available: {', '.join(available_dates_str)}"
+                )
+            else:
+                raise HTTPException(status_code=502, detail="Weather API unavailable")
+        
+        # Check if model is loaded
+        if model is None:
+            raise HTTPException(status_code=503, detail="Prediction model not loaded")
+        
+        # Prepare features with 6 features including precipitation
+        features = np.array([[
+            weather_data["temp_max"],
+            weather_data["temp_min"],
+            weather_data["temp_avg"],
+            weather_data["wind_speed"],
+            weather_data["humidity"],
+            weather_data["precipitation"]
+        ]])
+        
+        # Scale features
+        features_scaled = scaler.transform(features)
+        
+        # Predict
+        pred = model.predict(features_scaled)[0]
+        probabilities = model.predict_proba(features_scaled)[0]
+        
+        risk_code = int(pred)
+        risk_level = RISK_NAMES[risk_code]
+        confidence = float(max(probabilities) * 100)
+        
+        # Create probability dictionary
+        prob_dict = {}
+        for i in range(len(probabilities)):
+            prob_value = float(probabilities[i] * 100)
+            if prob_value > 0.1:
+                prob_dict[RISK_NAMES[i]] = round(prob_value, 2)
+        
+        # Create response
+        response = {
+            "risk_level": risk_level,
+            "risk_code": risk_code,
+            "confidence": round(confidence, 2),
+            "probabilities": prob_dict,
+            "city": request.city,
+            "forecast_date": request.date,
+            "weather": weather_data
+        }
+        
+        print(f"✅ Forecast complete: {risk_level}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== FORECAST WITH NEIGHBORS ENDPOINTS ====================
+
+@app.post("/forecast-with-neighbors")
+@app.post("/api/forecast-with-neighbors")
+async def forecast_with_neighbors(request: DateForecastRequest):
+    """
+    Get forecast with neighbor country influence analysis
+    """
+    try:
+        # First get the regular forecast
+        base_forecast = await forecast_by_date(request)
+        
+        # Load latest neighbor data
+        neighbor_file = 'data/neighbor_data/neighbor_weather_latest.csv'
+        if not os.path.exists(neighbor_file):
+            # Return forecast without neighbors if file missing
+            return base_forecast
+            
+        neighbor_df = pd.read_csv(neighbor_file)
+        
+        # Determine region for the city
+        region = 'central'
+        for r, cities in influence_zones.items():
+            if request.city in cities:
+                region = r
+                break
+        
+        # Get neighbor influences
+        influences = []
+        
+        if region in ['northwest', 'central']:
+            algeria_data = neighbor_df[neighbor_df['country'] == 'algeria']
+            if len(algeria_data) > 0:
+                influences.append({
+                    'country': 'Algeria',
+                    'temperature': float(algeria_data.iloc[0]['temperature']),
+                    'wind_speed': float(algeria_data.iloc[0]['wind_speed']),
+                    'influence_level': 'High' if region == 'northwest' else 'Medium'
+                })
+        
+        if region in ['southwest', 'southeast']:
+            libya_data = neighbor_df[neighbor_df['country'] == 'libya']
+            if len(libya_data) > 0:
+                influences.append({
+                    'country': 'Libya',
+                    'temperature': float(libya_data.iloc[0]['temperature']),
+                    'wind_speed': float(libya_data.iloc[0]['wind_speed']),
+                    'influence_level': 'High' if region == 'southwest' else 'Medium'
+                })
+        
+        if region in ['northeast', 'coastal']:
+            italy_data = neighbor_df[neighbor_df['country'] == 'italy']
+            malta_data = neighbor_df[neighbor_df['country'] == 'malta']
+            
+            if len(italy_data) > 0:
+                influences.append({
+                    'country': 'Italy',
+                    'temperature': float(italy_data.iloc[0]['temperature']),
+                    'wind_speed': float(italy_data.iloc[0]['wind_speed']),
+                    'influence_level': 'Medium'
+                })
+            
+            if len(malta_data) > 0:
+                influences.append({
+                    'country': 'Malta',
+                    'temperature': float(malta_data.iloc[0]['temperature']),
+                    'wind_speed': float(malta_data.iloc[0]['wind_speed']),
+                    'influence_level': 'Medium'
+                })
+        
+        # Add neighbor analysis to response
+        if isinstance(base_forecast, dict):
+            base_forecast['neighbor_influences'] = influences
+            base_forecast['region'] = region
+        
+        return base_forecast
+        
+    except Exception as e:
+        print(f"❌ Error in neighbor forecast: {e}")
+        # Fallback to regular forecast
+        return await forecast_by_date(request)
+
+# ==================== STAY HOME RISK ENDPOINTS ====================
+
+@app.post("/stay-home-risk")
+@app.post("/api/stay-home-risk")
+async def predict_stay_home_risk(request: DateForecastRequest):
+    """
+    Unified prediction: SAFE 🟢, CAUTION 🟡, or STAY HOME 🟠🔴
+    """
+    try:
+        # Get forecast data with precipitation
+        forecast = await get_weather_forecast(request.date, request.city)
+        
+        if forecast is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Could not fetch weather data for {request.date}"
+            )
+        
+        # Prepare features with precipitation
+        features = np.array([[
+            float(forecast['temp_max']),
+            float(forecast['temp_min']),
+            float(forecast['temp_avg']),
+            float(forecast['wind_speed']),
+            float(forecast['humidity']),
+            float(forecast['precipitation'])
+        ]])
+        
+        # Scale features
+        features_scaled = scaler.transform(features)
+        
+        # Predict
+        pred = model.predict(features_scaled)[0]
+        proba = model.predict_proba(features_scaled)[0]
+        
+        # Map to simplified risk levels
+        # 0-1: SAFE, 2: CAUTION, 3-4: STAY HOME
+        if pred <= 1:
+            simple_pred = 0  # SAFE
+        elif pred == 2:
+            simple_pred = 1  # CAUTION
+        else:
+            simple_pred = 2  # STAY HOME
+        
+        risk_levels = ['SAFE', 'CAUTION', 'STAY HOME']
+        emojis = ['🟢', '🟡', '🔴']
+        
+        # Calculate simplified probabilities
+        simple_proba = [0.0, 0.0, 0.0]
+        for i, p in enumerate(proba):
+            if i <= 1:
+                simple_proba[0] += p
+            elif i == 2:
+                simple_proba[1] += p
+            else:
+                simple_proba[2] += p
+        
+        # Recommendations
+        recommendations = {
+            0: {  # SAFE
+                "schools": "✅ Open normally",
+                "delivery": "✅ Normal operations",
+                "fishing": "✅ Safe to go out",
+                "public": "✅ Normal activities"
+            },
+            1: {  # CAUTION
+                "schools": "🟡 Monitor, possible delays",
+                "delivery": "🟡 Be careful, avoid rural roads",
+                "fishing": "🟡 Stay near coast",
+                "public": "🟡 Stay informed"
+            },
+            2: {  # STAY HOME
+                "schools": "🔴 CLOSED",
+                "delivery": "🔴 SUSPENDED",
+                "fishing": "🔴 DO NOT GO OUT",
+                "public": "🔴 STAY INDOORS"
+            }
+        }
+        
+        return {
+            "date": request.date,
+            "city": request.city,
+            "risk_level": risk_levels[simple_pred],
+            "risk_emoji": emojis[simple_pred],
+            "confidence": float(max(simple_proba) * 100),
+            "probabilities": {
+                "SAFE": float(simple_proba[0] * 100),
+                "CAUTION": float(simple_proba[1] * 100),
+                "STAY HOME": float(simple_proba[2] * 100)
+            },
+            "weather": forecast,
+            "recommendations": recommendations[simple_pred]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== DEBUG ENDPOINTS ====================
+
+@app.get("/debug/model-info")
+@app.get("/api/debug/model-info")
+def model_info():
+    """Debug endpoint to check model info"""
+    if model is None:
+        return {"error": "Model not loaded"}
+    
+    return {
+        "model_type": type(model).__name__,
+        "features": feature_cols if feature_cols else EXPECTED_FEATURES,
+        "classes": list(RISK_NAMES.values()),
+        "n_features": len(feature_cols) if feature_cols else len(EXPECTED_FEATURES),
+        "model_loaded": True
+    }
+
+@app.get("/debug/test-prediction")
+@app.get("/api/debug/test-prediction")
+def test_prediction():
+    """Test endpoint with sample data"""
+    if model is None:
+        return {"error": "Model not loaded"}
+    
+    test_cases = [
+        {"name": "Normal Day", "data": {"temp_max": 22, "temp_min": 15, "temp_avg": 18, "wind_speed": 15, "humidity": 65, "precipitation": 0}},
+        {"name": "Hot Day", "data": {"temp_max": 38, "temp_min": 24, "temp_avg": 31, "wind_speed": 20, "humidity": 40, "precipitation": 0}},
+        {"name": "Windy Day", "data": {"temp_max": 24, "temp_min": 18, "temp_avg": 21, "wind_speed": 55, "humidity": 70, "precipitation": 0}},
+        {"name": "Flood Day (Jan 20)", "data": {"temp_max": 11.1, "temp_min": 9.7, "temp_avg": 10.4, "wind_speed": 20.1, "humidity": 99.8, "precipitation": 71.9}},
+    ]
+    
+    results = []
+    for test in test_cases:
+        try:
+            features = np.array([[
+                test["data"]["temp_max"],
+                test["data"]["temp_min"],
+                test["data"]["temp_avg"],
+                test["data"]["wind_speed"],
+                test["data"]["humidity"],
+                test["data"]["precipitation"]
+            ]])
+            features_scaled = scaler.transform(features)
+            pred = model.predict(features_scaled)[0]
+            proba = model.predict_proba(features_scaled)[0]
+            
+            results.append({
+                "name": test["name"],
+                "prediction": int(pred),
+                "risk_level": RISK_NAMES[int(pred)],
+                "confidence": float(max(proba) * 100),
+                "success": True
+            })
+        except Exception as e:
+            results.append({
+                "name": test["name"],
+                "error": str(e),
+                "success": False
+            })
+    
+    return {"test_results": results}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
