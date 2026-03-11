@@ -1,4 +1,3 @@
-# backend/school_closure_policy.py
 
 def should_close_schools(weather_data):
     """
