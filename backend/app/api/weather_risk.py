@@ -21,12 +21,7 @@ app = FastAPI(title="WeatherGuardTN API")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-     allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8001",
-        "http://127.0.0.1:8001"
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
