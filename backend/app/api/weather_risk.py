@@ -21,7 +21,7 @@ app = FastAPI(title="WeatherGuardTN API")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +39,6 @@ print("📦 Loading model and preprocessors...")
 DEFAULT_FEATURES = ['temp_max', 'temp_min', 'temp_avg', 'wind_speed', 'humidity', 'precipitation']
 
 try:
-    # Load model
     if os.path.exists(MODEL_PATH):
         model = joblib.load(MODEL_PATH)
         print(f"✅ Model loaded: {type(model).__name__}")
@@ -47,7 +46,6 @@ try:
         print(f"❌ Model not found: {MODEL_PATH}")
         model = None
     
-    # Load scaler
     if os.path.exists(SCALER_PATH):
         scaler = joblib.load(SCALER_PATH)
         print(f"✅ Scaler loaded (expects {scaler.n_features_in_} features)")
@@ -55,7 +53,6 @@ try:
         print(f"❌ Scaler not found: {SCALER_PATH}")
         scaler = None
     
-    # Load features
     if os.path.exists(FEATURES_PATH):
         feature_cols = joblib.load(FEATURES_PATH)
         print(f"✅ Features: {feature_cols}")
@@ -74,6 +71,7 @@ except Exception as e:
 
 WEATHER_API_KEY = "139fef2236c773191352b491bd53a624"
 WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/forecast"
+CURRENT_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 # Tunisian cities coordinates
 CITY_COORDINATES = {
@@ -102,6 +100,7 @@ CITY_COORDINATES = {
     "Tozeur": {"lat": 33.9197, "lon": 8.1335},
     "Kebili": {"lat": 33.7044, "lon": 8.9692}
 }
+
 # ==================== PYDANTIC MODELS ====================
 
 class WeatherData(BaseModel):
@@ -143,7 +142,7 @@ RISK_COLORS = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "🟣"}
 async def get_weather_forecast(date: str, city: str):
     """Fetch weather forecast from OpenWeatherMap including precipitation"""
     try:
-        print(f"🌤️ Fetching weather for {city} on {date}")
+        print(f"🌤️ Fetching forecast for {city} on {date}")
         
         if city not in CITY_COORDINATES:
             return None
@@ -175,13 +174,11 @@ async def get_weather_forecast(date: str, city: str):
         if not day_forecasts:
             return None
         
-        # Calculate daily averages
         temps_max = [f["main"]["temp_max"] for f in day_forecasts]
         temps_min = [f["main"]["temp_min"] for f in day_forecasts]
         wind_speeds = [f["wind"]["speed"] * 3.6 for f in day_forecasts]
         humidities = [f["main"]["humidity"] for f in day_forecasts]
         
-        # Get precipitation
         precipitations = []
         for f in day_forecasts:
             if "rain" in f and "3h" in f["rain"]:
@@ -204,6 +201,82 @@ async def get_weather_forecast(date: str, city: str):
         print(f"❌ Error: {e}")
         return None
 
+async def get_current_weather(city: str):
+    """Fetch current weather from OpenWeatherMap"""
+    try:
+        print(f"🌤️ Fetching current weather for {city}")
+        
+        if city not in CITY_COORDINATES:
+            return None
+        
+        coords = CITY_COORDINATES[city]
+        params = {
+            "lat": coords["lat"],
+            "lon": coords["lon"],
+            "appid": WEATHER_API_KEY,
+            "units": "metric"
+        }
+        
+        response = requests.get(CURRENT_WEATHER_URL, params=params, timeout=10)
+        
+        if response.status_code != 200:
+            print(f"❌ API Error: {response.status_code}")
+            return None
+        
+        data = response.json()
+        
+        precipitation = 0
+        if "rain" in data and "1h" in data["rain"]:
+            precipitation = data["rain"]["1h"]
+        
+        return {
+            "temp_max": round(data["main"]["temp_max"], 1),
+            "temp_min": round(data["main"]["temp_min"], 1),
+            "temp_avg": round(data["main"]["temp"], 1),
+            "wind_speed": round(data["wind"]["speed"] * 3.6, 1),
+            "humidity": data["main"]["humidity"],
+            "precipitation": precipitation,
+            "city": city,
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return None
+
+# ==================== PREDICTION HELPER ====================
+
+async def get_prediction_from_weather(weather_data: dict):
+    """Get risk prediction from weather data"""
+    features = np.array([[
+        weather_data["temp_max"],
+        weather_data["temp_min"],
+        weather_data["temp_avg"],
+        weather_data["wind_speed"],
+        weather_data["humidity"],
+        weather_data["precipitation"]
+    ]])
+    
+    features_scaled = scaler.transform(features)
+    pred = model.predict(features_scaled)[0]
+    probabilities = model.predict_proba(features_scaled)[0]
+    
+    risk_code = int(pred)
+    risk_level = RISK_NAMES[risk_code]
+    confidence = float(max(probabilities) * 100)
+    
+    prob_dict = {}
+    for i in range(len(probabilities)):
+        if probabilities[i] > 0.01:
+            prob_dict[RISK_NAMES[i]] = round(probabilities[i] * 100, 2)
+    
+    return {
+        "risk_level": risk_level,
+        "risk_code": risk_code,
+        "confidence": round(confidence, 2),
+        "probabilities": prob_dict
+    }
+
 # ==================== API ENDPOINTS ====================
 
 @app.get("/")
@@ -218,7 +291,8 @@ def root():
             "/governorates",
             "/risk-info",
             "/predict (POST)",
-            "/forecast-by-date (POST)"
+            "/forecast-by-date (POST)",
+            "/current-weather (POST)"
         ]
     }
 
@@ -254,43 +328,19 @@ async def predict_risk(weather: WeatherData):
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
-        print(f"📥 Received request: {weather}")
+        weather_data = {
+            "temp_max": weather.temp_max,
+            "temp_min": weather.temp_min,
+            "temp_avg": weather.temp_avg,
+            "wind_speed": weather.wind_speed,
+            "humidity": weather.humidity,
+            "precipitation": weather.precipitation
+        }
         
-        # Prepare 6 features including precipitation
-        features = np.array([[
-            float(weather.temp_max),
-            float(weather.temp_min),
-            float(weather.temp_avg),
-            float(weather.wind_speed),
-            float(weather.humidity),
-            float(weather.precipitation)  # Critical 6th feature!
-        ]])
-        
-        print(f"📊 Features shape: {features.shape}")
-        print(f"📊 Features: {features}")
-        
-        # Scale and predict
-        features_scaled = scaler.transform(features)
-        pred = model.predict(features_scaled)[0]
-        probabilities = model.predict_proba(features_scaled)[0]
-        
-        risk_code = int(pred)
-        risk_level = RISK_NAMES[risk_code]
-        confidence = float(max(probabilities) * 100)
-        
-        # Create probability dict
-        prob_dict = {}
-        for i in range(len(probabilities)):
-            if probabilities[i] > 0.01:
-                prob_dict[RISK_NAMES[i]] = round(probabilities[i] * 100, 2)
-        
-        print(f"🎯 Prediction: {risk_level} ({confidence:.1f}%)")
+        prediction = await get_prediction_from_weather(weather_data)
         
         return {
-            "risk_level": risk_level,
-            "risk_code": risk_code,
-            "confidence": round(confidence, 2),
-            "probabilities": prob_dict,
+            **prediction,
             "city": weather.city,
             "weather": {
                 "temp_max": round(weather.temp_max, 1),
@@ -312,7 +362,6 @@ async def predict_risk(weather: WeatherData):
 async def forecast_by_date(request: DateForecastRequest):
     """Get weather forecast for a specific date and predict risk"""
     
-    # Get weather forecast with precipitation
     weather_data = await get_weather_forecast(request.date, request.city)
     
     if weather_data is None:
@@ -321,22 +370,35 @@ async def forecast_by_date(request: DateForecastRequest):
             detail=f"No forecast found for {request.date}"
         )
     
-    # Create WeatherData object
-    weather = WeatherData(
-        temp_max=weather_data["temp_max"],
-        temp_min=weather_data["temp_min"],
-        temp_avg=weather_data["temp_avg"],
-        wind_speed=weather_data["wind_speed"],
-        humidity=weather_data["humidity"],
-        precipitation=weather_data["precipitation"],
-        city=weather_data["city"]
-    )
+    prediction = await get_prediction_from_weather(weather_data)
     
-    # Get prediction
-    prediction = await predict_risk(weather)
-    prediction["forecast_date"] = request.date
+    return {
+        **prediction,
+        "city": request.city,
+        "weather": weather_data,
+        "forecast_date": request.date
+    }
+
+@app.post("/current-weather")
+async def current_weather(request: DateForecastRequest):
+    """Get current weather for a city (for today's date)"""
     
-    return prediction
+    weather_data = await get_current_weather(request.city)
+    
+    if weather_data is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No current weather found for {request.city}"
+        )
+    
+    prediction = await get_prediction_from_weather(weather_data)
+    
+    return {
+        **prediction,
+        "city": request.city,
+        "weather": weather_data,
+        "current_date": weather_data["date"]
+    }
 
 if __name__ == "__main__":
     import uvicorn

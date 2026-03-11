@@ -118,44 +118,69 @@ function App() {
 
   // Fetch forecasts - NO FAKE DATA, ONLY REAL API CALLS
   useEffect(() => {
-    const fetchForecasts = async () => {
-      if (selectedCities.length === 0 || apiStatus !== 'connected' || !selectedDate) {
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      const forecasts = {};
-      const failed = [];
-      
-      for (const city of selectedCities) {
-        try {
-          console.log(`📡 Fetching REAL data for ${city}...`);
-          const response = await axios.post(`${apiUrl}/forecast-by-date`, {
-            date: selectedDate,
-            city: city
-          }, { timeout: 5000 });
-          
-          if (response.data) {
-            forecasts[city] = response.data;
-            console.log(`✅ ${city}: ${response.data.risk_level}`);
-          }
-        } catch (err) {
-          console.error(`❌ Failed to fetch ${city}:`, err.message);
-          failed.push(city);
-        }
-      }
-      
-      setForecastData(forecasts);
-      setLoading(false);
-      
-      if (failed.length > 0) {
-        setError(`❌ Cannot load data for: ${failed.join(', ')}. Check console for details.`);
-      } else {
-        setError(null);
-      }
-    };
+   // Replace your fetchForecasts function with this:
 
+const fetchForecasts = async () => {
+  if (selectedCities.length === 0 || apiStatus !== 'connected' || !selectedDate) {
+    setLoading(false);
+    return;
+  }
+  
+  setLoading(true);
+  const forecasts = {};
+  const failed = [];
+  
+  // FIX: Get today's date correctly
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  
+  const isToday = selectedDate === todayStr;
+  
+  console.log(`📅 Date check: selected=${selectedDate}, today=${todayStr}, isToday=${isToday}`);
+  
+  for (const city of selectedCities) {
+    try {
+      let response;
+      
+      if (isToday) {
+        // Use current weather for today
+        console.log(`📡 Fetching CURRENT weather for ${city}...`);
+        response = await axios.post(`${apiUrl}/current-weather`, {
+          date: selectedDate,
+          city: city
+        }, { timeout: 5000 });
+      } else {
+        // Use forecast for future dates
+        console.log(`📡 Fetching FORECAST for ${city} on ${selectedDate}...`);
+        response = await axios.post(`${apiUrl}/forecast-by-date`, {
+          date: selectedDate,
+          city: city
+        }, { timeout: 5000 });
+      }
+      
+      if (response.data) {
+        forecasts[city] = response.data;
+        console.log(`✅ ${city}: ${response.data.risk_level}`);
+      }
+    } catch (err) {
+      console.error(`❌ ${city}:`, err.message);
+      failed.push(city);
+      // NO FAKE DATA HERE!
+    }
+  }
+  
+  setForecastData(forecasts);
+  setLoading(false);
+  
+  if (failed.length > 0) {
+    setError(`❌ Could not load data for: ${failed.join(', ')}`);
+  } else {
+    setError(null);
+  }
+};
     fetchForecasts();
   }, [selectedCities, selectedDate, apiUrl, apiStatus]);
 
