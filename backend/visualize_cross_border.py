@@ -1,4 +1,3 @@
-# backend/visualize_cross_border.py
 
 import pandas as pd
 import numpy as np

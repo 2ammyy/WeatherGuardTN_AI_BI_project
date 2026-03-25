@@ -20,5 +20,5 @@ COPY backend/ /app/
 # Exposer le port
 EXPOSE 8000
 
-# Commande pour lancer l'application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Commande pour lancer l'application - CORRECTED to use weather_risk.py
+CMD ["uvicorn", "app.api.weather_risk:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

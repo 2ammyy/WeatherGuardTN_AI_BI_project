@@ -1,4 +1,3 @@
-# backend/retrain_with_proper_risk.py
 
 import pandas as pd
 import numpy as np

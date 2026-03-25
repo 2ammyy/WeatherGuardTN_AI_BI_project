@@ -1,4 +1,3 @@
-# backend/train_with_neighbors.py
 
 import pandas as pd
 import numpy as np

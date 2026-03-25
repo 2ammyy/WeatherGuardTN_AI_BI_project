@@ -5,7 +5,9 @@ WORKDIR /app
 
 # Copier les fichiers de dépendances
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
+
+# Installer les dépendances avec legacy-peer-deps pour éviter les conflits React
+RUN npm install --legacy-peer-deps
 
 # Copier le code source
 COPY frontend/public/ ./public/
@@ -20,9 +22,11 @@ FROM nginx:alpine
 # Copier les fichiers compilés
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copier la configuration Nginx (optionnel)
+# Copier la configuration Nginx
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
+# Exposer le port
 EXPOSE 80
 
+# Démarrer Nginx
 CMD ["nginx", "-g", "daemon off;"]
