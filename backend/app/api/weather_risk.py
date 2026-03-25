@@ -18,11 +18,7 @@ load_dotenv()
 
 app = FastAPI(title="WeatherGuardTN API")
 
-<<<<<<< HEAD
-#  Add CORS middleware to allow React frontend to connect
-=======
 # CORS middleware
->>>>>>> 60c221cc646292acb0d525e668501f6b21c323f7
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
