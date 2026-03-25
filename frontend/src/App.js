@@ -376,7 +376,7 @@ function App() {
             <div className="hero-block">
               <h1>Stay ahead of the storm</h1>
               <div className="subhead">
-                Tunisia's first hyperlocal danger predictor — for people, authorities & fishermen
+                Tunisia's first hyperlocal danger predictor  for people, authorities & fishermen
               </div>
             </div>
 
