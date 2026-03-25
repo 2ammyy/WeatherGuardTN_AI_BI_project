@@ -2,320 +2,225 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 
+// Import components
+import VigilanceMap from './components/VigilanceMap';
+import HazardLegend from './components/HazardLegend';
+import RouteChecker from './components/RouteChecker';
+import { fetchHazards } from './services/hazardService';
+
 function App() {
-  // UI State
-  const [currentPage, setCurrentPage] = useState('home');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  // Prediction Form State
-  const [forecastData, setForecastData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    city: 'Tunis'
-  });
-
-  const [prediction, setPrediction] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // ==================== STATE VARIABLES ====================
+  const [selectedCities, setSelectedCities] = useState(['Tunis', 'Sfax', 'Bizerte']);
+  const [forecastData, setForecastData] = useState({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [governorates, setGovernorates] = useState([]);
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiUrl, setApiUrl] = useState('');
-  const [riskInfo, setRiskInfo] = useState(null);
-  
-  // Map data state
-  const [mapData, setMapData] = useState(null);
-  const [loadingMap, setLoadingMap] = useState(false);
+  const [governorates, setGovernorates] = useState([]);
+  const [hoveredCity, setHoveredCity] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [hazards, setHazards] = useState([]);
+  const [showNeighbors, setShowNeighbors] = useState(true);
 
-  // URLs à tester pour la connexion à l'API
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+
+  // ==================== RISK CONFIGURATION ====================
+  const riskLevels = {
+    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '🔴', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
+  };
+
+  // ==================== CITY COORDINATES ====================
+  const cityCoordinates = {
+    'Tunis': { x: 45, y: 35, lat: 36.8065, lng: 10.1815 },
+    'Sfax': { x: 52, y: 58, lat: 34.7400, lng: 10.7600 },
+    'Sousse': { x: 48, y: 45, lat: 35.8256, lng: 10.6411 },
+    'Bizerte': { x: 42, y: 18, lat: 37.2744, lng: 9.8739 },
+    'Jendouba': { x: 28, y: 25, lat: 36.5011, lng: 8.7803 },
+    'Nabeul': { x: 55, y: 40, lat: 36.4561, lng: 10.7378 },
+    'Gabes': { x: 52, y: 68, lat: 33.8815, lng: 10.0982 },
+    'Medenine': { x: 55, y: 78, lat: 33.3549, lng: 10.5055 },
+    'Kairouan': { x: 42, y: 48, lat: 35.6781, lng: 10.0963 },
+    'Monastir': { x: 50, y: 42, lat: 35.7833, lng: 10.8333 },
+    'Mahdia': { x: 52, y: 50, lat: 35.5047, lng: 11.0622 },
+    'Gafsa': { x: 32, y: 62, lat: 34.4250, lng: 8.7842 },
+    'Tozeur': { x: 25, y: 58, lat: 33.9197, lng: 8.1335 },
+    'Kebili': { x: 38, y: 72, lat: 33.7044, lng: 8.9692 },
+    'Tataouine': { x: 48, y: 88, lat: 32.9297, lng: 10.4518 },
+    'Kasserine': { x: 30, y: 48, lat: 35.1676, lng: 8.8365 },
+    'Beja': { x: 35, y: 25, lat: 36.7256, lng: 9.1817 },
+    'Kef': { x: 28, y: 32, lat: 36.1741, lng: 8.7049 },
+    'Siliana': { x: 38, y: 38, lat: 36.0849, lng: 9.3708 },
+    'Zaghouan': { x: 48, y: 32, lat: 36.4029, lng: 10.1429 },
+    'Ariana': { x: 44, y: 30, lat: 36.8667, lng: 10.2000 },
+    'Ben Arous': { x: 46, y: 32, lat: 36.7533, lng: 10.2219 },
+    'Manouba': { x: 42, y: 30, lat: 36.8081, lng: 10.0972 }
+  };
+
+  // ==================== API CONNECTION ====================
   const possibleUrls = useMemo(() => {
-    // Récupérer l'URL depuis les variables d'environnement
     const envUrl = process.env.REACT_APP_API_URL;
-    console.log('🔍 REACT_APP_API_URL from env:', envUrl);
-    
     const urls = [];
-    
-    // Ajouter l'URL du .env en premier (priorité)
-    if (envUrl) {
-      urls.push(envUrl);
-    }
-    
-    // Ajouter les URLs de fallback avec le nouveau port 8001
-    urls.push(
-      'http://localhost:8001',
-      'http://127.0.0.1:8001',
-      'http://localhost:8000',  // Ancien port (fallback)
-      'http://127.0.0.1:8000'    // Ancien port (fallback)
-    );
-    
-    // Supprimer les doublons
-    const uniqueUrls = [...new Set(urls)];
-    console.log('🔍 URLs to try:', uniqueUrls);
-    return uniqueUrls;
+    if (envUrl) urls.push(envUrl);
+    urls.push('http://localhost:8001', 'http://127.0.0.1:8001');
+    return [...new Set(urls)];
   }, []);
 
-  // Fonction pour trouver l'URL de l'API qui fonctionne
   const findWorkingApiUrl = useCallback(async () => {
-    console.log('🔍 Starting API connection check...');
-    
     for (const url of possibleUrls) {
       try {
-        console.log(`🔍 Trying to connect to ${url}/health...`);
-        const response = await axios.get(`${url}/health`, { 
-          timeout: 3000  // Augmenté à 3 secondes
-        });
-        
+        const response = await axios.get(`${url}/health`, { timeout: 3000 });
         if (response.status === 200) {
-          console.log(`✅ Connected to ${url}`);
-          console.log('✅ Response data:', response.data);
           setApiUrl(url);
           setApiStatus('connected');
+          console.log(`✅ Connected to ${url}`);
           return url;
         }
       } catch (err) {
-        console.log(`❌ Failed to connect to ${url}:`, err.message);
+        console.log(`❌ Failed to connect to ${url}`);
       }
     }
-    
-    console.log('❌ All connection attempts failed');
     setApiStatus('disconnected');
     return null;
   }, [possibleUrls]);
 
-  // Fonction pour récupérer la liste des gouvernorats
-  const fetchGovernorates = useCallback(async () => {
-    if (!apiUrl) return;
-    
-    try {
-      console.log('📥 Fetching governorates from:', `${apiUrl}/api/governorates`);
-      const response = await axios.get(`${apiUrl}/api/governorates`);
-      setGovernorates(response.data.governorates || response.data);
-    } catch (err) {
-      console.error('Error fetching governorates:', err);
-      // Fallback governorates
-      setGovernorates([
-        "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
-        "Bizerte", "Beja", "Jendouba", "Kef", "Siliana", "Sousse",
-        "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-        "Gabes", "Medenine", "Tataouine", "Gafsa", "Tozeur", "Kebili"
-      ]);
-    }
-  }, [apiUrl]);
-
-  // Fonction pour récupérer les informations sur les risques
-  const fetchRiskInfo = useCallback(async () => {
-    if (!apiUrl) return;
-    
-    try {
-      console.log('📥 Fetching risk info from:', `${apiUrl}/api/risk-info`);
-      const response = await axios.get(`${apiUrl}/api/risk-info`);
-      setRiskInfo(response.data);
-    } catch (err) {
-      console.error('Error fetching risk info:', err);
-    }
-  }, [apiUrl]);
-
-  // Générer des données de carte simulées
-  const generateMapData = useCallback(() => {
-    const governorateList = [
-      "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
-      "Bizerte", "Beja", "Jendouba", "Kef", "Siliana", "Sousse",
-      "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-      "Gabes", "Medenine", "Tataouine", "Gafsa", "Tozeur", "Kebili"
-    ];
-    
-    const mockData = {};
-    governorateList.forEach(gov => {
-      const rand = Math.random();
-      if (rand < 0.3) mockData[gov] = 'GREEN';
-      else if (rand < 0.55) mockData[gov] = 'YELLOW';
-      else if (rand < 0.75) mockData[gov] = 'ORANGE';
-      else if (rand < 0.9) mockData[gov] = 'RED';
-      else mockData[gov] = 'PURPLE';
-    });
-    
-    setMapData(mockData);
-    setLoadingMap(false);
-  }, []);
-
-  // Debug: Log API URL changes
-  useEffect(() => {
-    console.log('🔍 Current API URL:', apiUrl);
-    console.log('🔍 API Status:', apiStatus);
-  }, [apiUrl, apiStatus]);
-
-  // Check API connection on load
+  // ==================== DATA FETCHING ====================
   useEffect(() => {
     findWorkingApiUrl();
   }, [findWorkingApiUrl]);
 
-  // Fetch governorates and risk info when API URL changes
   useEffect(() => {
-    if (apiUrl && apiStatus === 'connected') {
-      fetchGovernorates();
-      fetchRiskInfo();
-    }
-  }, [apiUrl, apiStatus, fetchGovernorates, fetchRiskInfo]);
+    const fetchGovernorates = async () => {
+      if (!apiUrl) return;
+      try {
+        const response = await axios.get(`${apiUrl}/governorates`);
+        setGovernorates(response.data.governorates || response.data);
+      } catch (err) {
+        console.error('Error fetching governorates:', err);
+        setGovernorates(Object.keys(cityCoordinates));
+      }
+    };
+    fetchGovernorates();
+  }, [apiUrl]);
 
-  // Generate map data
+  // Set initial date
   useEffect(() => {
-    setLoadingMap(true);
-    generateMapData();
-  }, [generateMapData]);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  setSelectedDate(`${year}-${month}-${day}`);
+  console.log('📅 Today is:', `${year}-${month}-${day}`);
+}, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForecastData(prev => ({ ...prev, [name]: value }));
-  };
+  // Fetch forecasts - NO FAKE DATA, ONLY REAL API CALLS
+  useEffect(() => {
+   // Replace your fetchForecasts function with this:
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setPrediction(null);
-    
+const fetchForecasts = async () => {
+  if (selectedCities.length === 0 || apiStatus !== 'connected' || !selectedDate) {
+    setLoading(false);
+    return;
+  }
+  
+  setLoading(true);
+  const forecasts = {};
+  const failed = [];
+  
+  // FIX: Get today's date correctly
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  
+  const isToday = selectedDate === todayStr;
+  
+  console.log(`📅 Date check: selected=${selectedDate}, today=${todayStr}, isToday=${isToday}`);
+  
+  for (const city of selectedCities) {
     try {
-      console.log('📤 Sending request to /api/forecast-by-date:', forecastData);
-      console.log('📤 Full URL:', `${apiUrl}/api/forecast-by-date`);
+      let response;
       
-      const response = await axios.post(`${apiUrl}/api/forecast-by-date`, {
-        date: forecastData.date,
-        city: forecastData.city
-      });
-      
-      console.log('📥 Received response:', response.data);
-      setPrediction(response.data);
-      
-    } catch (err) {
-      console.error('❌ Full error object:', err);
-      
-      let errorMessage = 'Error getting forecast';
-      
-      if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
-        errorMessage = 'Cannot connect to backend server. Make sure it is running.';
-      } else if (err.response) {
-        console.log('❌ Error response status:', err.response.status);
-        console.log('❌ Error response data:', err.response.data);
-        console.log('❌ Tried to call:', err.config?.url);
-        
-        if (err.response.status === 404) {
-          errorMessage = `No forecast available for ${forecastData.date} in ${forecastData.city}. Try a different date or city.`;
-        } else if (err.response.status === 400) {
-          errorMessage = err.response.data?.detail || 'Invalid request. Please check your input.';
-        } else if (err.response.status === 422) {
-          errorMessage = 'Date format error. Please use YYYY-MM-DD format.';
-        } else if (err.response.status === 502) {
-          errorMessage = 'Weather service unavailable. Please try again later.';
-        } else {
-          errorMessage = err.response.data?.detail || `Server error: ${err.response.status}`;
-        }
-      } else if (err.request) {
-        console.log('❌ Request made but no response received');
-        errorMessage = 'No response from server. Check if backend is running.';
+      if (isToday) {
+        // Use current weather for today
+        console.log(`📡 Fetching CURRENT weather for ${city}...`);
+        response = await axios.post(`${apiUrl}/current-weather`, {
+          date: selectedDate,
+          city: city
+        }, { timeout: 5000 });
       } else {
-        errorMessage = err.message;
+        // Use forecast for future dates
+        console.log(`📡 Fetching FORECAST for ${city} on ${selectedDate}...`);
+        response = await axios.post(`${apiUrl}/forecast-by-date`, {
+          date: selectedDate,
+          city: city
+        }, { timeout: 5000 });
       }
       
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      if (response.data) {
+        forecasts[city] = response.data;
+        console.log(`✅ ${city}: ${response.data.risk_level}`);
+      }
+    } catch (err) {
+      console.error(`❌ ${city}:`, err.message);
+      failed.push(city);
+      // NO FAKE DATA HERE!
     }
-  };
+  }
+  
+  setForecastData(forecasts);
+  setLoading(false);
+  
+  if (failed.length > 0) {
+    setError(`❌ Could not load data for: ${failed.join(', ')}`);
+  } else {
+    setError(null);
+  }
+};
+    fetchForecasts();
+  }, [selectedCities, selectedDate, apiUrl, apiStatus]);
 
-  const getRiskColor = (riskLevel) => {
-    const colors = {
-      'GREEN': '#4CAF50',
-      'YELLOW': '#FFC107',
-      'ORANGE': '#FF9800',
-      'RED': '#F44336',
-      'PURPLE': '#9C27B0'
+  // Fetch hazards
+  useEffect(() => {
+    const loadHazards = async () => {
+      const hazardData = await fetchHazards();
+      setHazards(hazardData);
     };
-    return colors[riskLevel] || '#999';
+    
+    loadHazards();
+    const interval = setInterval(loadHazards, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ==================== HANDLERS ====================
+  const toggleCity = (city) => {
+    setSelectedCities(prev => 
+      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
+    );
   };
 
-  const getRiskEmoji = (riskLevel) => {
-    const emojis = {
-      'GREEN': '✅',
-      'YELLOW': '⚠️',
-      'ORANGE': '⚡',
-      'RED': '🔴',
-      'PURPLE': '🟣'
-    };
-    return emojis[riskLevel] || '❓';
+  const handleCityClick = (city) => {
+    toggleCity(city);
   };
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
+  const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#999';
+  const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '❓';
 
-  const today = new Date();
-  const minDate = today.toISOString().split('T')[0];
-  const maxDate = new Date(today.setDate(today.getDate() + 5)).toISOString().split('T')[0];
-
-  const getPageSource = () => {
-    const basePath = '/eda_results/cross_border/';
-    switch(currentPage) {
-      case 'dashboard':
-        return `${basePath}dashboard.html`;
-      case 'scatter':
-        return `${basePath}interactive_scatter.html`;
-      case 'tempbars':
-        return `${basePath}temperature_bars.html`;
-      case 'weathermap':
-        return `${basePath}weather_map.html`;
-      default:
-        return '';
-    }
-  };
-
-  const handleNavClick = (page) => (e) => {
-    e.preventDefault();
-    setCurrentPage(page);
-  };
-
-  // Helper function to get risk level for a governorate
-  const getGovRisk = (govName) => {
-    if (mapData && mapData[govName]) {
-      return mapData[govName].toLowerCase();
-    }
-    // Default fallback with some variety
-    const defaults = {
-      'Tunis': 'yellow',
-      'Ariana': 'green',
-      'Ben Arous': 'green',
-      'Manouba': 'green',
-      'Nabeul': 'yellow',
-      'Zaghouan': 'green',
-      'Bizerte': 'yellow',
-      'Beja': 'orange',
-      'Jendouba': 'orange',
-      'Kef': 'yellow',
-      'Siliana': 'green',
-      'Sousse': 'green',
-      'Monastir': 'green',
-      'Mahdia': 'yellow',
-      'Sfax': 'orange',
-      'Kairouan': 'green',
-      'Kasserine': 'orange',
-      'Sidi Bouzid': 'yellow',
-      'Gabes': 'red',
-      'Medenine': 'orange',
-      'Tataouine': 'purple',
-      'Gafsa': 'yellow',
-      'Tozeur': 'green',
-      'Kebili': 'yellow'
-    };
-    return defaults[govName] || 'green';
-  };
-
+  // ==================== RENDER ====================
   return (
-    <div className="app-wrapper">
-      {/* Sidebar */}
-      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-header">
-          <div className="logo-area">
-            <i className="fas fa-cloud-sun-rain logo-icon"></i>
-            {!sidebarCollapsed && <span className="logo-text">WeatherGuardTN</span>}
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div className="header-content">
+          <div className="logo">
+            <i className="fas fa-cloud-sun-rain"></i>
+            <h1>WeatherGuard<span>TN</span></h1>
           </div>
+<<<<<<< HEAD
           <button 
             className="toggle-btn" 
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -611,64 +516,177 @@ function App() {
             <div className="info-note">
               <p><i className="fas fa-cloud-sun"></i> Weather data provided by OpenWeatherMap · Model: LGBMClassifier</p>
             </div>
+=======
+          <div className="date-selector">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={selectedDate}
+              max={new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0]}
+            />
+>>>>>>> 60c221cc646292acb0d525e668501f6b21c323f7
           </div>
-        ) : (
-          <iframe
-            src={getPageSource()}
-            className="page-iframe"
-            title={currentPage}
-            frameBorder="0"
-          />
-        )}
+          <div className={`api-status ${apiStatus}`}>
+            {apiStatus === 'connected' ? '🟢 Live' : '🔴 Offline'}
+          </div>
+        </div>
+      </header>
 
-        {/* Footer */}
-        <footer className="site-footer">
-          <h3><i className="fas fa-paper-plane"></i> Contact us · feedback</h3>
-          <form className="footer-form" onSubmit={(e) => e.preventDefault()}>
-            <div className="form-group">
-              <label><i className="far fa-user"></i> Name</label>
-              <input type="text" placeholder="Your name" />
-            </div>
-            <div className="form-group">
-              <label><i className="far fa-envelope"></i> Email</label>
-              <input type="email" placeholder="name@example.com" />
-            </div>
-            <div className="form-group">
-              <label><i className="far fa-comment"></i> Message</label>
-              <textarea placeholder="Your feedback / danger report..."></textarea>
-            </div>
-            <button type="submit"><i className="fas fa-feather-alt"></i> Send</button>
-          </form>
-          <p className="footer-note">
-            <i className="fas fa-heart" style={{ color: '#da7b44' }}></i> protecting lives – made in tunisia
+      {/* Error Message - Shows REAL errors */}
+      {error && (
+        <div className="error-banner" style={{
+          background: '#fee2e2',
+          color: '#991b1b',
+          padding: '1rem',
+          margin: '1rem',
+          borderRadius: '8px',
+          border: '2px solid #ef4444'
+        }}>
+          <strong><i className="fas fa-exclamation-triangle"></i> {error}</strong>
+          <p style={{marginTop: '0.5rem', fontSize: '0.9rem'}}>
+            Make sure your backend is running and try again.
           </p>
-        </footer>
-      </main>
+        </div>
+      )}
+
+      {/* Main Dashboard Grid */}
+      <div className="dashboard-grid">
+        {/* Left Column - City Selector */}
+        <div className="city-panel">
+          <h3><i className="fas fa-map-marker-alt"></i> Governorates</h3>
+          <div className="city-list">
+            {governorates.map(city => (
+              <button
+                key={city}
+                className={`city-btn ${selectedCities.includes(city) ? 'selected' : ''}`}
+                onClick={() => toggleCity(city)}
+              >
+                <span className="city-name">{city}</span>
+                {forecastData[city] && (
+                  <span 
+                    className="city-risk"
+                    style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}
+                  >
+                    {getRiskEmoji(forecastData[city].risk_level)}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Center - Vigilance Map */}
+        <div className="map-panel">
+          <div className="map-header">
+            <h3><i className="fas fa-map"></i> Vigilance Map</h3>
+            <label className="neighbor-toggle">
+              <input 
+                type="checkbox" 
+                checked={showNeighbors}
+                onChange={(e) => setShowNeighbors(e.target.checked)}
+              />
+              Show Neighbors
+            </label>
+          </div>
+          
+          <VigilanceMap 
+            selectedCities={selectedCities}
+            forecastData={forecastData}
+            hazards={hazards}
+            showNeighbors={showNeighbors}
+            onCityClick={handleCityClick}
+          />
+          
+          <HazardLegend />
+        </div>
+
+        {/* Right Column - Risk Grid - Shows ONLY real data */}
+        <div className="risk-panel">
+          <h3><i className="fas fa-chart-line"></i> Risk Overview</h3>
+          {loading ? (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Loading forecasts...</p>
+            </div>
+          ) : (
+            <div className="risk-grid">
+              {selectedCities.map(city => (
+                <div key={city} className="risk-card">
+                  {forecastData[city] ? (
+                    <>
+                      <div className="risk-card-header">
+                        <h4>{city}</h4>
+                        <span 
+                          className="risk-badge"
+                          style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}
+                        >
+                          {forecastData[city].risk_level}
+                        </span>
+                      </div>
+                      
+                      <div className="weather-icons">
+                        <div className="weather-icon">
+                          <i className="fas fa-thermometer-half"></i>
+                          <span>{forecastData[city].weather?.temp_avg || 'N/A'}°C</span>
+                        </div>
+                        <div className="weather-icon">
+                          <i className="fas fa-wind"></i>
+                          <span>{forecastData[city].weather?.wind_speed || 'N/A'} km/h</span>
+                        </div>
+                        <div className="weather-icon">
+                          <i className="fas fa-tint"></i>
+                          <span>{forecastData[city].weather?.humidity || 'N/A'}%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="risk-probability">
+                        <div className="prob-bar">
+                          <div 
+                            className="prob-fill"
+                            style={{ 
+                              width: `${forecastData[city].confidence || 0}%`,
+                              backgroundColor: getRiskColor(forecastData[city].risk_level)
+                            }}
+                          />
+                        </div>
+                        <span className="prob-text">{forecastData[city].confidence || 0}% confidence</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="no-data" style={{
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#666'
+                    }}>
+                      <i className="fas fa-cloud-rain" style={{fontSize: '2rem', marginBottom: '1rem'}}></i>
+                      <p>No forecast data available for {city}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {selectedCities.length === 0 && (
+                <div className="empty-state">
+                  <i className="fas fa-hand-pointer"></i>
+                  <p>Select governorates to view risks</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <RouteChecker hazards={hazards} />
+
+      {/* Footer */}
+      <footer className="footer">
+        <p>
+          <i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy
+        </p>
+      </footer>
     </div>
   );
 }
 
 export default App;
-
-const RiskDisplay = ({ prediction }) => {
-  const colors = {
-    'SAFE': '#4CAF50',
-    'CAUTION': '#FFC107',
-    'STAY HOME': '#F44336'
-  };
-  
-  return (
-    <div className="result-card" style={{backgroundColor: colors[prediction.risk_level]}}>
-      <h2>{prediction.risk_emoji} {prediction.risk_level}</h2>
-      <p>Confidence: {prediction.confidence}%</p>
-      
-      <div className="recommendations">
-        <h3>📋 Recommendations:</h3>
-        <p>🏫 Schools: {prediction.recommendations.schools}</p>
-        <p>📦 Delivery: {prediction.recommendations.delivery}</p>
-        <p>⚓ Fishing: {prediction.recommendations.fishing}</p>
-        <p>🏠 Public: {prediction.recommendations.public}</p>
-      </div>
-    </div>
-  );
-};

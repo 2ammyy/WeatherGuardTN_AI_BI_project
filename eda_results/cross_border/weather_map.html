@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_ab4058ca5f0b6912adae0cca153d0f71 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_ab4058ca5f0b6912adae0cca153d0f71" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_ab4058ca5f0b6912adae0cca153d0f71 = L.map(
+                "map_ab4058ca5f0b6912adae0cca153d0f71",
+                {
+                    center: [36.0, 12.0],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 5,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_4c85d82d1b60fb42626c1a7565eb0b88 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_4c85d82d1b60fb42626c1a7565eb0b88.addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var marker_bcfd1af121e6971c8139564df96a8177 = L.marker(
+                [28.0, 1.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_d4be04be1afc518135432ebb91b303fe = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_29af6dde361055681a3fe9b35be943df = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_5e0269c180d37b52f673e5b7c7e73c7b = $(`<div id="html_5e0269c180d37b52f673e5b7c7e73c7b" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Annaba, Algeria</h4>                 <p>🌡️ Temperature: 12.9°C</p>                 <p>💨 Wind: 5.5 km/h</p>                 <p>💧 Humidity: 94%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_29af6dde361055681a3fe9b35be943df.setContent(html_5e0269c180d37b52f673e5b7c7e73c7b);
+            
+        
+
+        marker_bcfd1af121e6971c8139564df96a8177.bindPopup(popup_29af6dde361055681a3fe9b35be943df)
+        ;
+
+        
+    
+    
+                marker_bcfd1af121e6971c8139564df96a8177.setIcon(icon_d4be04be1afc518135432ebb91b303fe);
+            
+    
+            var marker_36c0ac9b8b917bdb42034acd25521a97 = L.marker(
+                [28.0, 1.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_942ee40e09903fc9ca764a27cf2bb3e9 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_f60d564bb75eaece47776eaa4b0b0a0b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_d6407239e766d0d26de57b7d94b95071 = $(`<div id="html_d6407239e766d0d26de57b7d94b95071" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Algiers, Algeria</h4>                 <p>🌡️ Temperature: 10.9°C</p>                 <p>💨 Wind: 5.5 km/h</p>                 <p>💧 Humidity: 61%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_f60d564bb75eaece47776eaa4b0b0a0b.setContent(html_d6407239e766d0d26de57b7d94b95071);
+            
+        
+
+        marker_36c0ac9b8b917bdb42034acd25521a97.bindPopup(popup_f60d564bb75eaece47776eaa4b0b0a0b)
+        ;
+
+        
+    
+    
+                marker_36c0ac9b8b917bdb42034acd25521a97.setIcon(icon_942ee40e09903fc9ca764a27cf2bb3e9);
+            
+    
+            var marker_ca80ce3e1f5661149c2e641384461600 = L.marker(
+                [28.0, 1.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_9d96a425ccf66768b3104e3af25a49d3 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_00476b4f7552911628126d73d4eff99d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_fecc3734b4a88ebbabdc6eb3941cabf4 = $(`<div id="html_fecc3734b4a88ebbabdc6eb3941cabf4" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Constantine, Algeria</h4>                 <p>🌡️ Temperature: 7.7°C</p>                 <p>💨 Wind: 7.4 km/h</p>                 <p>💧 Humidity: 93%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_00476b4f7552911628126d73d4eff99d.setContent(html_fecc3734b4a88ebbabdc6eb3941cabf4);
+            
+        
+
+        marker_ca80ce3e1f5661149c2e641384461600.bindPopup(popup_00476b4f7552911628126d73d4eff99d)
+        ;
+
+        
+    
+    
+                marker_ca80ce3e1f5661149c2e641384461600.setIcon(icon_9d96a425ccf66768b3104e3af25a49d3);
+            
+    
+            var marker_3d2a2982239e7a4e1fe0aa7b288663b2 = L.marker(
+                [27.0, 17.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_60ea4b13ac71c84b0b406f2831b74dab = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0b85bd82e314a43fea8d2ca8b5b73599 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bf3eec69c5a92f173a4b1445aa38220a = $(`<div id="html_bf3eec69c5a92f173a4b1445aa38220a" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Tripoli, Libya</h4>                 <p>🌡️ Temperature: 15.5°C</p>                 <p>💨 Wind: 26.9 km/h</p>                 <p>💧 Humidity: 86%</p>                 <p>☁️ Conditions: Clear</p>             </div>             </div>`)[0];
+                popup_0b85bd82e314a43fea8d2ca8b5b73599.setContent(html_bf3eec69c5a92f173a4b1445aa38220a);
+            
+        
+
+        marker_3d2a2982239e7a4e1fe0aa7b288663b2.bindPopup(popup_0b85bd82e314a43fea8d2ca8b5b73599)
+        ;
+
+        
+    
+    
+                marker_3d2a2982239e7a4e1fe0aa7b288663b2.setIcon(icon_60ea4b13ac71c84b0b406f2831b74dab);
+            
+    
+            var marker_ed0d21bcbda5d8313555000e377bc560 = L.marker(
+                [27.0, 17.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_dacfa972f1eb1a02f3243fd601cecbea = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_014dd45d6fbd6ef0fcd0674faec9db79 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_ca406889bed393e246c785f0685e7c37 = $(`<div id="html_ca406889bed393e246c785f0685e7c37" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Benghazi, Libya</h4>                 <p>🌡️ Temperature: 17.0°C</p>                 <p>💨 Wind: 38.3 km/h</p>                 <p>💧 Humidity: 53%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_014dd45d6fbd6ef0fcd0674faec9db79.setContent(html_ca406889bed393e246c785f0685e7c37);
+            
+        
+
+        marker_ed0d21bcbda5d8313555000e377bc560.bindPopup(popup_014dd45d6fbd6ef0fcd0674faec9db79)
+        ;
+
+        
+    
+    
+                marker_ed0d21bcbda5d8313555000e377bc560.setIcon(icon_dacfa972f1eb1a02f3243fd601cecbea);
+            
+    
+            var marker_f37c77198425e0e3649048c16cb06ad6 = L.marker(
+                [42.0, 12.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_f5efd33f0bfd1b06818068568bea16e2 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a68983eda066e5a456b6d2859b4874b8 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_e44bfb7c769f1ba992a707660af74f89 = $(`<div id="html_e44bfb7c769f1ba992a707660af74f89" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Palermo, Italy</h4>                 <p>🌡️ Temperature: 12.5°C</p>                 <p>💨 Wind: 3.8 km/h</p>                 <p>💧 Humidity: 80%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_a68983eda066e5a456b6d2859b4874b8.setContent(html_e44bfb7c769f1ba992a707660af74f89);
+            
+        
+
+        marker_f37c77198425e0e3649048c16cb06ad6.bindPopup(popup_a68983eda066e5a456b6d2859b4874b8)
+        ;
+
+        
+    
+    
+                marker_f37c77198425e0e3649048c16cb06ad6.setIcon(icon_f5efd33f0bfd1b06818068568bea16e2);
+            
+    
+            var marker_934020c41579f5cd5adb7b2f46156831 = L.marker(
+                [42.0, 12.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_b4087e75c17024bebea831377a177545 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_37d33a62221645a2ebf3414bca53876d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_aa0aaf908839285c4fa59456941d12cd = $(`<div id="html_aa0aaf908839285c4fa59456941d12cd" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Lampedusa, Italy</h4>                 <p>🌡️ Temperature: 15.8°C</p>                 <p>💨 Wind: 35.2 km/h</p>                 <p>💧 Humidity: 82%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_37d33a62221645a2ebf3414bca53876d.setContent(html_aa0aaf908839285c4fa59456941d12cd);
+            
+        
+
+        marker_934020c41579f5cd5adb7b2f46156831.bindPopup(popup_37d33a62221645a2ebf3414bca53876d)
+        ;
+
+        
+    
+    
+                marker_934020c41579f5cd5adb7b2f46156831.setIcon(icon_b4087e75c17024bebea831377a177545);
+            
+    
+            var marker_f74f7c25a98b407416219ae0d6bf85a2 = L.marker(
+                [35.9, 14.5],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_d837f5f2fa566aff19b048aea4b708a5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "cloud",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3dc70111ff5b5f83c230d93e8c3922ad = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_e933acc562b1e45148db275825445f66 = $(`<div id="html_e933acc562b1e45148db275825445f66" style="width: 100.0%; height: 100.0%;">             <div style="font-family: Arial; width: 200px;">                 <h4>Valletta, Malta</h4>                 <p>🌡️ Temperature: 15.3°C</p>                 <p>💨 Wind: 22.2 km/h</p>                 <p>💧 Humidity: 88%</p>                 <p>☁️ Conditions: Clouds</p>             </div>             </div>`)[0];
+                popup_3dc70111ff5b5f83c230d93e8c3922ad.setContent(html_e933acc562b1e45148db275825445f66);
+            
+        
+
+        marker_f74f7c25a98b407416219ae0d6bf85a2.bindPopup(popup_3dc70111ff5b5f83c230d93e8c3922ad)
+        ;
+
+        
+    
+    
+                marker_f74f7c25a98b407416219ae0d6bf85a2.setIcon(icon_d837f5f2fa566aff19b048aea4b708a5);
+            
+    
+            var marker_186e11df2984a21dae9e6b9743b97072 = L.marker(
+                [36.5, 8.5],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_ff3ff4a91da6fbb3f7c920d82ea72a0c = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b42d50c64f28a7737a27e335ac456b75 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_deb42e286afcdad0c2c6bfee9e3b678b = $(`<div id="html_deb42e286afcdad0c2c6bfee9e3b678b" style="width: 100.0%; height: 100.0%;">Northwest Region<br>Governorates: Jendouba, Beja, Kef...</div>`)[0];
+                popup_b42d50c64f28a7737a27e335ac456b75.setContent(html_deb42e286afcdad0c2c6bfee9e3b678b);
+            
+        
+
+        marker_186e11df2984a21dae9e6b9743b97072.bindPopup(popup_b42d50c64f28a7737a27e335ac456b75)
+        ;
+
+        
+    
+    
+                marker_186e11df2984a21dae9e6b9743b97072.setIcon(icon_ff3ff4a91da6fbb3f7c920d82ea72a0c);
+            
+    
+            var marker_b03d609661cf1e447cbdea03651e8603 = L.marker(
+                [37.0, 10.5],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_163a1a30d2e8d82820a1ac60e3e25abc = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_df81f62d859a8198153fe7af058967ca = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a3f5106cdc6c4a1f1a7abbef8442b925 = $(`<div id="html_a3f5106cdc6c4a1f1a7abbef8442b925" style="width: 100.0%; height: 100.0%;">Northeast Region<br>Governorates: Bizerte, Tunis, Ariana...</div>`)[0];
+                popup_df81f62d859a8198153fe7af058967ca.setContent(html_a3f5106cdc6c4a1f1a7abbef8442b925);
+            
+        
+
+        marker_b03d609661cf1e447cbdea03651e8603.bindPopup(popup_df81f62d859a8198153fe7af058967ca)
+        ;
+
+        
+    
+    
+                marker_b03d609661cf1e447cbdea03651e8603.setIcon(icon_163a1a30d2e8d82820a1ac60e3e25abc);
+            
+    
+            var marker_87ccdb3cd773e722ac221b42b18628b6 = L.marker(
+                [33.0, 8.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_13cc6ecb9a965b27c47b80bc6f437482 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "purple",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_65d1e63ffbed64c1dfff14fab46b2862 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_9cf6ea2c5cd6e8c874b7acc79ce47972 = $(`<div id="html_9cf6ea2c5cd6e8c874b7acc79ce47972" style="width: 100.0%; height: 100.0%;">Southwest Region<br>Governorates: Tozeur, Kebili, Tataouine...</div>`)[0];
+                popup_65d1e63ffbed64c1dfff14fab46b2862.setContent(html_9cf6ea2c5cd6e8c874b7acc79ce47972);
+            
+        
+
+        marker_87ccdb3cd773e722ac221b42b18628b6.bindPopup(popup_65d1e63ffbed64c1dfff14fab46b2862)
+        ;
+
+        
+    
+    
+                marker_87ccdb3cd773e722ac221b42b18628b6.setIcon(icon_13cc6ecb9a965b27c47b80bc6f437482);
+            
+    
+            var marker_afa42694d01d665b7a73a3b772e08a29 = L.marker(
+                [33.5, 10.5],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_037890a26c3a1466a13fbbdc33a4925b = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_984206b7b5e0c86fd6e1c25f7860502b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_32b8fe5ade3fd8b94a13d767936cbd34 = $(`<div id="html_32b8fe5ade3fd8b94a13d767936cbd34" style="width: 100.0%; height: 100.0%;">Southeast Region<br>Governorates: Medenine, Gabes, Sfax...</div>`)[0];
+                popup_984206b7b5e0c86fd6e1c25f7860502b.setContent(html_32b8fe5ade3fd8b94a13d767936cbd34);
+            
+        
+
+        marker_afa42694d01d665b7a73a3b772e08a29.bindPopup(popup_984206b7b5e0c86fd6e1c25f7860502b)
+        ;
+
+        
+    
+    
+                marker_afa42694d01d665b7a73a3b772e08a29.setIcon(icon_037890a26c3a1466a13fbbdc33a4925b);
+            
+    
+            var marker_4e080bbe43cc4410a304e9bb1135a9e1 = L.marker(
+                [35.5, 11.0],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_57df86e2361762f8fe2f5ae0009cbbd0 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3582ece516b19d6da51a93f3fd09f5d9 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_ab5a17b42d83909abc595ff102bd620d = $(`<div id="html_ab5a17b42d83909abc595ff102bd620d" style="width: 100.0%; height: 100.0%;">Coastal Region<br>Governorates: Sousse, Monastir, Mahdia...</div>`)[0];
+                popup_3582ece516b19d6da51a93f3fd09f5d9.setContent(html_ab5a17b42d83909abc595ff102bd620d);
+            
+        
+
+        marker_4e080bbe43cc4410a304e9bb1135a9e1.bindPopup(popup_3582ece516b19d6da51a93f3fd09f5d9)
+        ;
+
+        
+    
+    
+                marker_4e080bbe43cc4410a304e9bb1135a9e1.setIcon(icon_57df86e2361762f8fe2f5ae0009cbbd0);
+            
+    
+            var marker_ae172128281d87168da6338e80f6d949 = L.marker(
+                [35.0, 9.5],
+                {
+}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+            var icon_44a67473f852c7338a1463144c548f42 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_7897e7e2b65670d2badbed063067cddb = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0ffd8b8b5c1195c8ad69d07242fe6e85 = $(`<div id="html_0ffd8b8b5c1195c8ad69d07242fe6e85" style="width: 100.0%; height: 100.0%;">Central Region<br>Governorates: Kairouan, Kasserine, Sidi Bouzid...</div>`)[0];
+                popup_7897e7e2b65670d2badbed063067cddb.setContent(html_0ffd8b8b5c1195c8ad69d07242fe6e85);
+            
+        
+
+        marker_ae172128281d87168da6338e80f6d949.bindPopup(popup_7897e7e2b65670d2badbed063067cddb)
+        ;
+
+        
+    
+    
+                marker_ae172128281d87168da6338e80f6d949.setIcon(icon_44a67473f852c7338a1463144c548f42);
+            
+    
+            var poly_line_848ffd4f242392ca609e45968285f532 = L.polyline(
+                [[36.75, 3.05], [36.5, 8.5]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+        var popup_b97ee868dce6896bf8e8e49925f91eb2 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_cd745b1925d5583a1ffd53c40d6e406f = $(`<div id="html_cd745b1925d5583a1ffd53c40d6e406f" style="width: 100.0%; height: 100.0%;">Algeria → Northwest influence</div>`)[0];
+                popup_b97ee868dce6896bf8e8e49925f91eb2.setContent(html_cd745b1925d5583a1ffd53c40d6e406f);
+            
+        
+
+        poly_line_848ffd4f242392ca609e45968285f532.bindPopup(popup_b97ee868dce6896bf8e8e49925f91eb2)
+        ;
+
+        
+    
+    
+            var poly_line_94cc5c0ea67c3ed631466873ad35c54d = L.polyline(
+                [[32.88, 13.19], [33.5, 10.5]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+        var popup_a9bfe94b9840deb866d1995404d0b696 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_9f8d8926087dada92e349306f6ace466 = $(`<div id="html_9f8d8926087dada92e349306f6ace466" style="width: 100.0%; height: 100.0%;">Libya → Southeast influence</div>`)[0];
+                popup_a9bfe94b9840deb866d1995404d0b696.setContent(html_9f8d8926087dada92e349306f6ace466);
+            
+        
+
+        poly_line_94cc5c0ea67c3ed631466873ad35c54d.bindPopup(popup_a9bfe94b9840deb866d1995404d0b696)
+        ;
+
+        
+    
+    
+            var poly_line_e5d6d7309afca2ac72fe0831aa4acac0 = L.polyline(
+                [[38.11, 13.36], [37.0, 10.5]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+        var popup_cd1d585ac7191ade2240baa3bf20b762 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_309e7332948a4c0ce4421acedcaa2822 = $(`<div id="html_309e7332948a4c0ce4421acedcaa2822" style="width: 100.0%; height: 100.0%;">Italy → Northeast influence</div>`)[0];
+                popup_cd1d585ac7191ade2240baa3bf20b762.setContent(html_309e7332948a4c0ce4421acedcaa2822);
+            
+        
+
+        poly_line_e5d6d7309afca2ac72fe0831aa4acac0.bindPopup(popup_cd1d585ac7191ade2240baa3bf20b762)
+        ;
+
+        
+    
+    
+            var poly_line_25423b7b923ccebbe863255eb4811189 = L.polyline(
+                [[35.89, 14.51], [35.5, 11.0]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_ab4058ca5f0b6912adae0cca153d0f71);
+        
+    
+        var popup_fa6b8771107bec308cb2f82167452e2e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_aa41a1fedd0cc259af4115957068224d = $(`<div id="html_aa41a1fedd0cc259af4115957068224d" style="width: 100.0%; height: 100.0%;">Malta → Coastal influence</div>`)[0];
+                popup_fa6b8771107bec308cb2f82167452e2e.setContent(html_aa41a1fedd0cc259af4115957068224d);
+            
+        
+
+        poly_line_25423b7b923ccebbe863255eb4811189.bindPopup(popup_fa6b8771107bec308cb2f82167452e2e)
+        ;
+
+        
+    
+</script>
+</html>
