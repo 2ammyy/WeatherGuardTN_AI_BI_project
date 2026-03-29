@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Service MLflow
+  # MLflow Service
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
     container_name: climate-mlflow
@@ -22,7 +22,7 @@ services:
       - climate-network
     restart: unless-stopped
 
-  # Service Backend
+  # Backend Service (FastAPI)
   backend:
     build:
       context: .
@@ -34,27 +34,29 @@ services:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - PYTHONPATH=/app
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      # ADD YOUR SUPABASE CONNECTION HERE
+      - DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres
     volumes:
       - ./backend:/app
       - ./data:/data
-      - ./mlruns:/mlruns
-      - ./mlartifacts:/mlartifacts
     depends_on:
       - mlflow
     networks:
       - climate-network
     restart: unless-stopped
 
-  # Service Frontend
+  # Frontend Service (React + Nginx)
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        # These MUST be under 'args' to be available during 'npm run build'
+        - REACT_APP_API_URL=http://localhost:8001
+        - REACT_APP_GOOGLE_CLIENT_ID=932539718184-1rrvuua9t4907c8nkirk8n18cglm17hk.apps.googleusercontent.com
     container_name: climate-frontend
     ports:
       - "3000:80"
-    environment:
-      - REACT_APP_API_URL=http://localhost:8001
     depends_on:
       - backend
     networks:
