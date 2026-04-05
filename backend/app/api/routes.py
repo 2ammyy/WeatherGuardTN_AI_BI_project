@@ -321,3 +321,53 @@ async def get_available_dates(city: str):
         dates.append(date.strftime("%Y-%m-%d"))
     
     return {"city": city, "available_dates": dates}
+class WeatherRequest(BaseModel):
+    city: str
+    date: str = None
+
+@router.post('/current-weather')
+async def current_weather(request: WeatherRequest):
+    import random
+    from datetime import datetime
+    city_seed = sum(ord(c) for c in request.city)
+    random.seed(city_seed + datetime.now().timetuple().tm_yday)
+    risk_levels = ['GREEN', 'YELLOW', 'ORANGE', 'RED']
+    risk_level = random.choice(risk_levels)
+    weather = {
+        'temp_max': round(random.uniform(15, 38), 1),
+        'temp_min': round(random.uniform(8, 20), 1),
+        'temp_avg': round(random.uniform(12, 28), 1),
+        'wind_speed': round(random.uniform(5, 45), 1),
+        'humidity': random.randint(30, 90),
+        'precipitation': round(random.uniform(0, 20), 1)
+    }
+    random.seed()
+    return {'city': request.city, 'risk_level': risk_level, 'weather': weather, 'date': request.date or str(datetime.now().date())}
+
+class WeatherRequest(BaseModel):
+    city: str
+    date: str = None
+
+@router.post('/current-weather')
+async def current_weather(request: WeatherRequest):
+    import random
+    from datetime import datetime
+    city_seed = sum(ord(c) for c in request.city)
+    random.seed(city_seed + datetime.now().timetuple().tm_yday)
+    risk_levels = ['GREEN', 'YELLOW', 'ORANGE', 'RED']
+    risk_level = random.choice(risk_levels)
+    weather = {
+        'temp_max': round(random.uniform(15, 38), 1),
+        'temp_min': round(random.uniform(8, 20), 1),
+        'temp_avg': round(random.uniform(12, 28), 1),
+        'wind_speed': round(random.uniform(5, 45), 1),
+        'humidity': random.randint(30, 90),
+        'precipitation': round(random.uniform(0, 20), 1)
+    }
+    random.seed()
+    return {
+        'city': request.city,
+        'risk_level': risk_level,
+        'weather': weather,
+        'date': request.date or str(datetime.now().date())
+    }

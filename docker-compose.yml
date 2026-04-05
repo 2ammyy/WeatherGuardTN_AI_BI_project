@@ -1,6 +1,31 @@
 version: '3.8'
 
 services:
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15
+    container_name: climate-db
+    environment:
+      POSTGRES_USER: weatheruser
+      POSTGRES_PASSWORD: weatherpass
+      POSTGRES_DB: weatherguard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - climate-network
+    restart: unless-stopped
+  # pgAdmin Service
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: climate-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - climate-network
+    restart: unless-stopped
   # MLflow Service
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
@@ -34,13 +59,15 @@ services:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - PYTHONPATH=/app
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
-      # ADD YOUR SUPABASE CONNECTION HERE
-      - DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres
+      - DATABASE_URL=postgresql://weatheruser:weatherpass@db:5432/weatherguard
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     volumes:
       - ./backend:/app
       - ./data:/data
     depends_on:
       - mlflow
+      - db
     networks:
       - climate-network
     restart: unless-stopped
@@ -51,9 +78,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        # These MUST be under 'args' to be available during 'npm run build'
         - REACT_APP_API_URL=http://localhost:8001
-        - REACT_APP_GOOGLE_CLIENT_ID=932539718184-1rrvuua9t4907c8nkirk8n18cglm17hk.apps.googleusercontent.com
+        - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     container_name: climate-frontend
     ports:
       - "3000:80"
@@ -69,3 +95,4 @@ networks:
 
 volumes:
   mlflow_db:
+  postgres_data:

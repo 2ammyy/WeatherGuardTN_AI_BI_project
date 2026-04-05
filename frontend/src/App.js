@@ -92,7 +92,7 @@ function App() {
     const fetchGovernorates = async () => {
       if (!apiUrl) return;
       try {
-        const response = await axios.get(`${apiUrl}/governorates`);
+        const response = await axios.get(`${apiUrl}/api/governorates`);
         setGovernorates(response.data.governorates || response.data);
       } catch (err) { setGovernorates(Object.keys(cityCoordinates)); }
     };
@@ -118,7 +118,7 @@ function App() {
 
       for (const city of selectedCities) {
         try {
-          const endpoint = isToday ? '/current-weather' : '/forecast-by-date';
+          const endpoint = isToday ? '/api/current-weather' : '/api/forecast-by-date';
           const response = await axios.post(`${apiUrl}${endpoint}`, { date: selectedDate, city: city }, { timeout: 5000 });
           if (response.data) forecasts[city] = response.data;
         } catch (err) { failed.push(city); }
