@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copier et installer les dépendances Python
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install mlflow
+RUN pip install --no-cache-dir -r requirements.txt mlflow
 
 # Copier tout le code backend
 COPY backend/ /app/

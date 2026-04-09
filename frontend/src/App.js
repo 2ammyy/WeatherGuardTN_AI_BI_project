@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -6,9 +6,10 @@ import './App.css';
 import VigilanceMap from './components/VigilanceMap';
 import HazardLegend from './components/HazardLegend';
 import RouteChecker from './components/RouteChecker';
-import Login from './components/Login'; // Ensure these components exist
-import Signup from './components/Signup'; // Ensure these components exist
+import Login from './components/Login'; 
+import Signup from './components/Signup'; 
 import { fetchHazards } from './services/hazardService';
+import Settings from './components/Settings';
 
 function App() {
   // ==================== AUTH STATE ====================
@@ -27,8 +28,9 @@ function App() {
   const [selectedDate, setSelectedDate] = useState('');
   const [hazards, setHazards] = useState([]);
   const [showNeighbors, setShowNeighbors] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
 
-  // ==================== RISK CONFIGURATION ====================
+  // ==================== RISK CONFIGURATION (Fixed Encoding) ====================
   const riskLevels = {
     'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
     'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
@@ -153,9 +155,8 @@ function App() {
   const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#999';
   const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '❓';
 
-  // ==================== CONDITIONAL RENDER (THE AUTH GATE) ====================
+  // ==================== CONDITIONAL RENDER ====================
   
-  // 1. Show Login or Signup if user is not authenticated
   if (!user) {
     return (
       <div className="auth-wrapper">
@@ -174,7 +175,6 @@ function App() {
     );
   }
 
-  // 2. Show Dashboard only if user exists
   return (
     <div className="app">
       <header className="header">
@@ -192,6 +192,7 @@ function App() {
             />
           </div>
           <div className="user-controls">
+            <button onClick={() => setShowSettings(true)} className="logout-btn">⚙️ Settings</button>
              <span className="user-name"><i className="fas fa-user"></i> {user.name || 'User'}</span>
              <button onClick={handleLogout} className="logout-btn">Logout</button>
              <div className={`api-status ${apiStatus}`}>
@@ -262,6 +263,25 @@ function App() {
       </div>
       <RouteChecker hazards={hazards} />
       <footer className="footer"><p><i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy</p></footer>
+      
+      {showSettings && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999, overflowY: "auto" }}>
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setShowSettings(false)} style={{
+              position: "fixed", top: 16, right: 24, zIndex: 1000,
+              background: "white", border: "1px solid #d1d5db", borderRadius: "50%",
+              width: 36, height: 36, fontSize: 18, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+            }}>✕</button>
+            <Settings
+              user={user}
+              onLogout={handleLogout}
+              onUserUpdate={(updatedUser) => { setUser(updatedUser); setShowSettings(false); }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

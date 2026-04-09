@@ -688,3 +688,41 @@ body {
 #googleSignInDiv {
   margin-bottom: 1rem;
 }
+
+.settings-page-wrapper {
+  padding: 40px 20px;
+  background-color: #f3f4f6;
+  min-height: calc(100vh - 120px); /* Adjust based on header/footer height */
+  display: flex;
+  justify-content: center;
+}
+
+.settings-card {
+  background: white;
+  width: 100%;
+  max-width: 900px;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-btn {
+  text-decoration: none;
+  color: white;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 15px;
+  border-radius: 6px;
+  transition: 0.3s;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.2);
+}

@@ -1,6 +1,5 @@
 # Étape 1: Build de l'application React
-FROM node:18-alpine as build
-
+FROM node:18-alpine AS build
 WORKDIR /app
 
 # --- NEW: Accept build arguments from docker-compose ---

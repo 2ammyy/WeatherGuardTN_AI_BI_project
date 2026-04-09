@@ -14,6 +14,12 @@ services:
     networks:
       - climate-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weatheruser -d weatherguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # pgAdmin Service
   pgadmin:
     image: dpage/pgadmin4
@@ -26,6 +32,7 @@ services:
     networks:
       - climate-network
     restart: unless-stopped
+
   # MLflow Service
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
@@ -66,8 +73,10 @@ services:
       - ./backend:/app
       - ./data:/data
     depends_on:
-      - mlflow
-      - db
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
     networks:
       - climate-network
     restart: unless-stopped
