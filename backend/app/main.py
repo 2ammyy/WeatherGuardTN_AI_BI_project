@@ -14,6 +14,8 @@ from app.models import User
 from app.api.routes import router
 from app.auth.google_auth import router as google_auth_router
 
+from app.forum.routes import router as forum_router
+
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 EXPERIMENT_NAME = "WeatherGuardTN"
 
@@ -102,3 +104,5 @@ def test_mlflow_connection():
 
 # ✅ Keep `app` as an alias so uvicorn can still find it (uvicorn runs `app.main:app`)
 app = fastapi_app
+
+app.include_router(forum_router, prefix="/api/forum", tags=["forum"])

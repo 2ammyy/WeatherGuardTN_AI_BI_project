@@ -4,6 +4,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import os
 import psycopg2
+from jose import jwt
+from datetime import timedelta, timezone
 from datetime import datetime
 
 router = APIRouter()
@@ -13,6 +15,29 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://weatheruser:weatherpass@d
 
 def get_db():
     return psycopg2.connect(DATABASE_URL)
+
+import secrets
+from passlib.context import CryptContext
+_pwd_ctx = CryptContext(schemes=['bcrypt_sha256'], deprecated='auto')
+
+FORUM_SECRET = os.getenv('FORUM_SECRET_KEY', 'change-me-in-production-use-long-random-string')
+
+def _make_forum_token(user_id: str) -> str:
+    payload = {'sub': str(user_id), 'type': 'access',
+               'exp': datetime.now(timezone.utc) + timedelta(hours=24)}
+    return jwt.encode(payload, FORUM_SECRET, algorithm='HS256')
+
+
+def _ensure_forum_user(cur, email, name, governorate=None):
+    username = email.split('@')[0].lower().replace('.','_').replace('+','_')[:50]
+    cur.execute('SELECT id FROM forum_users WHERE username = %s AND email != %s', (username, email))
+    if cur.fetchone():
+        import secrets as _s
+        username = username[:45] + '_' + _s.token_hex(2)
+    random_pw = _pwd_ctx.hash(secrets.token_hex(16))
+    cur.execute('INSERT INTO forum_users (username, email, hashed_password, display_name, governorate) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (email) DO UPDATE SET display_name = COALESCE(EXCLUDED.display_name, forum_users.display_name), governorate  = COALESCE(EXCLUDED.governorate,  forum_users.governorate), updated_at   = NOW()', (username, email, random_pw, name or username, governorate))
+
+
 
 # ─── MODELS ───────────────────────────────────────────────────────────────────
 
@@ -65,15 +90,20 @@ async def google_auth(request: GoogleAuthRequest):
             datetime.now(), request.governorate, request.user_type
         ))
         row = cur.fetchone()
+        _ensure_forum_user(cur, row[1], row[2], row[4])
+        cur.execute("SELECT id FROM forum_users WHERE email = %s", (row[1],))
+        frow = cur.fetchone()
         conn.commit()
         cur.close()
         conn.close()
         return {
             "id": row[0], "email": row[1], "name": row[2],
             "picture": row[3], "governorate": row[4],
-            "user_type": row[5], "google_id": row[6]
+            "user_type": row[5], "google_id": row[6],
+            "forum_token": _make_forum_token(frow[0]) if frow else None
         }
     except ValueError as e:
+        print(f"CRITICAL AUTH ERROR: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Auth error: {str(e)}")
@@ -93,6 +123,7 @@ async def register(request: EmailAuthRequest):
             RETURNING id, email, name, governorate, user_type
         """, (request.email, request.name, password_hash, request.governorate, request.user_type))
         row = cur.fetchone()
+        _ensure_forum_user(cur, row[1], row[2], row[3])
         conn.commit()
         cur.close()
         conn.close()
@@ -121,8 +152,16 @@ async def login(request: EmailAuthRequest):
         cur.close()
         conn.close()
         if not row:
+            cur.close()
+            conn.close()
             raise HTTPException(status_code=401, detail="Invalid email or password.")
-        return {"id": row[0], "email": row[1], "name": row[2], "governorate": row[3], "user_type": row[4], "picture": row[5]}
+        _ensure_forum_user(cur, row[1], row[2], row[3])
+        cur.execute("SELECT id FROM forum_users WHERE email = %s", (row[1],))
+        frow = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": row[0], "email": row[1], "name": row[2], "governorate": row[3], "user_type": row[4], "picture": row[5], "forum_token": _make_forum_token(frow[0]) if frow else None}
     except HTTPException:
         raise
     except Exception as e:
@@ -149,7 +188,13 @@ async def update_profile(request: UpdateRequest):
         conn.close()
         if not row:
             raise HTTPException(status_code=404, detail="User not found.")
-        return {"id": row[0], "email": row[1], "name": row[2], "governorate": row[3], "user_type": row[4], "picture": row[5]}
+        _ensure_forum_user(cur, row[1], row[2], row[3])
+        cur.execute("SELECT id FROM forum_users WHERE email = %s", (row[1],))
+        frow = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": row[0], "email": row[1], "name": row[2], "governorate": row[3], "user_type": row[4], "picture": row[5], "forum_token": _make_forum_token(frow[0]) if frow else None}
     except HTTPException:
         raise
     except Exception as e:

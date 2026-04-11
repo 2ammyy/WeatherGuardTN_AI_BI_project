@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -10,6 +10,7 @@ import Login from './components/Login';
 import Signup from './components/Signup'; 
 import { fetchHazards } from './services/hazardService';
 import Settings from './components/Settings';
+import ForumPage from './forum/pages/ForumPage';
 
 function App() {
   // ==================== AUTH STATE ====================
@@ -29,14 +30,15 @@ function App() {
   const [hazards, setHazards] = useState([]);
   const [showNeighbors, setShowNeighbors] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showForum, setShowForum] = useState(false);
 
   // ==================== RISK CONFIGURATION (Fixed Encoding) ====================
   const riskLevels = {
-    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
-    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
-    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
-    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '🔴', label: 'ALERT', description: 'Take action' },
-    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
+    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '??', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '??', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '??', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '??', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '??', label: 'EVAC', description: 'Emergency response' }
   };
 
   const cityCoordinates = {
@@ -153,7 +155,7 @@ function App() {
   };
 
   const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#999';
-  const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '❓';
+  const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '?';
 
   // ==================== CONDITIONAL RENDER ====================
   
@@ -167,13 +169,15 @@ function App() {
           />
         ) : (
           <Login 
-            onLoginSuccess={(userData) => setUser(userData)} 
+            onLoginSuccess={(userData) => { setUser(userData); if(userData.forum_token){ localStorage.setItem("forum_access_token", userData.forum_token); } }} 
             onSwitchToSignup={() => setShowSignup(true)}
           />
         )}
       </div>
     );
   }
+
+  if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} />;
 
   return (
     <div className="app">
@@ -192,11 +196,12 @@ function App() {
             />
           </div>
           <div className="user-controls">
-            <button onClick={() => setShowSettings(true)} className="logout-btn">⚙️ Settings</button>
+            <button onClick={() => setShowForum(true)} className="logout-btn" style={{background:"#1D9E75",color:"white",border:"none",marginRight:"8px"}}>Forum</button>
+             <button onClick={() => setShowSettings(true)} className="logout-btn">?? Settings</button>
              <span className="user-name"><i className="fas fa-user"></i> {user.name || 'User'}</span>
              <button onClick={handleLogout} className="logout-btn">Logout</button>
              <div className={`api-status ${apiStatus}`}>
-               {apiStatus === 'connected' ? '🟢 Live' : '🔴 Offline'}
+               {apiStatus === 'connected' ? '?? Live' : '?? Offline'}
              </div>
           </div>
         </div>
@@ -273,7 +278,7 @@ function App() {
               width: 36, height: 36, fontSize: 18, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-            }}>✕</button>
+            }}>?</button>
             <Settings
               user={user}
               onLogout={handleLogout}

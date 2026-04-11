@@ -54,6 +54,47 @@ services:
       - climate-network
     restart: unless-stopped
 
+  # Ollama Service (local LLM for AI moderation)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: climate-ollama
+    # ports:
+    #   - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama          # persists downloaded models across restarts
+    networks:
+      - climate-network
+    restart: unless-stopped
+    # If you have an NVIDIA GPU and nvidia-container-toolkit installed, uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Ollama model bootstrapper — pulls qwen2.5:3b once then exits
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: climate-ollama-init
+    depends_on:
+      - ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - climate-network
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...' &&
+        sleep 5 &&
+        ollama pull qwen2.5:3b &&
+        echo 'Model ready.'
+      "
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    restart: "no"                          # run once and exit
+
   # Backend Service (FastAPI)
   backend:
     build:
@@ -69,6 +110,12 @@ services:
       - DATABASE_URL=postgresql://weatheruser:weatherpass@db:5432/weatherguard
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # Forum JWT
+      - FORUM_SECRET_KEY=${FORUM_SECRET_KEY:-change-me-to-a-long-random-secret}
+      # Ollama — uses the service name as hostname inside Docker network
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      - OLLAMA_TIMEOUT_SECONDS=60
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -76,6 +123,8 @@ services:
       db:
         condition: service_healthy
       mlflow:
+        condition: service_started
+      ollama:
         condition: service_started
     networks:
       - climate-network
@@ -105,3 +154,4 @@ networks:
 volumes:
   mlflow_db:
   postgres_data:
+  ollama_data:                             # persists the qwen2.5:3b model between restarts
