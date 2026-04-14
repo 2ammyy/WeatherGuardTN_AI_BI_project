@@ -9,7 +9,8 @@ from sqlalchemy import (
     Column, String, Text, Boolean, Integer, DateTime,
     ForeignKey, CheckConstraint, UniqueConstraint, Enum as SAEnum
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import Index
 from sqlalchemy.orm import relationship, backref
 from app.database import Base   # reuse your existing Base/engine
 
@@ -187,3 +188,82 @@ class Notification(Base):
 
     recipient = relationship("ForumUser", foreign_keys=[user_id], back_populates="notifications")
     actor     = relationship("ForumUser", foreign_keys=[actor_id])
+
+# ─────────────────────────────────────────────
+# News Articles (scraped from external sources)
+# ─────────────────────────────────────────────
+class NewsArticle(Base):
+    __tablename__ = "news_articles"
+ 
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_name    = Column(String(100), nullable=False)   # "businessnews" | "mosaiquefm" | "jawharafm"
+    source_url     = Column(Text, unique=True, nullable=False)  # dedup key
+    title          = Column(String(400), nullable=False)
+    body           = Column(Text)
+    category       = Column(String(50), default="meteo")   # "meteo" | "impact" | "infrastructure" | "alert"
+    governorates   = Column(ARRAY(String), default=list)   # ["Tunis", "Bizerte"]
+    risk_level     = Column(String(20), default="green")   # green/yellow/orange/red/purple
+    scraped_at     = Column(DateTime(timezone=True), default=utcnow)
+    published_at   = Column(DateTime(timezone=True))
+    likes_count    = Column(Integer, default=0)
+    comments_count = Column(Integer, default=0)
+    shares_count   = Column(Integer, default=0)
+ 
+    comments  = relationship("NewsComment",   back_populates="article", lazy="dynamic")
+    reactions = relationship("NewsReaction",  back_populates="article", lazy="dynamic")
+    shares    = relationship("NewsShare",     back_populates="article", lazy="dynamic")
+ 
+    __table_args__ = (
+        Index("ix_news_articles_scraped_at", "scraped_at"),
+        Index("ix_news_articles_risk_level", "risk_level"),
+    )
+ 
+ 
+class NewsReaction(Base):
+    __tablename__ = "news_reactions"
+    article_id = Column(UUID(as_uuid=True), ForeignKey("news_articles.id", ondelete="CASCADE"), primary_key=True)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("forum_users.id",  ondelete="CASCADE"), primary_key=True)
+    emoji      = Column(String(10), default="👍")   # 👍 🔥 😮 🙏 😢
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+ 
+    article = relationship("NewsArticle", back_populates="reactions")
+    user    = relationship("ForumUser")
+ 
+ 
+class NewsShare(Base):
+    __tablename__ = "news_shares"
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id = Column(UUID(as_uuid=True), ForeignKey("news_articles.id", ondelete="CASCADE"))
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("forum_users.id",  ondelete="CASCADE"))
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+ 
+    article = relationship("NewsArticle", back_populates="shares")
+ 
+ 
+class NewsComment(Base):
+    __tablename__ = "news_comments"
+ 
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id  = Column(UUID(as_uuid=True), ForeignKey("news_articles.id", ondelete="CASCADE"), nullable=False)
+    author_id   = Column(UUID(as_uuid=True), ForeignKey("forum_users.id",  ondelete="CASCADE"), nullable=False)
+    parent_id   = Column(UUID(as_uuid=True), ForeignKey("news_comments.id", ondelete="CASCADE"), nullable=True)
+    body        = Column(Text, nullable=False)
+    ai_approved = Column(Boolean, default=False)
+    ai_reason   = Column(Text)
+    ai_checked_at = Column(DateTime(timezone=True))
+    is_deleted  = Column(Boolean, default=False)
+    likes_count = Column(Integer, default=0)
+    created_at  = Column(DateTime(timezone=True), default=utcnow)
+    updated_at  = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+ 
+    article = relationship("NewsArticle", back_populates="comments")
+    author  = relationship("ForumUser")
+    replies = relationship("NewsComment", backref=backref("parent", remote_side="NewsComment.id"))
+    likes   = relationship("NewsCommentLike", lazy="dynamic")
+ 
+ 
+class NewsCommentLike(Base):
+    __tablename__ = "news_comment_likes"
+    comment_id = Column(UUID(as_uuid=True), ForeignKey("news_comments.id", ondelete="CASCADE"), primary_key=True)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("forum_users.id",  ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)

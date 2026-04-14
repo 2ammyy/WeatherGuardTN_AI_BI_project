@@ -1,7 +1,7 @@
 // frontend/src/forum/components/CommentsSection.jsx
 import { useState, useEffect, useRef } from "react";
 import { commentsAPI } from "../api/client";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 
 function CommentBubble({ comment, postId, onReply, depth = 0 }) {
   const { user } = useAuth();

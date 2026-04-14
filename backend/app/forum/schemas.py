@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator, Field, HttpUrl
 
 
 # ─────────────────────────────────────────────
@@ -207,3 +207,170 @@ class PaginatedPosts(BaseModel):
 class PaginatedComments(BaseModel):
     items: List[CommentOut]
     total: int
+
+
+
+# ─────────────────────────────────────────────
+# Shared
+# ─────────────────────────────────────────────
+RISK_LEVELS = {"green", "yellow", "orange", "red", "purple"}
+VALID_EMOJIS = {"👍", "🔥", "😮", "🙏", "😢"}
+VALID_OCCUPATIONS = {"student", "fisherman", "delivery", "farmer", "authority", "general"}
+ 
+ 
+# ─────────────────────────────────────────────
+# Author (minimal user info embedded in responses)
+# ─────────────────────────────────────────────
+class AuthorOut(BaseModel):
+    id:           UUID
+    username:     str
+    display_name: Optional[str] = None
+    avatar_url:   Optional[str] = None
+    governorate:  Optional[str] = None
+    occupation:   Optional[str] = None
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+# ─────────────────────────────────────────────
+# News Articles
+# ─────────────────────────────────────────────
+class NewsArticleOut(BaseModel):
+    id:            UUID
+    source_name:   str
+    source_url:    str
+    title:         str
+    body:          Optional[str] = None
+    category:      str
+    governorates:  List[str] = []
+    risk_level:    str
+    published_at:  Optional[datetime] = None
+    scraped_at:    datetime
+    likes_count:   int = 0
+    comments_count: int = 0
+    shares_count:  int = 0
+    # populated per-request when user is authenticated
+    user_reaction: Optional[str] = None   # emoji the current user reacted with, or None
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class NewsArticleListOut(BaseModel):
+    total:    int
+    page:     int
+    per_page: int
+    items:    List[NewsArticleOut]
+ 
+ 
+# ─────────────────────────────────────────────
+# Reactions
+# ─────────────────────────────────────────────
+class ReactionCreate(BaseModel):
+    emoji: str = Field(default="👍", description="One of: 👍 🔥 😮 🙏 😢")
+ 
+    def validate_emoji(self):
+        if self.emoji not in VALID_EMOJIS:
+            raise ValueError(f"emoji must be one of {VALID_EMOJIS}")
+ 
+ 
+class ReactionOut(BaseModel):
+    article_id: UUID
+    user_id:    UUID
+    emoji:      str
+    created_at: datetime
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class ReactionSummary(BaseModel):
+    """Aggregated reaction counts for an article."""
+    article_id: UUID
+    counts:     dict[str, int]   # {"👍": 12, "🔥": 4, ...}
+    user_emoji: Optional[str] = None
+ 
+ 
+# ─────────────────────────────────────────────
+# Comments
+# ─────────────────────────────────────────────
+class CommentCreate(BaseModel):
+    body:      str = Field(..., min_length=3, max_length=2000)
+    parent_id: Optional[UUID] = None
+ 
+ 
+class CommentOut(BaseModel):
+    id:          UUID
+    article_id:  UUID
+    author:      AuthorOut
+    parent_id:   Optional[UUID] = None
+    body:        str
+    ai_approved: bool
+    ai_reason:   Optional[str] = None
+    is_deleted:  bool
+    likes_count: int
+    created_at:  datetime
+    replies:     List["CommentOut"] = []
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+CommentOut.model_rebuild()
+ 
+ 
+class CommentModerationResult(BaseModel):
+    approved: bool
+    reason:   str
+ 
+ 
+# ─────────────────────────────────────────────
+# Shares
+# ─────────────────────────────────────────────
+class ShareOut(BaseModel):
+    article_id: UUID
+    user_id:    UUID
+    created_at: datetime
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+# ─────────────────────────────────────────────
+# Notifications
+# ─────────────────────────────────────────────
+class NotificationOut(BaseModel):
+    id:         UUID
+    type:       str
+    message:    Optional[str] = None
+    article_id: Optional[UUID] = None
+    post_id:    Optional[UUID] = None
+    comment_id: Optional[UUID] = None
+    is_read:    bool
+    created_at: datetime
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class NotificationListOut(BaseModel):
+    unread_count: int
+    items:        List[NotificationOut]
+ 
+ 
+# ─────────────────────────────────────────────
+# User profile update (for occupation/governorate)
+# ─────────────────────────────────────────────
+class UserProfileUpdate(BaseModel):
+    display_name: Optional[str] = Field(None, max_length=100)
+    bio:          Optional[str] = Field(None, max_length=500)
+    governorate:  Optional[str] = Field(None, max_length=100)
+    occupation:   Optional[str] = Field(None, description=f"One of: {VALID_OCCUPATIONS}")
+    avatar_url:   Optional[str] = None
+ 
+ 
+# ─────────────────────────────────────────────
+# Scraper status (internal / admin)
+# ─────────────────────────────────────────────
+class ScraperRunResult(BaseModel):
+    source:        str
+    articles_new:  int
+    articles_skip: int
+    errors:        List[str] = []
+    ran_at:        datetime
+ 

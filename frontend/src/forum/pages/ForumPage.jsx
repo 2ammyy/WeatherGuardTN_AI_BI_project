@@ -1,7 +1,7 @@
 // frontend/src/forum/pages/ForumPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { postsAPI } from "../api/client";
-import { AuthProvider, useAuth } from "../hooks/useAuth";
+import { AuthProvider, useAuth } from "../../hooks/useAuth";
 import PostCard from "../components/PostCard";
 import ComposeModal from "../components/ComposeModal";
 import NotificationBell from "../components/NotificationBell";

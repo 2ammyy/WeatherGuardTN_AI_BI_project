@@ -1,6 +1,6 @@
 // frontend/src/forum/components/NotificationBell.jsx
 import { useRef, useEffect } from "react";
-import { useNotifications } from "../hooks/useNotifications";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const TYPE_ICONS = {
   post_like:            "♥",

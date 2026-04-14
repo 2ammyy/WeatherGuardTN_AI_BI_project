@@ -1,7 +1,7 @@
 // frontend/src/forum/components/PostCard.jsx
 import { useState } from "react";
 import { postsAPI } from "../api/client";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import CommentsSection from "./CommentsSection";
 
 const RISK_STYLES = {
