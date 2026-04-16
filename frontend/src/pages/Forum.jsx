@@ -1,4 +1,4 @@
-// frontend/src/pages/Forum.jsx
+﻿// frontend/src/pages/Forum.jsx
 // Main WeatherGuardTN Forum / News Feed page.
 // Shows scraped weather news with filters, reactions, comments, shares.
 // Authenticated users get personalised feed + notifications.
@@ -9,30 +9,30 @@ import NotificationBell from "../components/forum/NotificationBell";
 import { ProfileTag, ProfileSetupPrompt } from "../components/forum/ProfileTag";
 import { useAuth } from "../hooks/useAuth";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
 const RISK_FILTERS = [
-  { value: "",       label: "All",    emoji: "📋" },
-  { value: "green",  label: "Safe",   emoji: "🟢" },
-  { value: "yellow", label: "Watch",  emoji: "🟡" },
-  { value: "orange", label: "Alert",  emoji: "🟠" },
-  { value: "red",    label: "Danger", emoji: "🔴" },
-  { value: "purple", label: "Extreme",emoji: "🟣" },
+  { value: "",       label: "All",    emoji: "ðŸ“‹" },
+  { value: "green",  label: "Safe",   emoji: "ðŸŸ¢" },
+  { value: "yellow", label: "Watch",  emoji: "ðŸŸ¡" },
+  { value: "orange", label: "Alert",  emoji: "ðŸŸ " },
+  { value: "red",    label: "Danger", emoji: "ðŸ”´" },
+  { value: "purple", label: "Extreme",emoji: "ðŸŸ£" },
 ];
 
 const CATEGORY_FILTERS = [
   { value: "",               label: "All categories" },
-  { value: "meteo",          label: "🌤 Météo" },
-  { value: "alert",          label: "🚨 Alerts" },
-  { value: "impact",         label: "🌊 Impacts" },
-  { value: "infrastructure", label: "🛣 Infrastructure" },
+  { value: "meteo",          label: "ðŸŒ¤ MÃ©tÃ©o" },
+  { value: "alert",          label: "ðŸš¨ Alerts" },
+  { value: "impact",         label: "ðŸŒŠ Impacts" },
+  { value: "infrastructure", label: "ðŸ›£ Infrastructure" },
 ];
 
 const TUNISIAN_GOVS = [
   "", "Tunis","Ariana","Ben Arous","Manouba","Nabeul","Zaghouan","Bizerte",
-  "Béja","Jendouba","Le Kef","Siliana","Sousse","Monastir","Mahdia",
-  "Sfax","Kairouan","Kasserine","Sidi Bouzid","Gabès","Médenine",
-  "Tataouine","Gafsa","Tozeur","Kébili",
+  "BÃ©ja","Jendouba","Le Kef","Siliana","Sousse","Monastir","Mahdia",
+  "Sfax","Kairouan","Kasserine","Sidi Bouzid","GabÃ¨s","MÃ©denine",
+  "Tataouine","Gafsa","Tozeur","KÃ©bili",
 ];
 
 export default function Forum() {
@@ -122,10 +122,10 @@ export default function Forum() {
 
   return (
     <div className="forum-page">
-      {/* ── Top bar ── */}
+      {/* â”€â”€ Top bar â”€â”€ */}
       <div className="forum-topbar">
         <div className="forum-title-wrap">
-          <h1 className="forum-title">⛈ WeatherGuard News</h1>
+          <h1 className="forum-title">â›ˆ WeatherGuard News</h1>
           <span className="forum-subtitle">Live weather news & alerts for Tunisia</span>
         </div>
         <div className="forum-topbar-right">
@@ -137,23 +137,23 @@ export default function Forum() {
         </div>
       </div>
 
-      {/* ── Profile setup prompt (only for logged-in users without profile) ── */}
+      {/* â”€â”€ Profile setup prompt (only for logged-in users without profile) â”€â”€ */}
       {isLoggedIn && <ProfileSetupPrompt />}
 
-      {/* ── Filters ── */}
+      {/* â”€â”€ Filters â”€â”€ */}
       <div className="forum-filters">
         {/* Search */}
         <div className="search-wrap">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">ðŸ”</span>
           <input
             className="search-input"
             type="text"
-            placeholder="Search news…"
+            placeholder="Search newsâ€¦"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="search-clear" onClick={() => setSearch("")}>✕</button>
+            <button className="search-clear" onClick={() => setSearch("")}>âœ•</button>
           )}
         </div>
 
@@ -195,26 +195,26 @@ export default function Forum() {
 
           {hasActiveFilters && (
             <button className="filter-reset" onClick={handleFilterReset}>
-              ✕ Clear filters
+              âœ• Clear filters
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Stats bar ── */}
+      {/* â”€â”€ Stats bar â”€â”€ */}
       <div className="forum-stats">
         <span>{total} article{total !== 1 ? "s" : ""} found</span>
-        {hasActiveFilters && <span className="filter-active-note">· Filters active</span>}
+        {hasActiveFilters && <span className="filter-active-note">Â· Filters active</span>}
         <button className="refresh-btn" onClick={() => fetchArticles(1, false)} disabled={loading}>
-          🔄 Refresh
+          ðŸ”„ Refresh
         </button>
       </div>
 
-      {/* ── News Feed ── */}
+      {/* â”€â”€ News Feed â”€â”€ */}
       <div className="forum-feed">
         {!loading && articles.length === 0 && (
           <div className="empty-state">
-            <span className="empty-icon">🌤</span>
+            <span className="empty-icon">ðŸŒ¤</span>
             <h3>No articles found</h3>
             <p>Try adjusting your filters or check back later.</p>
             {hasActiveFilters && (
@@ -234,11 +234,11 @@ export default function Forum() {
           {loading && (
             <div className="loading-spinner">
               <span className="spinner" />
-              Loading articles…
+              Loading articlesâ€¦
             </div>
           )}
           {!loading && !hasMore && articles.length > 0 && (
-            <p className="end-of-feed">You've seen all articles · {total} total</p>
+            <p className="end-of-feed">You've seen all articles Â· {total} total</p>
           )}
         </div>
       </div>
@@ -255,7 +255,7 @@ export default function Forum() {
           min-height: 100vh;
         }
 
-        /* ── Top bar ── */
+        /* â”€â”€ Top bar â”€â”€ */
         .forum-topbar {
           display: flex;
           justify-content: space-between;
@@ -293,7 +293,7 @@ export default function Forum() {
         }
         .sign-in-link:hover { background: #e3f2fd; }
 
-        /* ── Filters ── */
+        /* â”€â”€ Filters â”€â”€ */
         .forum-filters {
           background: #fff;
           border-radius: 12px;
@@ -365,7 +365,7 @@ export default function Forum() {
           font-weight: 600;
         }
 
-        /* ── Stats bar ── */
+        /* â”€â”€ Stats bar â”€â”€ */
         .forum-stats {
           display: flex;
           align-items: center;
@@ -390,10 +390,10 @@ export default function Forum() {
         .refresh-btn:hover { border-color: #90caf9; color: #1976d2; }
         .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ── Feed ── */
+        /* â”€â”€ Feed â”€â”€ */
         .forum-feed { display: flex; flex-direction: column; }
 
-        /* ── Empty state ── */
+        /* â”€â”€ Empty state â”€â”€ */
         .empty-state {
           text-align: center;
           padding: 60px 20px;
@@ -412,7 +412,7 @@ export default function Forum() {
           font-weight: 600;
         }
 
-        /* ── Loader ── */
+        /* â”€â”€ Loader â”€â”€ */
         .scroll-loader { padding: 20px; text-align: center; }
         .loading-spinner {
           display: flex;
@@ -433,7 +433,7 @@ export default function Forum() {
         @keyframes spin { to { transform: rotate(360deg); } }
         .end-of-feed { color: #ccc; font-size: 13px; }
 
-        /* ── Responsive ── */
+        /* â”€â”€ Responsive â”€â”€ */
         @media (max-width: 480px) {
           .forum-title { font-size: 20px; }
           .forum-topbar { flex-direction: column; }

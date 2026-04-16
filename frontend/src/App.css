@@ -726,3 +726,49 @@ body {
 .nav-btn:hover {
   background: rgba(255,255,255,0.2);
 }
+/* News Widget Styles */
+.news-widget-container {
+  margin-top: 30px;
+  padding: 0 20px;
+}
+
+.news-widget-container h3 {
+  margin-bottom: 15px;
+  color: #1e293b;
+}
+
+.news-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.news-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+.governorate-tag {
+  display: inline-block;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6b7280;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .news-widget-container {
+    padding: 0 10px;
+  }
+}

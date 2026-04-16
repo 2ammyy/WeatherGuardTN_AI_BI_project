@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import axios from 'axios';
 
 const GOVERNORATES = [
-  "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
-  "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
-  "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
+  "Ariana", "BÃ©ja", "Ben Arous", "Bizerte", "GabÃ¨s", "Gafsa",
+  "Jendouba", "Kairouan", "Kasserine", "KÃ©bili", "Le Kef", "Mahdia",
+  "La Manouba", "MÃ©denine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
   "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
 ];
 
 const USER_TYPES = [
-  { value: "student_parent", label: "🎓 Student / Parent" },
-  { value: "delivery_driver", label: "🛵 Delivery Driver" },
-  { value: "fisherman", label: "🎣 Fisherman / Mariner" },
-  { value: "general_population", label: "👤 General Population" },
-  { value: "government", label: "🏛️ Government / Civil Protection / Authority" },
-  { value: "ngo", label: "🤝 NGO / Local Association" },
+  { value: "student_parent", label: "ðŸŽ“ Student / Parent" },
+  { value: "delivery_driver", label: "ðŸ›µ Delivery Driver" },
+  { value: "fisherman", label: "ðŸŽ£ Fisherman / Mariner" },
+  { value: "general_population", label: "ðŸ‘¤ General Population" },
+  { value: "government", label: "ðŸ›ï¸ Government / Civil Protection / Authority" },
+  { value: "ngo", label: "ðŸ¤ NGO / Local Association" },
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
 const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => (
   <div className="auth-card" style={{ textAlign: 'center' }}>
-    <div style={{ fontSize: 64, marginBottom: 12 }}>🎉</div>
+    <div style={{ fontSize: 64, marginBottom: 12 }}>ðŸŽ‰</div>
     <h2 style={{ color: '#10b981', marginBottom: 8 }}>Welcome, {name}!</h2>
     <p style={{ color: '#6b7280', marginBottom: 20 }}>
       Your account has been created successfully.
@@ -30,13 +30,13 @@ const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => (
       background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12,
       padding: '16px 20px', marginBottom: 20, textAlign: 'left'
     }}>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>📍 Region: <strong>{governorate}</strong></p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>📧 A welcome email has been sent to your inbox</p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>🌦️ You'll receive personalized weather alerts for your region</p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>🛡️ Stay safe with early danger predictions</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“ Region: <strong>{governorate}</strong></p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“§ A welcome email has been sent to your inbox</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸŒ¦ï¸ You'll receive personalized weather alerts for your region</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ›¡ï¸ Stay safe with early danger predictions</p>
     </div>
     <button className="auth-btn" onClick={onSwitchToLogin} style={{ width: '100%' }}>
-      Login to Dashboard →
+      Login to Dashboard â†’
     </button>
   </div>
 );
@@ -103,7 +103,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
           background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
           borderRadius: '8px', marginBottom: '12px', fontSize: '14px'
         }}>
-          ⚠️ {error}
+          âš ï¸ {error}
         </div>
       )}
 
@@ -121,21 +121,21 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
           <input type="password" name="password" placeholder="Min. 6 characters" onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>📍 Your Governorate</label>
+          <label>ðŸ“ Your Governorate</label>
           <select name="governorate" value={formData.governorate} onChange={handleChange} required style={selectStyle}>
             <option value="">-- Select your governorate --</option>
             {GOVERNORATES.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
         <div className="input-group">
-          <label>👤 Your Situation</label>
+          <label>ðŸ‘¤ Your Situation</label>
           <select name="user_type" value={formData.user_type} onChange={handleChange} required style={selectStyle}>
             <option value="">-- Select your situation --</option>
             {USER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
         <button type="submit" className="auth-btn signup" disabled={loading} style={{ marginTop: '8px' }}>
-          {loading ? '⏳ Creating account...' : '🚀 Create Account'}
+          {loading ? 'â³ Creating account...' : 'ðŸš€ Create Account'}
         </button>
       </form>
 

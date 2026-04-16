@@ -1,4 +1,4 @@
-// frontend/src/forum/api/client.js
+﻿// frontend/src/forum/api/client.js
 // Axios instance pre-configured with base URL and JWT injection
 
 import axios from "axios";
@@ -29,14 +29,14 @@ api.interceptors.response.use(
 
 export default api;
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const authAPI = {
   register: (data) => api.post("/auth/register", data).then((r) => r.data),
   login:    (data) => api.post("/auth/login",    data).then((r) => r.data),
   me:       ()     => api.get("/auth/me")              .then((r) => r.data),
 };
 
-// ── Users ────────────────────────────────────────────────────────────────────
+// â”€â”€ Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const usersAPI = {
   profile:  (username)        => api.get(`/users/${username}`).then((r) => r.data),
   update:   (data)            => api.patch("/users/me", data).then((r) => r.data),
@@ -48,7 +48,7 @@ export const usersAPI = {
   posts:    (username, params) => api.get(`/users/${username}/posts`, { params }).then((r) => r.data),
 };
 
-// ── Posts ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const postsAPI = {
   list:    (params)   => api.get("/posts", { params }).then((r) => r.data),
   get:     (id)       => api.get(`/posts/${id}`).then((r) => r.data),
@@ -62,7 +62,7 @@ export const postsAPI = {
   report:  (id, reason) => api.post(`/posts/${id}/report`, { reason }).then((r) => r.data),
 };
 
-// ── Comments ──────────────────────────────────────────────────────────────────
+// â”€â”€ Comments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const commentsAPI = {
   list:        (postId, params) => api.get(`/posts/${postId}/comments`, { params }).then((r) => r.data),
   create:      (postId, data)   => api.post(`/posts/${postId}/comments`, data).then((r) => r.data),
@@ -72,10 +72,11 @@ export const commentsAPI = {
   report:      (id, reason)     => api.post(`/comments/${id}/report`, { reason }).then((r) => r.data),
 };
 
-// ── Notifications ─────────────────────────────────────────────────────────────
+// â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const notifsAPI = {
   list:       (params) => api.get("/notifications", { params }).then((r) => r.data),
   unreadCount: ()      => api.get("/notifications/unread-count").then((r) => r.data),
   readAll:    ()       => api.post("/notifications/read-all").then((r) => r.data),
   read:       (id)     => api.post(`/notifications/${id}/read`).then((r) => r.data),
 };
+

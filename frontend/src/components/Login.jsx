@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const GOVERNORATES = [
-  "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
-  "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
-  "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
+  "Ariana", "BÃ©ja", "Ben Arous", "Bizerte", "GabÃ¨s", "Gafsa",
+  "Jendouba", "Kairouan", "Kasserine", "KÃ©bili", "Le Kef", "Mahdia",
+  "La Manouba", "MÃ©denine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
   "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
 ];
 
 const USER_TYPES = [
-  { value: "student_parent", label: "🎓 Student / Parent" },
-  { value: "delivery_driver", label: "🛵 Delivery Driver" },
-  { value: "fisherman", label: "🎣 Fisherman / Mariner" },
-  { value: "general_population", label: "👤 General Population" },
-  { value: "government", label: "🏛️ Government / Civil Protection / Authority" },
-  { value: "ngo", label: "🤝 NGO / Local Association" },
+  { value: "student_parent", label: "ðŸŽ“ Student / Parent" },
+  { value: "delivery_driver", label: "ðŸ›µ Delivery Driver" },
+  { value: "fisherman", label: "ðŸŽ£ Fisherman / Mariner" },
+  { value: "general_population", label: "ðŸ‘¤ General Population" },
+  { value: "government", label: "ðŸ›ï¸ Government / Civil Protection / Authority" },
+  { value: "ngo", label: "ðŸ¤ NGO / Local Association" },
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
@@ -55,7 +55,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         token: response.credential,
       });
       const user = res.data;
-      // New user — no profile yet → show completion form
+      // New user â€” no profile yet â†’ show completion form
       if (!user.governorate || !user.user_type) {
         setGoogleToken(response.credential);
         setGoogleProfile(user);
@@ -119,20 +119,20 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             <img src={googleProfile.picture} alt="profile"
               style={{ width: 64, height: 64, borderRadius: '50%', marginBottom: 8 }} />
           )}
-          <h2>👋 Welcome, {googleProfile?.name}!</h2>
-          <p>One last step — tell us about yourself so we can personalize your alerts</p>
+          <h2>ðŸ‘‹ Welcome, {googleProfile?.name}!</h2>
+          <p>One last step â€” tell us about yourself so we can personalize your alerts</p>
         </div>
 
         {error && (
           <div style={{
             background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
             borderRadius: '8px', marginBottom: '12px', fontSize: '14px'
-          }}>⚠️ {error}</div>
+          }}>âš ï¸ {error}</div>
         )}
 
         <form onSubmit={handleProfileCompletion}>
           <div className="input-group">
-            <label>📍 Your Governorate</label>
+            <label>ðŸ“ Your Governorate</label>
             <select value={profileData.governorate}
               onChange={(e) => setProfileData({ ...profileData, governorate: e.target.value })}
               required style={selectStyle}>
@@ -142,7 +142,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
           </div>
 
           <div className="input-group">
-            <label>👤 Your Situation</label>
+            <label>ðŸ‘¤ Your Situation</label>
             <select value={profileData.user_type}
               onChange={(e) => setProfileData({ ...profileData, user_type: e.target.value })}
               required style={selectStyle}>
@@ -152,7 +152,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
           </div>
 
           <button type="submit" className="auth-btn" disabled={loading} style={{ marginTop: '8px' }}>
-            {loading ? '⏳ Saving...' : '🚀 Enter Dashboard'}
+            {loading ? 'â³ Saving...' : 'ðŸš€ Enter Dashboard'}
           </button>
         </form>
       </div>
@@ -169,7 +169,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         <div style={{
           background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
           borderRadius: '8px', marginBottom: '12px', fontSize: '14px'
-        }}>⚠️ {error}</div>
+        }}>âš ï¸ {error}</div>
       )}
 
       <form onSubmit={handleSubmit}>
@@ -184,7 +184,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             onChange={(e) => { setPassword(e.target.value); setError(''); }} required />
         </div>
         <button type="submit" className="auth-btn" disabled={loading}>
-          {loading ? '⏳ Signing in...' : 'Sign In'}
+          {loading ? 'â³ Signing in...' : 'Sign In'}
         </button>
       </form>
 

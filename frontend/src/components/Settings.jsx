@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import axios from 'axios';
 
 const GOVERNORATES = [
-  "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
-  "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
-  "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
+  "Ariana", "BÃ©ja", "Ben Arous", "Bizerte", "GabÃ¨s", "Gafsa",
+  "Jendouba", "Kairouan", "Kasserine", "KÃ©bili", "Le Kef", "Mahdia",
+  "La Manouba", "MÃ©denine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
   "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
 ];
 
 const USER_TYPES = [
-  { value: "student_parent", label: "🎓 Student / Parent" },
-  { value: "delivery_driver", label: "🛵 Delivery Driver" },
-  { value: "fisherman", label: "🎣 Fisherman / Mariner" },
-  { value: "general_population", label: "👤 General Population" },
-  { value: "government", label: "🏛️ Government / Civil Protection / Authority" },
-  { value: "ngo", label: "🤝 NGO / Local Association" },
+  { value: "student_parent", label: "ðŸŽ“ Student / Parent" },
+  { value: "delivery_driver", label: "ðŸ›µ Delivery Driver" },
+  { value: "fisherman", label: "ðŸŽ£ Fisherman / Mariner" },
+  { value: "general_population", label: "ðŸ‘¤ General Population" },
+  { value: "government", label: "ðŸ›ï¸ Government / Civil Protection / Authority" },
+  { value: "ngo", label: "ðŸ¤ NGO / Local Association" },
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
-// ─── DELETE CONFIRMATION MODAL ───────────────────────────────────────────────
+// â”€â”€â”€ DELETE CONFIRMATION MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DeleteModal = ({ user, onConfirm, onCancel }) => {
   const [typed, setTyped] = useState('');
   const expected = user?.email || '';
@@ -36,7 +36,7 @@ const DeleteModal = ({ user, onConfirm, onCancel }) => {
         maxWidth: 480, width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>⚠️</div>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>âš ï¸</div>
           <h2 style={{ color: '#dc2626', margin: 0 }}>Delete Account</h2>
         </div>
 
@@ -89,7 +89,7 @@ const DeleteModal = ({ user, onConfirm, onCancel }) => {
               fontSize: 14, fontWeight: 700, transition: 'background 0.2s'
             }}
           >
-            🗑️ Delete My Account
+            ðŸ—‘ï¸ Delete My Account
           </button>
         </div>
       </div>
@@ -97,7 +97,7 @@ const DeleteModal = ({ user, onConfirm, onCancel }) => {
   );
 };
 
-// ─── MAIN SETTINGS COMPONENT ─────────────────────────────────────────────────
+// â”€â”€â”€ MAIN SETTINGS COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Settings = ({ user, onLogout, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -118,7 +118,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
 
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // ── Profile Update ──────────────────────────────────────────────────────────
+  // â”€â”€ Profile Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleProfileSave = async (e) => {
     e.preventDefault();
     setProfileLoading(true);
@@ -131,7 +131,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
         user_type: profileForm.user_type,
       });
       onUserUpdate({ ...user, ...res.data });
-      setProfileMsg({ type: 'success', text: '✅ Profile updated successfully!' });
+      setProfileMsg({ type: 'success', text: 'âœ… Profile updated successfully!' });
     } catch (err) {
       setProfileMsg({ type: 'error', text: err.response?.data?.detail || 'Update failed.' });
     } finally {
@@ -139,15 +139,15 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
     }
   };
 
-  // ── Preferences Save ───────────────────────────────────────────────────────
+  // â”€â”€ Preferences Save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handlePrefSave = () => {
     localStorage.setItem('theme', theme);
     localStorage.setItem('language', language);
-    setPrefMsg({ type: 'success', text: '✅ Preferences saved! (will be applied on next update)' });
+    setPrefMsg({ type: 'success', text: 'âœ… Preferences saved! (will be applied on next update)' });
     setTimeout(() => setPrefMsg(null), 3000);
   };
 
-  // ── Account Delete ─────────────────────────────────────────────────────────
+  // â”€â”€ Account Delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
     try {
@@ -163,7 +163,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
     }
   };
 
-  // ── Styles ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const tabStyle = (tab) => ({
     padding: '10px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
     fontWeight: 600, fontSize: 14, transition: 'all 0.2s',
@@ -206,7 +206,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1f2937' }}>
-            ⚙️ Account Settings
+            âš™ï¸ Account Settings
           </h1>
           <p style={{ color: '#6b7280', margin: '4px 0 0' }}>
             Manage your profile and preferences
@@ -219,17 +219,17 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
           background: '#f3f4f6', padding: 4, borderRadius: 10
         }}>
           <button style={tabStyle('profile')} onClick={() => setActiveTab('profile')}>
-            👤 Profile
+            ðŸ‘¤ Profile
           </button>
           <button style={tabStyle('preferences')} onClick={() => setActiveTab('preferences')}>
-            🎨 Preferences
+            ðŸŽ¨ Preferences
           </button>
           <button style={tabStyle('danger')} onClick={() => setActiveTab('danger')}>
-            🗑️ Danger Zone
+            ðŸ—‘ï¸ Danger Zone
           </button>
         </div>
 
-        {/* ── PROFILE TAB ── */}
+        {/* â”€â”€ PROFILE TAB â”€â”€ */}
         {activeTab === 'profile' && (
           <div style={{
             background: 'white', borderRadius: 16, padding: 28,
@@ -256,7 +256,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
                   fontSize: 12, marginTop: 4, color: '#2563eb',
                   background: '#eff6ff', padding: '2px 8px', borderRadius: 20, display: 'inline-block'
                 }}>
-                  {user?.google_id ? '🔗 Google Account' : '📧 Email Account'}
+                  {user?.google_id ? 'ðŸ”— Google Account' : 'ðŸ“§ Email Account'}
                 </div>
               </div>
             </div>
@@ -283,7 +283,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>📍 Governorate</label>
+                <label style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>ðŸ“ Governorate</label>
                 <select
                   value={profileForm.governorate}
                   onChange={(e) => setProfileForm({ ...profileForm, governorate: e.target.value })}
@@ -295,7 +295,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>👤 Your Situation</label>
+                <label style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>ðŸ‘¤ Your Situation</label>
                 <select
                   value={profileForm.user_type}
                   onChange={(e) => setProfileForm({ ...profileForm, user_type: e.target.value })}
@@ -311,19 +311,19 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
                 background: '#2563eb', color: 'white', fontSize: 15,
                 fontWeight: 700, cursor: profileLoading ? 'not-allowed' : 'pointer'
               }}>
-                {profileLoading ? '⏳ Saving...' : '💾 Save Changes'}
+                {profileLoading ? 'â³ Saving...' : 'ðŸ’¾ Save Changes'}
               </button>
             </form>
           </div>
         )}
 
-        {/* ── PREFERENCES TAB ── */}
+        {/* â”€â”€ PREFERENCES TAB â”€â”€ */}
         {activeTab === 'preferences' && (
           <div style={{
             background: 'white', borderRadius: 16, padding: 28,
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
           }}>
-            <h3 style={{ margin: '0 0 20px', color: '#1f2937' }}>🎨 Display Preferences</h3>
+            <h3 style={{ margin: '0 0 20px', color: '#1f2937' }}>ðŸŽ¨ Display Preferences</h3>
 
             {msgBox(prefMsg)}
 
@@ -331,18 +331,18 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
               background: '#fefce8', border: '1px solid #fde047',
               borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#854d0e'
             }}>
-              🚧 Theme and language features are coming soon. Your selection will be saved and applied in the next update.
+              ðŸš§ Theme and language features are coming soon. Your selection will be saved and applied in the next update.
             </div>
 
             {/* Theme */}
             <div style={{ marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 12 }}>
-                🌗 Theme
+                ðŸŒ— Theme
               </label>
               <div style={{ display: 'flex', gap: 12 }}>
                 {[
-                  { value: 'light', label: '☀️ Light', bg: '#ffffff', border: '#d1d5db' },
-                  { value: 'dark', label: '🌙 Dark', bg: '#1f2937', border: '#374151' },
+                  { value: 'light', label: 'â˜€ï¸ Light', bg: '#ffffff', border: '#d1d5db' },
+                  { value: 'dark', label: 'ðŸŒ™ Dark', bg: '#1f2937', border: '#374151' },
                 ].map(opt => (
                   <div
                     key={opt.value}
@@ -365,13 +365,13 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
             {/* Language */}
             <div style={{ marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 12 }}>
-                🌍 Language
+                ðŸŒ Language
               </label>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 {[
-                  { value: 'en', label: '🇬🇧 English' },
-                  { value: 'fr', label: '🇫🇷 Français' },
-                  { value: 'ar', label: '🇹🇳 العربية' },
+                  { value: 'en', label: 'ðŸ‡¬ðŸ‡§ English' },
+                  { value: 'fr', label: 'ðŸ‡«ðŸ‡· FranÃ§ais' },
+                  { value: 'ar', label: 'ðŸ‡¹ðŸ‡³ Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' },
                 ].map(opt => (
                   <div
                     key={opt.value}
@@ -397,19 +397,19 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
               background: '#2563eb', color: 'white', fontSize: 15,
               fontWeight: 700, cursor: 'pointer'
             }}>
-              💾 Save Preferences
+              ðŸ’¾ Save Preferences
             </button>
           </div>
         )}
 
-        {/* ── DANGER ZONE TAB ── */}
+        {/* â”€â”€ DANGER ZONE TAB â”€â”€ */}
         {activeTab === 'danger' && (
           <div style={{
             background: 'white', borderRadius: 16, padding: 28,
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             border: '1px solid #fecaca'
           }}>
-            <h3 style={{ margin: '0 0 8px', color: '#dc2626' }}>⚠️ Danger Zone</h3>
+            <h3 style={{ margin: '0 0 8px', color: '#dc2626' }}>âš ï¸ Danger Zone</h3>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 24 }}>
               These actions are irreversible. Please proceed with caution.
             </p>
@@ -419,7 +419,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
             }}>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>
-                  🗑️ Delete this account
+                  ðŸ—‘ï¸ Delete this account
                 </div>
                 <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
                   Once deleted, your account and all associated data will be permanently removed.

@@ -1,4 +1,4 @@
-import traceback
+﻿import traceback
 import os
 from contextlib import asynccontextmanager
 
@@ -14,6 +14,7 @@ from app.models import User
 from app.api.routes import router
 from app.auth.google_auth import router as google_auth_router
 from app.forum.routes import router as forum_router
+from app.routers import news
 from app.scraper.scheduler import run_all_scrapers, start_scheduler, stop_scheduler
 
 MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'http://mlflow:5000')
@@ -21,12 +22,12 @@ EXPERIMENT_NAME = 'WeatherGuardTN'
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
-    print('🚀 Démarrage de WeatherGuardTN API...')
+    print('ðŸš€ DÃ©marrage de WeatherGuardTN API...')
     try:
         Base.metadata.create_all(bind=engine)
-        print('✅ Tables de la base de données initialisées.')
+        print('âœ… Tables de la base de donnÃ©es initialisÃ©es.')
     except Exception as e:
-        print(f'❌ Erreur lors de la création des tables : {e}')
+        print(f'âŒ Erreur lors de la crÃ©ation des tables : {e}')
 
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     try:
@@ -35,12 +36,12 @@ async def lifespan(fastapi_app: FastAPI):
             mlflow.create_experiment(EXPERIMENT_NAME)
         mlflow.set_experiment(EXPERIMENT_NAME)
         mlflow.search_experiments()
-        print('✅ Connexion à MLflow établie')
+        print('âœ… Connexion Ã  MLflow Ã©tablie')
     except Exception as e:
-        print(f'⚠️ MLflow non connecté ou erreur : {e}')
+        print(f'âš ï¸ MLflow non connectÃ© ou erreur : {e}')
 
     yield
-    print('👋 Arrêt de WeatherGuardTN API...')
+    print('ðŸ‘‹ ArrÃªt de WeatherGuardTN API...')
 
 fastapi_app = FastAPI(
     title='WeatherGuardTN API',
@@ -81,6 +82,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 fastapi_app.include_router(router, prefix='/api')
 fastapi_app.include_router(google_auth_router, prefix='/api/auth', tags=['auth'])
 fastapi_app.include_router(forum_router, prefix='/api/forum', tags=['forum'])
+fastapi_app.include_router(news.router)
+# Removed - using news router instead
 
 @fastapi_app.get('/')
 def root():
@@ -116,3 +119,6 @@ async def shutdown():
 # Import public news routes
 
 # Include public news routes
+
+
+

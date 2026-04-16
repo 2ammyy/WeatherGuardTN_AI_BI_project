@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -11,6 +11,7 @@ import Signup from './components/Signup';
 import { fetchHazards } from './services/hazardService';
 import Settings from './components/Settings';
 import ForumPage from './forum/pages/ForumPage';
+import NewsWidget from './components/NewsWidget';
 
 function App() {
   // ==================== AUTH STATE ====================
@@ -34,11 +35,11 @@ function App() {
 
   // ==================== RISK CONFIGURATION (Fixed Encoding) ====================
   const riskLevels = {
-    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '??', label: 'SAFE', description: 'Normal conditions' },
-    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '??', label: 'WATCH', description: 'Be aware' },
-    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '??', label: 'WARN', description: 'Prepare for disruptions' },
-    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '??', label: 'ALERT', description: 'Take action' },
-    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '??', label: 'EVAC', description: 'Emergency response' }
+    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '🔴', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
   };
 
   const cityCoordinates = {
@@ -197,11 +198,11 @@ function App() {
           </div>
           <div className="user-controls">
             <button onClick={() => setShowForum(true)} className="logout-btn" style={{background:"#1D9E75",color:"white",border:"none",marginRight:"8px"}}>Forum</button>
-             <button onClick={() => setShowSettings(true)} className="logout-btn">?? Settings</button>
+             <button onClick={() => setShowSettings(true)} className="logout-btn">⚙️ Settings</button>
              <span className="user-name"><i className="fas fa-user"></i> {user.name || 'User'}</span>
              <button onClick={handleLogout} className="logout-btn">Logout</button>
              <div className={`api-status ${apiStatus}`}>
-               {apiStatus === 'connected' ? '?? Live' : '?? Offline'}
+               {apiStatus === 'connected' ? '🟢 Live' : '🔴 Offline'}
              </div>
           </div>
         </div>
@@ -266,8 +267,17 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* News Section */}
+      <div style={{ marginTop: '30px', padding: '0 20px' }}>
+        <NewsWidget />
+      </div>
+
       <RouteChecker hazards={hazards} />
-      <footer className="footer"><p><i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy</p></footer>
+      
+      <footer className="footer">
+        <p><i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy</p>
+      </footer>
       
       {showSettings && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999, overflowY: "auto" }}>
@@ -278,7 +288,7 @@ function App() {
               width: 36, height: 36, fontSize: 18, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-            }}>?</button>
+            }}>×</button>
             <Settings
               user={user}
               onLogout={handleLogout}

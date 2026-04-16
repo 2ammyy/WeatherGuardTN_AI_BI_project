@@ -1,12 +1,12 @@
-// frontend/src/hooks/useAuth.js
+﻿// frontend/src/hooks/useAuth.js
 // Reads the existing JWT session from localStorage/context.
-// No re-login required — the user's token persists across pages.
+// No re-login required â€” the user's token persists across pages.
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
-// ─── Context ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setUser(data))
       .catch(() => {
-        // Token invalid/expired — clear it
+        // Token invalid/expired â€” clear it
         localStorage.removeItem("wg_token");
         setToken(null);
       })
@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Hook â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
