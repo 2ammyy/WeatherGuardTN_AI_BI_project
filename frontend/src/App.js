@@ -32,14 +32,15 @@ function App() {
   const [showNeighbors, setShowNeighbors] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showForum, setShowForum] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // ==================== RISK CONFIGURATION (Fixed Encoding) ====================
+  // ==================== RISK CONFIGURATION ====================
   const riskLevels = {
-    'GREEN': { color: '#10b981', light: '#d1fae5', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
-    'YELLOW': { color: '#f59e0b', light: '#fef3c7', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
-    'ORANGE': { color: '#f97316', light: '#ffedd5', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
-    'RED': { color: '#ef4444', light: '#fee2e2', emoji: '🔴', label: 'ALERT', description: 'Take action' },
-    'PURPLE': { color: '#8b5cf6', light: '#ede9fe', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
+    'GREEN': { color: '#22c55e', light: '#22c55e20', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#eab308', light: '#eab30820', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#f9731620', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#ef444420', emoji: '🔴', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#a855f7', light: '#a855f720', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
   };
 
   const cityCoordinates = {
@@ -155,14 +156,21 @@ function App() {
     setShowSignup(false);
   };
 
-  const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#999';
+  const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#64748b';
   const getRiskEmoji = (riskLevel) => riskLevels[riskLevel]?.emoji || '?';
 
   // ==================== CONDITIONAL RENDER ====================
   
   if (!user) {
     return (
-      <div className="auth-wrapper">
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}>
         {showSignup ? (
           <Signup 
             onSignupSuccess={() => setShowSignup(false)} 
@@ -181,44 +189,305 @@ function App() {
   if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} />;
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="header-content">
-          <div className="logo">
-            <i className="fas fa-cloud-sun-rain"></i>
-            <h1>WeatherGuard<span>TN</span></h1>
+    <div style={{
+      minHeight: '100vh',
+      background: '#020617',
+      color: 'white',
+      fontFamily: 'sans-serif',
+    }}>
+      <style>
+        {`
+          @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}
+      </style>
+
+      {/* Header */}
+      <header style={{
+        background: 'rgba(11, 17, 32, 0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #1e293b',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        <div style={{
+          maxWidth: 1400,
+          margin: '0 auto',
+          padding: '0 24px',
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 18,
+            }}>
+              🌦️
+            </div>
+            <div>
+              <h1 style={{
+                fontSize: 18,
+                fontWeight: 700,
+                margin: 0,
+                background: 'linear-gradient(135deg, #fff 0%, #9FE1CB 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                WeatherGuard<span style={{ color: '#1D9E75', background: 'none', WebkitTextFillColor: '#1D9E75' }}>TN</span>
+              </h1>
+              <p style={{ fontSize: 10, color: '#64748b', margin: 0 }}>AI-Powered Weather Intelligence</p>
+            </div>
           </div>
-          <div className="date-selector">
+
+          {/* Date Selector */}
+          <div style={{
+            background: '#1e293b',
+            padding: '6px 12px',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <span style={{ fontSize: 14 }}>📅</span>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'white',
+                fontSize: 13,
+                outline: 'none',
+                cursor: 'pointer',
+              }}
             />
           </div>
-          <div className="user-controls">
-            <button onClick={() => setShowForum(true)} className="logout-btn" style={{background:"#1D9E75",color:"white",border:"none",marginRight:"8px"}}>Forum</button>
-             <button onClick={() => setShowSettings(true)} className="logout-btn">⚙️ Settings</button>
-             <span className="user-name"><i className="fas fa-user"></i> {user.name || 'User'}</span>
-             <button onClick={handleLogout} className="logout-btn">Logout</button>
-             <div className={`api-status ${apiStatus}`}>
-               {apiStatus === 'connected' ? '🟢 Live' : '🔴 Offline'}
-             </div>
+
+          {/* User Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={() => setShowForum(true)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+            >
+              <span>💬</span> Forum
+            </button>
+
+            <button
+              onClick={() => setShowSettings(true)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 10,
+                background: 'transparent',
+                border: '1px solid #334155',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#1D9E75';
+                e.target.style.color = '#1D9E75';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#334155';
+                e.target.style.color = '#94a3b8';
+              }}
+            >
+              ⚙️ Settings
+            </button>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '4px 8px',
+              background: '#1e293b',
+              borderRadius: 20,
+            }}>
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+              }}>
+                👤
+              </div>
+              <span style={{ fontSize: 13, color: 'white' }}>{user.name || 'User'}</span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 10,
+                background: 'transparent',
+                border: '1px solid #ef4444',
+                color: '#ef4444',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#ef4444';
+                e.target.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.color = '#ef4444';
+              }}
+            >
+              Logout
+            </button>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: 20,
+              background: apiStatus === 'connected' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${apiStatus === 'connected' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+            }}>
+              <div style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: apiStatus === 'connected' ? '#22c55e' : '#ef4444',
+                animation: apiStatus === 'connected' ? 'pulse 1.5s ease-in-out infinite' : 'none',
+              }} />
+              <span style={{ fontSize: 11, color: apiStatus === 'connected' ? '#4ade80' : '#f87171' }}>
+                {apiStatus === 'connected' ? 'Live' : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
-      {error && <div className="error-banner"><strong>{error}</strong></div>}
+      {/* Error Banner */}
+      {error && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#f87171',
+          padding: '12px 20px',
+          textAlign: 'center',
+          fontSize: 13,
+          animation: 'slideDown 0.3s ease-out',
+        }}>
+          <strong>⚠️ {error}</strong>
+        </div>
+      )}
 
-      <div className="dashboard-grid">
-        <div className="city-panel">
-          <h3><i className="fas fa-map-marker-alt"></i> Governorates</h3>
-          <div className="city-list">
+      {/* Dashboard Grid */}
+      <div style={{
+        maxWidth: 1400,
+        margin: '0 auto',
+        padding: '24px',
+        display: 'grid',
+        gridTemplateColumns: '280px 1fr 320px',
+        gap: 20,
+      }}>
+        {/* City Panel */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)',
+          borderRadius: 16,
+          border: '1px solid #1e293b',
+          padding: '20px',
+          height: 'fit-content',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 20 }}>📍</span>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Governorates</h3>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            maxHeight: 500,
+            overflowY: 'auto',
+          }}>
             {governorates.map(city => (
-              <button key={city} className={`city-btn ${selectedCities.includes(city) ? 'selected' : ''}`} onClick={() => toggleCity(city)}>
-                <span className="city-name">{city}</span>
+              <button
+                key={city}
+                onClick={() => toggleCity(city)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: `1px solid ${selectedCities.includes(city) ? '#1D9E75' : '#1e293b'}`,
+                  background: selectedCities.includes(city) ? 'rgba(29, 158, 117, 0.1)' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectedCities.includes(city)) {
+                    e.currentTarget.style.borderColor = '#334155';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!selectedCities.includes(city)) {
+                    e.currentTarget.style.borderColor = '#1e293b';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <span style={{ fontSize: 13, color: 'white' }}>{city}</span>
                 {forecastData[city] && (
-                  <span className="city-risk" style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: getRiskColor(forecastData[city].risk_level),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                  }}>
                     {getRiskEmoji(forecastData[city].risk_level)}
                   </span>
                 )}
@@ -227,40 +496,129 @@ function App() {
           </div>
         </div>
 
-        <div className="map-panel">
-          <div className="map-header">
-            <h3><i className="fas fa-map"></i> Vigilance Map</h3>
-            <label className="neighbor-toggle">
-              <input type="checkbox" checked={showNeighbors} onChange={(e) => setShowNeighbors(e.target.checked)} />
+        {/* Map Panel */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)',
+          borderRadius: 16,
+          border: '1px solid #1e293b',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid #1e293b',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🗺️</span>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Vigilance Map</h3>
+            </div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: '#94a3b8',
+              cursor: 'pointer',
+            }}>
+              <input
+                type="checkbox"
+                checked={showNeighbors}
+                onChange={(e) => setShowNeighbors(e.target.checked)}
+                style={{
+                  width: 16,
+                  height: 16,
+                  cursor: 'pointer',
+                  accentColor: '#1D9E75',
+                }}
+              />
               Show Neighbors
             </label>
           </div>
-          <VigilanceMap selectedCities={selectedCities} forecastData={forecastData} hazards={hazards} showNeighbors={showNeighbors} onCityClick={toggleCity} />
+          <VigilanceMap
+            selectedCities={selectedCities}
+            forecastData={forecastData}
+            hazards={hazards}
+            showNeighbors={showNeighbors}
+            onCityClick={toggleCity}
+          />
           <HazardLegend />
         </div>
 
-        <div className="risk-panel">
-          <h3><i className="fas fa-chart-line"></i> Risk Overview</h3>
+        {/* Risk Panel */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)',
+          borderRadius: 16,
+          border: '1px solid #1e293b',
+          padding: '20px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Risk Overview</h3>
+          </div>
+
           {loading ? (
-            <div className="loading"><div className="spinner"></div><p>Loading forecasts...</p></div>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                border: '3px solid rgba(29, 158, 117, 0.2)',
+                borderTopColor: '#1D9E75',
+                borderRadius: '50%',
+                margin: '0 auto 12px',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <p style={{ color: '#64748b', fontSize: 13 }}>Loading forecasts...</p>
+            </div>
           ) : (
-            <div className="risk-grid">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {selectedCities.map(city => (
-                <div key={city} className="risk-card">
+                <div
+                  key={city}
+                  style={{
+                    padding: '14px',
+                    borderRadius: 12,
+                    background: forecastData[city] ? riskLevels[forecastData[city].risk_level]?.light || 'rgba(100, 116, 139, 0.1)' : 'rgba(100, 116, 139, 0.05)',
+                    border: `1px solid ${forecastData[city] ? getRiskColor(forecastData[city].risk_level) + '40' : '#1e293b'}`,
+                  }}
+                >
                   {forecastData[city] ? (
                     <>
-                      <div className="risk-card-header">
-                        <h4>{city}</h4>
-                        <span className="risk-badge" style={{ backgroundColor: getRiskColor(forecastData[city].risk_level) }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'white' }}>{city}</h4>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          background: getRiskColor(forecastData[city].risk_level),
+                          color: 'white',
+                        }}>
                           {forecastData[city].risk_level}
                         </span>
                       </div>
-                      <div className="weather-icons">
-                        <div className="weather-icon"><i className="fas fa-thermometer-half"></i><span>{forecastData[city].weather?.temp_avg || 'N/A'}°C</span></div>
-                        <div className="weather-icon"><i className="fas fa-wind"></i><span>{forecastData[city].weather?.wind_speed || 'N/A'} km/h</span></div>
+                      <div style={{ display: 'flex', gap: 16, justifyContent: 'space-around' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, marginBottom: 4 }}>🌡️</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>Temp</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.temp_avg || 'N/A'}°C</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, marginBottom: 4 }}>💨</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>Wind</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.wind_speed || 'N/A'} km/h</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, marginBottom: 4 }}>💧</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>Humidity</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.humidity || 'N/A'}%</div>
+                        </div>
                       </div>
                     </>
-                  ) : <p>No data for {city}</p>}
+                  ) : (
+                    <p style={{ color: '#64748b', fontSize: 13, textAlign: 'center', margin: 0 }}>No data for {city}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -269,26 +627,72 @@ function App() {
       </div>
 
       {/* News Section */}
-      <div style={{ marginTop: '30px', padding: '0 20px' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px 24px' }}>
         <NewsWidget />
       </div>
 
-      <RouteChecker hazards={hazards} />
-      
-      <footer className="footer">
-        <p><i className="fas fa-heart"></i> Protecting lives · Model: 99.58% accuracy</p>
+      {/* Route Checker */}
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px 24px' }}>
+        <RouteChecker hazards={hazards} />
+      </div>
+
+      {/* Footer */}
+      <footer style={{
+        background: '#0b1120',
+        borderTop: '1px solid #1e293b',
+        padding: '20px',
+        textAlign: 'center',
+      }}>
+        <p style={{ margin: 0, fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <span>❤️</span> Protecting lives · Model: 99.58% accuracy
+        </p>
       </footer>
-      
+
+      {/* Settings Modal */}
       {showSettings && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999, overflowY: "auto" }}>
-          <div style={{ position: "relative" }}>
-            <button onClick={() => setShowSettings(false)} style={{
-              position: "fixed", top: 16, right: 24, zIndex: 1000,
-              background: "white", border: "1px solid #d1d5db", borderRadius: "50%",
-              width: 36, height: 36, fontSize: 18, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-            }}>×</button>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 999,
+          overflowY: 'auto',
+          animation: 'fadeIn 0.2s ease-out',
+        }}>
+          <div style={{ position: 'relative', minHeight: '100vh' }}>
+            <button
+              onClick={() => setShowSettings(false)}
+              style={{
+                position: 'fixed',
+                top: 20,
+                right: 20,
+                zIndex: 1000,
+                background: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '50%',
+                width: 40,
+                height: 40,
+                fontSize: 20,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#94a3b8',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#ef4444';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = '#ef4444';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = '#1e293b';
+                e.target.style.color = '#94a3b8';
+                e.target.style.borderColor = '#334155';
+              }}
+            >
+              ×
+            </button>
             <Settings
               user={user}
               onLogout={handleLogout}
@@ -297,6 +701,19 @@ function App() {
           </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+          }
+        `}
+      </style>
     </div>
   );
 }

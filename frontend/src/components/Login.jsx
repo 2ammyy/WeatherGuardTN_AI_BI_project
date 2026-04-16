@@ -2,19 +2,19 @@
 import axios from 'axios';
 
 const GOVERNORATES = [
-  "Ariana", "BÃ©ja", "Ben Arous", "Bizerte", "GabÃ¨s", "Gafsa",
-  "Jendouba", "Kairouan", "Kasserine", "KÃ©bili", "Le Kef", "Mahdia",
-  "La Manouba", "MÃ©denine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
+  "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
+  "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
+  "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
   "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
 ];
 
 const USER_TYPES = [
-  { value: "student_parent", label: "ðŸŽ“ Student / Parent" },
-  { value: "delivery_driver", label: "ðŸ›µ Delivery Driver" },
-  { value: "fisherman", label: "ðŸŽ£ Fisherman / Mariner" },
-  { value: "general_population", label: "ðŸ‘¤ General Population" },
-  { value: "government", label: "ðŸ›ï¸ Government / Civil Protection / Authority" },
-  { value: "ngo", label: "ðŸ¤ NGO / Local Association" },
+  { value: "student_parent", label: "🎓 Student / Parent", icon: "🎓" },
+  { value: "delivery_driver", label: "🛵 Delivery Driver", icon: "🛵" },
+  { value: "fisherman", label: "🎣 Fisherman / Mariner", icon: "🎣" },
+  { value: "general_population", label: "👤 General Population", icon: "👤" },
+  { value: "government", label: "🏛️ Government / Civil Protection", icon: "🏛️" },
+  { value: "ngo", label: "🤝 NGO / Local Association", icon: "🤝" },
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
@@ -55,7 +55,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         token: response.credential,
       });
       const user = res.data;
-      // New user â€” no profile yet â†’ show completion form
+      // New user — no profile yet → show completion form
       if (!user.governorate || !user.user_type) {
         setGoogleToken(response.credential);
         setGoogleProfile(user);
@@ -104,55 +104,165 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 12,
+    border: '1px solid #334155',
+    background: '#1e293b',
+    fontSize: 14,
+    color: 'white',
+    outline: 'none',
+    transition: 'all 0.2s',
+    boxSizing: 'border-box',
+  };
+
   const selectStyle = {
-    width: '100%', padding: '10px 12px', borderRadius: '8px',
-    border: '1px solid #d1d5db', fontSize: '14px',
-    background: 'white', cursor: 'pointer'
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 12,
+    border: '1px solid #334155',
+    background: '#1e293b',
+    fontSize: 14,
+    color: 'white',
+    cursor: 'pointer',
+    outline: 'none',
+    transition: 'all 0.2s',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#94a3b8',
+    marginBottom: 6,
+    letterSpacing: '0.3px',
   };
 
   // ==================== PROFILE COMPLETION SCREEN (Google new users) ====================
   if (showProfileCompletion) {
     return (
-      <div className="auth-card">
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+      <div style={{
+        background: "linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)",
+        borderRadius: 24,
+        border: "1px solid rgba(29, 158, 117, 0.2)",
+        padding: "2rem",
+        maxWidth: 480,
+        margin: "0 auto",
+        animation: "slideUp 0.3s ease-out",
+      }}>
+        <style>
+          {`
+            @keyframes slideUp {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
           {googleProfile?.picture && (
-            <img src={googleProfile.picture} alt="profile"
-              style={{ width: 64, height: 64, borderRadius: '50%', marginBottom: 8 }} />
+            <img 
+              src={googleProfile.picture} 
+              alt="profile"
+              style={{ 
+                width: 80, 
+                height: 80, 
+                borderRadius: '50%', 
+                marginBottom: 12,
+                border: '2px solid #1D9E75',
+                padding: 2,
+              }} 
+            />
           )}
-          <h2>ðŸ‘‹ Welcome, {googleProfile?.name}!</h2>
-          <p>One last step â€” tell us about yourself so we can personalize your alerts</p>
+          <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', marginBottom: 8 }}>
+            👋 Welcome, {googleProfile?.name}!
+          </h2>
+          <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+            One last step — tell us about yourself so we can personalize your alerts
+          </p>
         </div>
 
         {error && (
           <div style={{
-            background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
-            borderRadius: '8px', marginBottom: '12px', fontSize: '14px'
-          }}>âš ï¸ {error}</div>
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#f87171',
+            padding: '12px 16px',
+            borderRadius: 12,
+            marginBottom: 16,
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <span>⚠️</span> {error}
+          </div>
         )}
 
         <form onSubmit={handleProfileCompletion}>
-          <div className="input-group">
-            <label>ðŸ“ Your Governorate</label>
-            <select value={profileData.governorate}
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>
+              <span style={{ marginRight: 4 }}>📍</span> Your Governorate
+            </label>
+            <select
+              value={profileData.governorate}
               onChange={(e) => setProfileData({ ...profileData, governorate: e.target.value })}
-              required style={selectStyle}>
-              <option value="">-- Select your governorate --</option>
-              {GOVERNORATES.map(g => <option key={g} value={g}>{g}</option>)}
+              required
+              style={selectStyle}
+              onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
+              onBlur={(e) => e.target.style.borderColor = '#334155'}
+            >
+              <option value="" style={{ color: '#94a3b8' }}>-- Select your governorate --</option>
+              {GOVERNORATES.map(g => <option key={g} value={g} style={{ color: 'white' }}>{g}</option>)}
             </select>
           </div>
 
-          <div className="input-group">
-            <label>ðŸ‘¤ Your Situation</label>
-            <select value={profileData.user_type}
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle}>
+              <span style={{ marginRight: 4 }}>👤</span> Your Situation
+            </label>
+            <select
+              value={profileData.user_type}
               onChange={(e) => setProfileData({ ...profileData, user_type: e.target.value })}
-              required style={selectStyle}>
-              <option value="">-- Select your situation --</option>
-              {USER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              required
+              style={selectStyle}
+              onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
+              onBlur={(e) => e.target.style.borderColor = '#334155'}
+            >
+              <option value="" style={{ color: '#94a3b8' }}>-- Select your situation --</option>
+              {USER_TYPES.map(t => (
+                <option key={t.value} value={t.value} style={{ color: 'white' }}>
+                  {t.icon} {t.label}
+                </option>
+              ))}
             </select>
           </div>
 
-          <button type="submit" className="auth-btn" disabled={loading} style={{ marginTop: '8px' }}>
-            {loading ? 'â³ Saving...' : 'ðŸš€ Enter Dashboard'}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+              color: 'white',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              transition: 'all 0.2s',
+              opacity: loading ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => { if (!loading) e.target.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { if (!loading) e.target.style.transform = 'translateY(0)'; }}
+          >
+            {loading ? '⏳ Saving...' : '🚀 Enter Dashboard'}
           </button>
         </form>
       </div>
@@ -161,39 +271,166 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
 
   // ==================== NORMAL LOGIN SCREEN ====================
   return (
-    <div className="auth-card">
-      <h2><i className="fas fa-sign-in-alt"></i> Login</h2>
-      <p>Access WeatherGuardTN Dashboard</p>
+    <div style={{
+      background: "linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)",
+      borderRadius: 24,
+      border: "1px solid rgba(29, 158, 117, 0.2)",
+      padding: "2rem",
+      maxWidth: 480,
+      margin: "0 auto",
+      animation: "slideUp 0.3s ease-out",
+    }}>
+      <style>
+        {`
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{
+          background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)",
+          width: 56,
+          height: 56,
+          borderRadius: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 28,
+          margin: '0 auto 12px',
+        }}>
+          🌦️
+        </div>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: 'white', marginBottom: 8 }}>
+          Welcome Back
+        </h2>
+        <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+          Sign in to access WeatherGuardTN Dashboard
+        </p>
+      </div>
 
       {error && (
         <div style={{
-          background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
-          borderRadius: '8px', marginBottom: '12px', fontSize: '14px'
-        }}>âš ï¸ {error}</div>
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#f87171',
+          padding: '12px 16px',
+          borderRadius: 12,
+          marginBottom: 20,
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span>⚠️</span> {error}
+        </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <label>Email</label>
-          <input type="email" value={email} placeholder="your@email.com"
-            onChange={(e) => { setEmail(e.target.value); setError(''); }} required />
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>
+            <span style={{ marginRight: 4 }}>📧</span> Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            placeholder="your@email.com"
+            onChange={(e) => { setEmail(e.target.value); setError(''); }}
+            required
+            style={inputStyle}
+            onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
+            onBlur={(e) => e.target.style.borderColor = '#334155'}
+          />
         </div>
-        <div className="input-group">
-          <label>Password</label>
-          <input type="password" value={password} placeholder="Your password"
-            onChange={(e) => { setPassword(e.target.value); setError(''); }} required />
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>
+            <span style={{ marginRight: 4 }}>🔒</span> Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            placeholder="Your password"
+            onChange={(e) => { setPassword(e.target.value); setError(''); }}
+            required
+            style={inputStyle}
+            onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
+            onBlur={(e) => e.target.style.borderColor = '#334155'}
+          />
         </div>
-        <button type="submit" className="auth-btn" disabled={loading}>
-          {loading ? 'â³ Signing in...' : 'Sign In'}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+            color: 'white',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: 14,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+            opacity: loading ? 0.6 : 1,
+            marginBottom: 16,
+          }}
+          onMouseEnter={(e) => { if (!loading) e.target.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={(e) => { if (!loading) e.target.style.transform = 'translateY(0)'; }}
+        >
+          {loading ? '⏳ Signing in...' : 'Sign In'}
         </button>
       </form>
 
-      <div className="separator"><span>OR</span></div>
-      <div id="googleSignInDiv"></div>
+      <div style={{
+        textAlign: 'center',
+        position: 'relative',
+        marginBottom: 16,
+      }}>
+        <div style={{
+          borderTop: '1px solid #1e293b',
+          position: 'relative',
+        }}>
+          <span style={{
+            position: 'relative',
+            top: '-10px',
+            background: '#0f172a',
+            padding: '0 12px',
+            fontSize: 11,
+            color: '#64748b',
+          }}>
+            OR
+          </span>
+        </div>
+      </div>
 
-      <p className="auth-footer">
+      <div id="googleSignInDiv" style={{ marginBottom: 16 }}></div>
+
+      <p style={{
+        textAlign: 'center',
+        fontSize: 13,
+        color: '#64748b',
+        margin: 0,
+      }}>
         Don't have an account?{' '}
-        <span onClick={onSwitchToSignup} style={{ cursor: 'pointer', color: '#2563eb', fontWeight: 600 }}>
+        <span
+          onClick={onSwitchToSignup}
+          style={{
+            cursor: 'pointer',
+            color: '#1D9E75',
+            fontWeight: 600,
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={(e) => e.target.style.color = '#4ade80'}
+          onMouseLeave={(e) => e.target.style.color = '#1D9E75'}
+        >
           Sign Up
         </span>
       </p>

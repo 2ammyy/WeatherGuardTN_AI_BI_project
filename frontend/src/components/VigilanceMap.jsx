@@ -21,20 +21,32 @@ const VigilanceMap = ({
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [mapLayers, setMapLayers] = useState('streets');
 
   // Risk color mapping
   const getRiskColor = (riskLevel) => {
     const colors = {
-      'GREEN': '#10b981',
-      'YELLOW': '#f59e0b',
+      'GREEN': '#22c55e',
+      'YELLOW': '#eab308',
       'ORANGE': '#f97316',
       'RED': '#ef4444',
-      'PURPLE': '#8b5cf6',
-      'SAFE': '#10b981',
-      'CAUTION': '#f59e0b',
+      'PURPLE': '#a855f7',
+      'SAFE': '#22c55e',
+      'CAUTION': '#eab308',
       'DANGER': '#ef4444'
     };
-    return colors[riskLevel] || '#94a3b8';
+    return colors[riskLevel] || '#64748b';
+  };
+
+  const getRiskLevelText = (riskLevel) => {
+    const texts = {
+      'GREEN': 'Safe',
+      'YELLOW': 'Caution',
+      'ORANGE': 'Warning',
+      'RED': 'Alert',
+      'PURPLE': 'Emergency'
+    };
+    return texts[riskLevel] || 'Unknown';
   };
 
   // City coordinates (Tunisia + Neighbors)
@@ -104,13 +116,24 @@ const VigilanceMap = ({
         attribution: '© Google'
       });
 
+      // Add dark map layer
+      const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      });
+
       // Add layer control
       const baseMaps = {
-        "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-        "Satellite": googleSat
+        "🗺️ Streets": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        "🛰️ Satellite": googleSat,
+        "🌙 Dark": darkMap
       };
       
       L.control.layers(baseMaps).addTo(mapInstance.current);
+      
+      // Add scale bar
+      L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(mapInstance.current);
       
       // Get user location if available
       if (navigator.geolocation) {
@@ -119,15 +142,29 @@ const VigilanceMap = ({
             const { latitude, longitude } = position.coords;
             setUserLocation([latitude, longitude]);
             
-            // Add user marker
-            L.marker([latitude, longitude], {
-              icon: L.divIcon({
-                className: 'user-location-marker',
-                html: '<div style="background-color: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>',
-                iconSize: [20, 20]
-              })
-            }).addTo(mapInstance.current)
-              .bindPopup('You are here');
+            // Add user marker with custom icon
+            const userIcon = L.divIcon({
+              className: 'user-location-marker',
+              html: `<div style="
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 0 10px rgba(59,130,246,0.5);
+                animation: pulse 1.5s ease-in-out infinite;
+              "></div>`,
+              iconSize: [20, 20]
+            });
+            
+            L.marker([latitude, longitude], { icon: userIcon })
+              .addTo(mapInstance.current)
+              .bindPopup(`
+                <div style="font-family: sans-serif; padding: 4px;">
+                  <strong>📍 You are here</strong>
+                  <p style="margin: 4px 0 0; font-size: 11px; color: #64748b;">Lat: ${latitude.toFixed(4)}<br>Lng: ${longitude.toFixed(4)}</p>
+                </div>
+              `);
           },
           (error) => console.log('Geolocation error:', error)
         );
@@ -158,31 +195,52 @@ const VigilanceMap = ({
       const cityData = forecastData[city];
       const riskLevel = cityData?.risk_level || 'GREEN';
       const color = getRiskColor(riskLevel);
+      const riskText = getRiskLevelText(riskLevel);
       
       // Create custom marker with risk color
       const marker = L.circleMarker([coords.lat, coords.lng], {
-        radius: 10,
+        radius: 12,
         fillColor: color,
-        color: '#fff',
+        color: '#ffffff',
         weight: 2,
         opacity: 1,
-        fillOpacity: 0.9
+        fillOpacity: 0.85
       }).addTo(mapInstance.current);
 
       // Add popup with info
       marker.bindPopup(`
-        <div style="font-family: Arial; min-width: 200px;">
-          <h3 style="margin: 0 0 10px 0; color: #1e293b;">${city}</h3>
+        <div style="font-family: sans-serif; min-width: 240px; max-width: 280px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              ⚠️
+            </div>
+            <div>
+              <h3 style="margin: 0; color: #1e293b; font-size: 16px;">${city}</h3>
+              <span style="font-size: 11px; color: ${color}; font-weight: 600;">${riskText} Risk</span>
+            </div>
+          </div>
           ${cityData ? `
-            <p><strong>Risk:</strong> <span style="color: ${color};">${riskLevel}</span></p>
-            <p><strong>Confidence:</strong> ${cityData.confidence || 0}%</p>
-            <p><strong>Weather:</strong><br>
-              🌡️ ${cityData.weather?.temp_avg || 'N/A'}°C<br>
-              💨 ${cityData.weather?.wind_speed || 'N/A'} km/h<br>
-              💧 ${cityData.weather?.humidity || 'N/A'}%<br>
-              🌧️ ${cityData.weather?.precipitation || 0} mm
-            </p>
-          ` : '<p>No forecast data</p>'}
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: #64748b;">Risk Score</span>
+                <span style="font-size: 14px; font-weight: 600; color: ${color};">${cityData.confidence || 0}%</span>
+              </div>
+              <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                <div style="width: ${cityData.confidence || 0}%; height: 100%; background: ${color}; border-radius: 2px;"></div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px;">
+              <div><span style="color: #64748b;">🌡️ Temp:</span> <strong>${cityData.weather?.temp_avg || 'N/A'}°C</strong></div>
+              <div><span style="color: #64748b;">💨 Wind:</span> <strong>${cityData.weather?.wind_speed || 'N/A'} km/h</strong></div>
+              <div><span style="color: #64748b;">💧 Humidity:</span> <strong>${cityData.weather?.humidity || 'N/A'}%</strong></div>
+              <div><span style="color: #64748b;">🌧️ Rain:</span> <strong>${cityData.weather?.precipitation || 0} mm</strong></div>
+            </div>
+          ` : '<p style="color: #64748b; font-size: 12px;">No forecast data available</p>'}
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+            <button onclick="window.dispatchEvent(new CustomEvent('cityClick', { detail: '${city}' }))" style="width: 100%; padding: 6px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500;">
+              View Details →
+            </button>
+          </div>
         </div>
       `);
 
@@ -198,15 +256,15 @@ const VigilanceMap = ({
             radius: 6,
             fillColor: '#94a3b8',
             color: '#fff',
-            weight: 1,
+            weight: 1.5,
             opacity: 0.8,
-            fillOpacity: 0.6
+            fillOpacity: 0.5
           }).addTo(mapInstance.current);
 
           marker.bindPopup(`
-            <div style="font-family: Arial;">
-              <h4 style="margin: 0;">${city}</h4>
-              <p style="margin: 5px 0 0 0; color: #64748b;">${coords.country}</p>
+            <div style="font-family: sans-serif; padding: 4px;">
+              <strong style="color: #1e293b;">${city}</strong>
+              <p style="margin: 4px 0 0; font-size: 11px; color: #64748b;">${coords.country}</p>
             </div>
           `);
           
@@ -230,33 +288,61 @@ const VigilanceMap = ({
       // Choose icon based on hazard type
       let icon = '⚠️';
       let color = '#f59e0b';
+      let label = 'Hazard';
       
-      if (properties.what?.includes('flood')) {
+      if (properties.what?.toLowerCase().includes('flood')) {
         icon = '🌊';
         color = '#3b82f6';
-      } else if (properties.what?.includes('accident')) {
+        label = 'Flood';
+      } else if (properties.what?.toLowerCase().includes('accident')) {
         icon = '🚗💥';
         color = '#ef4444';
-      } else if (properties.what?.includes('storm')) {
+        label = 'Accident';
+      } else if (properties.what?.toLowerCase().includes('storm')) {
         icon = '⛈️';
         color = '#8b5cf6';
+        label = 'Storm';
+      } else if (properties.what?.toLowerCase().includes('road')) {
+        icon = '🚧';
+        color = '#f97316';
+        label = 'Road Work';
       }
 
-      const marker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: 'hazard-marker',
-          html: `<div style="background-color: ${color}; color: white; padding: 5px 10px; border-radius: 20px; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-            ${icon} ${properties.what?.split('.')[1] || 'Hazard'}
-          </div>`,
-          iconSize: [100, 30]
-        })
-      }).addTo(mapInstance.current);
+      const hazardIcon = L.divIcon({
+        className: 'hazard-marker',
+        html: `<div style="
+          background: ${color};
+          color: white;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+        ">
+          ${icon} ${label}
+        </div>`,
+        iconSize: [80, 28]
+      });
+      
+      const marker = L.marker([lat, lng], { icon: hazardIcon }).addTo(mapInstance.current);
 
       marker.bindPopup(`
-        <div style="font-family: Arial;">
-          <h4 style="margin: 0;">${properties.what}</h4>
-          <p style="margin: 5px 0 0 0;">${properties.description || 'No description'}</p>
-          <small>Updated: ${new Date(properties.updated || Date.now()).toLocaleString()}</small>
+        <div style="font-family: sans-serif; max-width: 260px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+              ${icon}
+            </div>
+            <div>
+              <h4 style="margin: 0; color: #1e293b;">${properties.what || 'Hazard'}</h4>
+              <span style="font-size: 10px; color: ${color};">Active Alert</span>
+            </div>
+          </div>
+          <p style="margin: 0 0 8px; font-size: 12px; color: #475569;">${properties.description || 'No description available'}</p>
+          <small style="color: #94a3b8; font-size: 10px;">🕐 Updated: ${new Date(properties.updated || Date.now()).toLocaleString()}</small>
         </div>
       `);
 
@@ -273,12 +359,129 @@ const VigilanceMap = ({
     mapInstance.current.fitBounds(group.getBounds().pad(0.1));
   }, [markersRef.current.length]);
 
+  // Add CSS animations
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+      }
+      .leaflet-popup-content-wrapper {
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+      }
+      .leaflet-popup-tip {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   return (
-    <div className="vigilance-map-container">
-      <div ref={mapRef} style={{ height: '600px', width: '100%', borderRadius: '24px' }} />
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      borderRadius: 20,
+  overflow: 'hidden',
+      border: '1px solid #1e293b',
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+      background: '#020617',
+    }}>
+      <div ref={mapRef} style={{ height: '600px', width: '100%' }} />
+      
+      {/* User location badge */}
       {userLocation && (
-        <div className="user-location-badge">
-          <i className="fas fa-location-dot"></i> Your location detected
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(8px)',
+          padding: '8px 16px',
+          borderRadius: 20,
+          fontSize: 12,
+          color: '#3b82f6',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          zIndex: 1000,
+          fontFamily: 'sans-serif',
+        }}>
+          <div style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#3b82f6',
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }} />
+          <span>📍 Your location detected</span>
+        </div>
+      )}
+
+      {/* Map legend overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '20px',
+        background: 'rgba(15, 23, 42, 0.95)',
+        backdropFilter: 'blur(8px)',
+        padding: '10px 14px',
+        borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.1)',
+        fontSize: 10,
+        zIndex: 1000,
+        fontFamily: 'sans-serif',
+      }}>
+        <div style={{ fontWeight: 600, color: 'white', marginBottom: 8, fontSize: 11 }}>
+          Risk Levels
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22c55e' }} />
+            <span style={{ color: '#94a3b8' }}>Safe</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#eab308' }} />
+            <span style={{ color: '#94a3b8' }}>Caution</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#f97316' }} />
+            <span style={{ color: '#94a3b8' }}>Warning</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
+            <span style={{ color: '#94a3b8' }}>Alert</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#a855f7' }} />
+            <span style={{ color: '#94a3b8' }}>Emergency</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Hazards count badge */}
+      {hazards.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(239, 68, 68, 0.95)',
+          backdropFilter: 'blur(8px)',
+          padding: '6px 12px',
+          borderRadius: 20,
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          zIndex: 1000,
+          fontFamily: 'sans-serif',
+        }}>
+          <span>⚠️</span> {hazards.length} Active Hazards
         </div>
       )}
     </div>
