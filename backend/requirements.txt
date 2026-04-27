@@ -29,3 +29,6 @@ apscheduler
 # Admin Panel
 sqladmin
 
+
+PyJWT>=2.8.0
+

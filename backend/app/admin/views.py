@@ -3,17 +3,24 @@
 # Core models
 from app.models.user import User
 
-# Forum models (they are all in one file)
+# Forum models
 from app.forum.models import (
     ForumPost, 
     ForumComment, 
     NewsArticle, 
-    Notification
+    Notification,
+    PostLike,
+    PostShare,
+    PostReport,
+    CommentLike,
+    UserFollow,
+    UserBlock,
+    UserReport
 )
 
 # ── User Admin ─────────────────────────────────────
 class UserAdmin(ModelView, model=User):
-    column_list = ['id', 'email', 'full_name', 'is_admin', 'created_at']
+    column_list = ['id', 'email', 'full_name', 'is_admin']
     column_searchable_list = ['email', 'full_name']
     column_editable_list = ['is_admin']
     form_excluded_columns = ['hashed_password']
@@ -21,31 +28,46 @@ class UserAdmin(ModelView, model=User):
     name_plural = 'Users'
     icon = 'fa-solid fa-users'
 
-# ── Forum Post Admin ───────────────────────────────
+# ── Forum Content ──────────────────────────────────
 class ForumPostAdmin(ModelView, model=ForumPost):
-    column_list = ['id', 'title', 'user_id', 'created_at', 'is_approved', 'is_deleted']
-    column_searchable_list = ['title', 'content']
+    column_list = ['id', 'title', 'user_id', 'created_at', 'is_approved']
+    column_searchable_list = ['title']
     column_editable_list = ['is_approved']
     name = 'Forum Post'
     name_plural = 'Forum Posts'
     icon = 'fa-solid fa-newspaper'
 
-# ── Forum Comment Admin ────────────────────────────
 class ForumCommentAdmin(ModelView, model=ForumComment):
     column_list = ['id', 'content', 'post_id', 'user_id', 'created_at']
     column_searchable_list = ['content']
     name = 'Forum Comment'
     name_plural = 'Forum Comments'
 
-# ── News Article Admin ─────────────────────────────
+# ── News ───────────────────────────────────────────
 class NewsArticleAdmin(ModelView, model=NewsArticle):
-    column_list = ['id', 'title', 'source', 'published_at', 'created_at']
+    column_list = ['id', 'title', 'source', 'published_at']
     column_searchable_list = ['title']
     name = 'News Article'
     name_plural = 'News Articles'
     icon = 'fa-solid fa-globe'
 
-# ── Notification Admin ─────────────────────────────
+# ── Interactions ───────────────────────────────────
+class PostLikeAdmin(ModelView, model=PostLike):
+    column_list = ['id', 'user_id', 'post_id', 'created_at']
+    name = 'Post Like'
+    name_plural = 'Post Likes'
+
+class UserFollowAdmin(ModelView, model=UserFollow):
+    column_list = ['id', 'follower_id', 'followed_id', 'created_at']
+    name = 'User Follow'
+    name_plural = 'User Follows'
+
+class UserBlockAdmin(ModelView, model=UserBlock):
+    column_list = ['id', 'blocker_id', 'blocked_id', 'created_at']
+    name = 'User Block'
+    name_plural = 'User Blocks'
+
+# ── Notification ───────────────────────────────────
 class NotificationAdmin(ModelView, model=Notification):
     column_list = ['id', 'user_id', 'title', 'read', 'created_at']
     column_searchable_list = ['title']
@@ -54,11 +76,13 @@ class NotificationAdmin(ModelView, model=Notification):
     name_plural = 'Notifications'
 
 def register_views(admin):
-    '''Register all important views'''
     admin.add_view(UserAdmin)
     admin.add_view(ForumPostAdmin)
     admin.add_view(ForumCommentAdmin)
     admin.add_view(NewsArticleAdmin)
     admin.add_view(NotificationAdmin)
+    admin.add_view(PostLikeAdmin)
+    admin.add_view(UserFollowAdmin)
+    admin.add_view(UserBlockAdmin)
     
-    print('✅ Admin views registered: Users + Forum Posts + Comments + News + Notifications')
+    print('✅ Extended admin views registered (added likes, follows, blocks)')
