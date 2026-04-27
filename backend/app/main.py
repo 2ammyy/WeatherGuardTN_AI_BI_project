@@ -17,6 +17,9 @@ from app.forum.routes import router as forum_router
 from app.routers import news
 from app.scraper.scheduler import run_all_scrapers, start_scheduler, stop_scheduler
 
+from app.admin.config import setup_admin
+
+
 MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'http://mlflow:5000')
 EXPERIMENT_NAME = 'WeatherGuardTN'
 
@@ -73,6 +76,8 @@ fastapi_app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+setup_admin(fastapi_app)
 
 @fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

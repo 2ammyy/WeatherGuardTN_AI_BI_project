@@ -25,3 +25,7 @@ APScheduler==3.10.4         # Background job scheduler
 
 apscheduler
 apscheduler
+
+# Admin Panel
+sqladmin
+
