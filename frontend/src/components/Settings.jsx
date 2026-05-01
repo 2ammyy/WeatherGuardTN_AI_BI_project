@@ -378,7 +378,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
             🎨 Preferences
           </button>
           <button style={tabStyle('danger')} onClick={() => setActiveTab('danger')}>
-            ⚠️ Danger Zone
+            ⚠️ Delete Account
           </button>
         </div>
 
@@ -637,7 +637,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
             padding: 28,
           }}>
             <h3 style={{ margin: '0 0 8px', color: '#f87171', fontSize: 18, fontWeight: 600 }}>
-              ⚠️ Danger Zone
+              ⚠️  Delete Account
             </h3>
             <p style={{ color: '#64748b', fontSize: 13, marginBottom: 24 }}>
               These actions are irreversible. Please proceed with caution.
