@@ -1,8 +1,39 @@
-﻿.env
+﻿# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Dependencies
 node_modules/
+.venv/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
-.venv/
 *.egg-info/
+.pytest_cache/
+
+# OS
 .DS_Store
+
+# Build outputs
+build/
+dist/
+
+# MLflow artifacts
+mlruns/
+mlartifacts/
+backend/mlruns/
+backend/mlartifacts/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes
+db-data/
+
+# Logs
+*.log
