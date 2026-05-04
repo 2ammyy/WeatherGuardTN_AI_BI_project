@@ -9,7 +9,7 @@ const api = axios.create({ baseURL: BASE });
 
 // Attach token to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("forum_access_token");
+  const token = localStorage.getItem("wg_token") || localStorage.getItem("forum_access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -19,6 +19,7 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
+      localStorage.removeItem("wg_token");
       localStorage.removeItem("forum_access_token");
       localStorage.removeItem("forum_refresh_token");
       window.dispatchEvent(new CustomEvent("forum:logout"));

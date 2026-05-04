@@ -1,59 +1,64 @@
 // frontend/src/hooks/useNotifications.js
-// Polls /api/forum/notifications/mine every 30 seconds.
-// Only active when user is logged in.
+// Polls /api/forum/notifications every 30 seconds.
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "./useAuth";
+import { notifsAPI } from "../forum/api/client";
 
 const POLL_INTERVAL = 30_000; // 30s
 
 export function useNotifications() {
-  const { isLoggedIn, authFetch } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount]     = useState(0);
-  const [loading, setLoading]             = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const intervalRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
-    if (!isLoggedIn) return;
     try {
-      const res  = await authFetch("/api/forum/notifications/mine");
-      if (!res.ok) return;
-      const data = await res.json();
-      setNotifications(data.items || []);
-      setUnreadCount(data.unread_count || 0);
+      const data = await notifsAPI.list({ limit: 30 });
+      setNotifications(data || []);
+      const countResp = await notifsAPI.unreadCount();
+      setUnreadCount(countResp.count || 0);
     } catch (_) {
       // silently ignore network errors during polling
     }
-  }, [isLoggedIn, authFetch]);
+  }, []);
 
-  // Start polling when logged in
+  // Start polling
   useEffect(() => {
-    if (!isLoggedIn) {
-      setNotifications([]);
-      setUnreadCount(0);
-      return;
-    }
     setLoading(true);
     fetchNotifications().finally(() => setLoading(false));
 
     intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL);
     return () => clearInterval(intervalRef.current);
-  }, [isLoggedIn, fetchNotifications]);
+  }, [fetchNotifications]);
+
+  const openPanel = useCallback(() => {
+    setOpen(true);
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const markRead = useCallback(async (notifId) => {
-    await authFetch(`/api/forum/notifications/${notifId}/read`, { method: "POST" });
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
-    );
-    setUnreadCount((c) => Math.max(0, c - 1));
-  }, [authFetch]);
+    try {
+      await notifsAPI.read(notifId);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch (_) {
+      // ignore
+    }
+  }, []);
 
   const markAllRead = useCallback(async () => {
-    await authFetch("/api/forum/notifications/read-all", { method: "POST" });
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-  }, [authFetch]);
+    try {
+      await notifsAPI.readAll();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (_) {
+      // ignore
+    }
+  }, []);
 
-  return { notifications, unreadCount, loading, markRead, markAllRead, refresh: fetchNotifications };
+  return { notifications, unreadCount, loading, open, setOpen, openPanel, markRead, markAllRead, refresh: fetchNotifications };
 }

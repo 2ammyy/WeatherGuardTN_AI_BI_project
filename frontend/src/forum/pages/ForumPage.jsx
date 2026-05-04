@@ -1,7 +1,6 @@
 ﻿// frontend/src/forum/pages/ForumPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { postsAPI } from "../api/client";
-import { AuthProvider, useAuth } from "../../hooks/useAuth";
 import PostCard from "../components/PostCard";
 import ComposeModal from "../components/ComposeModal";
 import NotificationBell from "../components/NotificationBell";
@@ -19,173 +18,8 @@ const GOVERNORATES = [
   "Bizerte", "Jendouba", "Monastir", "Mahdia", "Kairouan", "Gafsa",
 ];
 
-// ── Auth modal ────────────────────────────────────────────────────────────────
-function AuthModal({ onClose }) {
-  const { login, register } = useAuth();
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ username: "", email: "", password: "", display_name: "", governorate: "" });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const submit = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (mode === "login") await login(form.email, form.password);
-      else await register(form);
-      onClose();
-    } catch (e) {
-      setError(e.response?.data?.detail ?? "Authentication error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const styles = {
-    overlay: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.8)",
-      backdropFilter: "blur(4px)",
-      zIndex: 500,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      animation: "fadeIn 0.2s ease-out",
-    },
-    modal: {
-      background: "linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)",
-      border: "1px solid rgba(29, 158, 117, 0.2)",
-      borderRadius: 24,
-      width: 400,
-      padding: "2rem",
-      boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
-      animation: "slideUp 0.3s ease-out",
-    },
-    input: {
-      width: "100%",
-      padding: "12px 14px",
-      borderRadius: 12,
-      border: "1px solid #334155",
-      background: "#1e293b",
-      color: "white",
-      fontSize: 14,
-      fontFamily: "sans-serif",
-      marginBottom: 12,
-      boxSizing: "border-box",
-      transition: "all 0.2s",
-      outline: "none",
-    },
-    button: {
-      width: "100%",
-      padding: "12px",
-      borderRadius: 12,
-      background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)",
-      color: "white",
-      border: "none",
-      cursor: "pointer",
-      fontSize: 14,
-      fontWeight: 600,
-      fontFamily: "sans-serif",
-      transition: "all 0.2s",
-    },
-  };
-
-  return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-          <div>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{mode === "login" ? "👋" : "✨"}</div>
-            <h2 style={{ color: "white", fontSize: 20, fontWeight: 600, margin: 0 }}>
-              {mode === "login" ? "Welcome back" : "Join the community"}
-            </h2>
-            <p style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>
-              {mode === "login" ? "Sign in to continue" : "Create your account to post"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 24, transition: "color 0.2s" }}
-            onMouseEnter={(e) => e.target.style.color = "#fff"}
-            onMouseLeave={(e) => e.target.style.color = "#94a3b8"}
-          >
-            ×
-          </button>
-        </div>
-
-        {mode === "register" && (
-          <>
-            <input
-              style={styles.input}
-              placeholder="Username"
-              value={form.username}
-              onChange={set("username")}
-              onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-              onBlur={(e) => e.target.style.borderColor = "#334155"}
-            />
-            <input
-              style={styles.input}
-              placeholder="Display name"
-              value={form.display_name}
-              onChange={set("display_name")}
-              onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-              onBlur={(e) => e.target.style.borderColor = "#334155"}
-            />
-          </>
-        )}
-        <input
-          style={styles.input}
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={set("email")}
-          onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-          onBlur={(e) => e.target.style.borderColor = "#334155"}
-        />
-        <input
-          style={styles.input}
-          placeholder="Password"
-          type="password"
-          value={form.password}
-          onChange={set("password")}
-          onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-          onBlur={(e) => e.target.style.borderColor = "#334155"}
-        />
-
-        {error && (
-          <div style={{ background: "#450a0a", border: "1px solid #991b1b", color: "#fca5a5", borderRadius: 12, padding: "10px 14px", fontSize: 13, marginBottom: 12 }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        <button
-          onClick={submit}
-          disabled={loading}
-          style={{ ...styles.button, opacity: loading ? 0.6 : 1 }}
-          onMouseEnter={(e) => { if (!loading) e.target.style.transform = "translateY(-1px)"; }}
-          onMouseLeave={(e) => { if (!loading) e.target.style.transform = "translateY(0)"; }}
-        >
-          {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
-        </button>
-
-        <div style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "#64748b" }}>
-          {mode === "login" ? (
-            <>No account? <span style={{ color: "#1D9E75", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("register")}>Sign up</span></>
-          ) : (
-            <>Have an account? <span style={{ color: "#1D9E75", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("login")}>Sign in</span></>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Inner forum (needs auth context) ─────────────────────────────────────────
-function ForumInner({ onBack }) {
-  const { user, logout } = useAuth();
+// ── Forum content (user already authenticated by platform) ───────────────────────────────
+function ForumInner({ onBack, existingUser }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -193,8 +27,9 @@ function ForumInner({ onBack }) {
   const [category, setCategory] = useState("");
   const [governorate, setGovernorate] = useState("");
   const [compose, setCompose] = useState(false);
-  const [authModal, setAuthModal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const user = existingUser;
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -225,10 +60,6 @@ function ForumInner({ onBack }) {
   }, []);
 
   const handleCompose = () => {
-    if (!user) {
-      setAuthModal(true);
-      return;
-    }
     setCompose(true);
   };
 
@@ -296,41 +127,20 @@ function ForumInner({ onBack }) {
           </div>
         </div>
         <div style={{ flex: 1 }} />
-        {user ? (
-          <>
-            <NotificationBell />
-            <button
-              onClick={handleCompose}
-              style={{ padding: "8px 18px", background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}
-              onMouseEnter={(e) => e.target.style.transform = "translateY(-1px)"}
-              onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
-            >
-              <span>✏️</span> New post
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #9FE1CB 0%, #6bc4a8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: "#0F6E56" }}>
-                {(user.display_name ?? user.username ?? "?")[0].toUpperCase()}
-              </div>
-              <button
-                onClick={logout}
-                style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 12, fontFamily: "sans-serif", transition: "color 0.2s" }}
-                onMouseEnter={(e) => e.target.style.color = "#ef4444"}
-                onMouseLeave={(e) => e.target.style.color = "#64748b"}
-              >
-                Sign out
-              </button>
-            </div>
-          </>
-        ) : (
-          <button
-            onClick={() => setAuthModal(true)}
-            style={{ padding: "8px 18px", background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "sans-serif", transition: "all 0.2s" }}
-            onMouseEnter={(e) => e.target.style.transform = "translateY(-1px)"}
-            onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
-          >
-            Sign in
-          </button>
-        )}
+        <NotificationBell />
+        <button
+          onClick={handleCompose}
+          style={{ padding: "8px 18px", background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}
+          onMouseEnter={(e) => e.target.style.transform = "translateY(-1px)"}
+          onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
+        >
+          <span>✏️</span> New post
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #9FE1CB 0%, #6bc4a8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: "#0F6E56" }}>
+            {(user?.display_name ?? user?.username ?? user?.name ?? "?")[0].toUpperCase()}
+          </div>
+        </div>
       </div>
 
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "2rem 1rem" }}>
@@ -393,7 +203,7 @@ function ForumInner({ onBack }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {posts.map((p) => (
-              <PostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} user={user} />
             ))}
           </div>
         )}
@@ -471,16 +281,11 @@ function ForumInner({ onBack }) {
       )}
 
       {compose && <ComposeModal onClose={() => setCompose(false)} onPublished={handlePublished} />}
-      {authModal && <AuthModal onClose={() => setAuthModal(false)} />}
     </div>
   );
 }
 
-// ── Export: wraps everything in AuthProvider ──────────────────────────────────
+// ── Export: forum page (user already authenticated by platform) ──────────────────────────────
 export default function ForumPage({ onBack, existingUser }) {
-  return (
-    <AuthProvider existingUser={existingUser}>
-      <ForumInner onBack={onBack} />
-    </AuthProvider>
-  );
+  return <ForumInner onBack={onBack} existingUser={existingUser} />;
 }

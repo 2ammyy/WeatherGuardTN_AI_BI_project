@@ -1,7 +1,6 @@
 // frontend/src/forum/components/PostCard.jsx
 import { useState } from "react";
 import { postsAPI } from "../api/client";
-import { useAuth } from "../../hooks/useAuth";
 import CommentsSection from "./CommentsSection";
 
 const RISK_STYLES = {
@@ -50,8 +49,7 @@ function Avatar({ name = "?", size = 32 }) {
   );
 }
 
-export default function PostCard({ post: initial, onProfileClick }) {
-  const { user } = useAuth();
+export default function PostCard({ post: initial, onProfileClick, user }) {
   const [post,          setPost]          = useState(initial);
   const [showComments,  setShowComments]  = useState(false);
   const [reportReason,  setReportReason]  = useState("");
@@ -62,7 +60,6 @@ export default function PostCard({ post: initial, onProfileClick }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const handleLike = async () => {
-    if (!user) return showToast("Sign in to like posts");
     setLoading(true);
     try {
       if (post.is_liked) {
@@ -77,7 +74,6 @@ export default function PostCard({ post: initial, onProfileClick }) {
   };
 
   const handleShare = async () => {
-    if (!user) return showToast("Sign in to share posts");
     try {
       await postsAPI.share(post.id);
       setPost((p) => ({ ...p, shares_count: p.shares_count + 1 }));
@@ -87,7 +83,6 @@ export default function PostCard({ post: initial, onProfileClick }) {
   };
 
   const handleReport = async () => {
-    if (!user) return showToast("Sign in to report posts");
     try {
       await postsAPI.report(post.id, reportReason);
       setShowReport(false);

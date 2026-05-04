@@ -1,16 +1,13 @@
 // frontend/src/forum/components/CommentsSection.jsx
 import { useState, useEffect, useRef } from "react";
 import { commentsAPI } from "../api/client";
-import { useAuth } from "../../hooks/useAuth";
 
-function CommentBubble({ comment, postId, onReply, depth = 0 }) {
-  const { user } = useAuth();
+function CommentBubble({ comment, postId, onReply, depth = 0, user }) {
   const [liked,  setLiked]  = useState(comment.is_liked ?? false);
   const [likes,  setLikes]  = useState(comment.likes_count ?? 0);
   const [showRep, setShowRep] = useState(false);
 
   const handleLike = async () => {
-    if (!user) return;
     try {
       if (liked) { await commentsAPI.unlike(comment.id); setLikes((l) => l - 1); }
       else        { await commentsAPI.like(comment.id);  setLikes((l) => l + 1); }
@@ -61,21 +58,20 @@ function CommentBubble({ comment, postId, onReply, depth = 0 }) {
         </div>
       </div>
       {comment.replies?.map((r) => (
-        <CommentBubble key={r.id} comment={r} postId={postId} onReply={onReply} depth={depth + 1} />
+        <CommentBubble key={r.id} comment={r} postId={postId} onReply={onReply} depth={depth + 1} user={user} />
       ))}
     </div>
   );
 }
 
-function CommentInput({ postId, parentId = null, onSuccess, small = false }) {
-  const { user } = useAuth();
+function CommentInput({ postId, parentId = null, onSuccess, small = false, user }) {
   const [body,    setBody]    = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
   const ref = useRef();
 
   const submit = async () => {
-    if (!body.trim() || !user) return;
+    if (!body.trim()) return;
     setLoading(true);
     setError(null);
     try {
@@ -88,12 +84,6 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false }) {
       else setError(detail ?? "Error posting comment");
     } finally { setLoading(false); }
   };
-
-  if (!user) return (
-    <div style={{ fontSize:13, color:"var(--color-text-tertiary)", padding:"8px 0" }}>
-      Sign in to leave a comment.
-    </div>
-  );
 
   return (
     <div style={{ marginTop: small ? 6 : 10 }}>
@@ -129,7 +119,7 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false }) {
   );
 }
 
-export default function CommentsSection({ postId }) {
+export default function CommentsSection({ postId, user }) {
   const [data,    setData]    = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
@@ -153,10 +143,10 @@ export default function CommentsSection({ postId }) {
         <div style={{ fontSize:13, color:"var(--color-text-tertiary)", marginBottom:10 }}>No comments yet. Be the first!</div>
       ) : (
         data.items.map((c) => (
-          <CommentBubble key={c.id} comment={c} postId={postId} />
+          <CommentBubble key={c.id} comment={c} postId={postId} user={user} />
         ))
       )}
-      <CommentInput postId={postId} onSuccess={() => setRefresh((r) => r + 1)} />
+      <CommentInput postId={postId} onSuccess={() => setRefresh((r) => r + 1)} user={user} />
     </div>
   );
 }
