@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// BUILD v2026-05-04-12-25-no-bom
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -36,11 +37,11 @@ function App() {
 
   // ==================== RISK CONFIGURATION ====================
   const riskLevels = {
-    'GREEN': { color: '#22c55e', light: '#22c55e20', emoji: '🟢', label: 'SAFE', description: 'Normal conditions' },
-    'YELLOW': { color: '#eab308', light: '#eab30820', emoji: '🟡', label: 'WATCH', description: 'Be aware' },
-    'ORANGE': { color: '#f97316', light: '#f9731620', emoji: '🟠', label: 'WARN', description: 'Prepare for disruptions' },
-    'RED': { color: '#ef4444', light: '#ef444420', emoji: '🔴', label: 'ALERT', description: 'Take action' },
-    'PURPLE': { color: '#a855f7', light: '#a855f720', emoji: '🟣', label: 'EVAC', description: 'Emergency response' }
+    'GREEN': { color: '#22c55e', light: '#22c55e20', emoji: '??', label: 'SAFE', description: 'Normal conditions' },
+    'YELLOW': { color: '#eab308', light: '#eab30820', emoji: '??', label: 'WATCH', description: 'Be aware' },
+    'ORANGE': { color: '#f97316', light: '#f9731620', emoji: '??', label: 'WARN', description: 'Prepare for disruptions' },
+    'RED': { color: '#ef4444', light: '#ef444420', emoji: '??', label: 'ALERT', description: 'Take action' },
+    'PURPLE': { color: '#a855f7', light: '#a855f720', emoji: '??', label: 'EVAC', description: 'Emergency response' }
   };
 
   const cityCoordinates = {
@@ -240,7 +241,7 @@ function App() {
               justifyContent: 'center',
               fontSize: 18,
             }}>
-              🌦️
+              ???
             </div>
             <div>
               <h1 style={{
@@ -266,7 +267,7 @@ function App() {
             alignItems: 'center',
             gap: 8,
           }}>
-            <span style={{ fontSize: 14 }}>📅</span>
+            <span style={{ fontSize: 14 }}>??</span>
             <input
               type="date"
               value={selectedDate}
@@ -304,7 +305,7 @@ function App() {
               onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
-              <span>💬</span> Forum
+              <span>??</span> Forum
             </button>
 
             <button
@@ -329,7 +330,7 @@ function App() {
                 e.target.style.color = '#94a3b8';
               }}
             >
-              ⚙️ Settings
+              ?? Settings
             </button>
 
             <div style={{
@@ -350,7 +351,7 @@ function App() {
                 justifyContent: 'center',
                 fontSize: 12,
               }}>
-                👤
+                ??
               </div>
               <span style={{ fontSize: 13, color: 'white' }}>{user.name || 'User'}</span>
             </div>
@@ -415,7 +416,7 @@ function App() {
           fontSize: 13,
           animation: 'slideDown 0.3s ease-out',
         }}>
-          <strong>⚠️ {error}</strong>
+          <strong>?? {error}</strong>
         </div>
       )}
 
@@ -437,7 +438,7 @@ function App() {
           height: 'fit-content',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 20 }}>📍</span>
+            <span style={{ fontSize: 20 }}>??</span>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Governorates</h3>
           </div>
           <div style={{
@@ -511,7 +512,7 @@ function App() {
             alignItems: 'center',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🗺️</span>
+              <span style={{ fontSize: 20 }}>???</span>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Vigilance Map</h3>
             </div>
             <label style={{
@@ -546,7 +547,7 @@ function App() {
           <HazardLegend />
         </div>
 
-        {/* Risk Panel */}
+        {/* Risk Overview */}
         <div style={{
           background: 'linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)',
           borderRadius: 16,
@@ -554,75 +555,86 @@ function App() {
           padding: '20px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 20 }}>⚠️</span>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Risk Overview</h3>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Meteo & Risques</h3>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                border: '3px solid rgba(29, 158, 117, 0.2)',
-                borderTopColor: '#1D9E75',
-                borderRadius: '50%',
-                margin: '0 auto 12px',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <p style={{ color: '#64748b', fontSize: 13 }}>Loading forecasts...</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {selectedCities.map(city => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {selectedCities.map(city => {
+              const data = forecastData[city];
+              const hasData = data && data.risk_level;
+              const risk = hasData ? data.risk_level : 'UNKNOWN';
+              const riskConfig = riskLevels[risk] || { color: '#64748b', light: '#64748b10', emoji: '?', label: 'N/A', description: 'No data' };
+              const weather = hasData ? (data.weather || {}) : {};
+
+              return (
                 <div
                   key={city}
                   style={{
                     padding: '14px',
                     borderRadius: 12,
-                    background: forecastData[city] ? riskLevels[forecastData[city].risk_level]?.light || 'rgba(100, 116, 139, 0.1)' : 'rgba(100, 116, 139, 0.05)',
-                    border: `1px solid ${forecastData[city] ? getRiskColor(forecastData[city].risk_level) + '40' : '#1e293b'}`,
+                    background: hasData ? riskConfig.light : 'rgba(100, 116, 139, 0.08)',
+                    border: `2px solid ${hasData ? riskConfig.color + '50' : '#334155'}`,
+                    position: 'relative',
+                    zIndex: 1,
+                    marginBottom: '8px',
                   }}
                 >
-                  {forecastData[city] ? (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'white' }}>{city}</h4>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: 12,
-                          fontSize: 10,
-                          fontWeight: 600,
-                          background: getRiskColor(forecastData[city].risk_level),
-                          color: 'white',
-                        }}>
-                          {forecastData[city].risk_level}
-                        </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#f8fafc' }}>
+                      {city}
+                    </h4>
+                    {hasData && (
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: riskConfig.color,
+                        color: 'white',
+                      }}>
+                        {riskConfig.label}
+                      </span>
+                    )}
+                  </div>
+
+                  {hasData ? (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>TEMP</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
+                            {weather.temp_avg || 'N/A'} C
+                          </div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>WIND</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
+                            {weather.wind_speed || 'N/A'} km/h
+                          </div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>HUMIDITY</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
+                            {weather.humidity || 'N/A'}%
+                          </div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>RAIN</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
+                            {weather.precipitation || 'N/A'} mm
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 16, justifyContent: 'space-around' }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, marginBottom: 4 }}>🌡️</div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>Temp</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.temp_avg || 'N/A'}°C</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, marginBottom: 4 }}>💨</div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>Wind</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.wind_speed || 'N/A'} km/h</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, marginBottom: 4 }}>💧</div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>Humidity</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{forecastData[city].weather?.humidity || 'N/A'}%</div>
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   ) : (
-                    <p style={{ color: '#64748b', fontSize: 13, textAlign: 'center', margin: 0 }}>No data for {city}</p>
+                    <div style={{ textAlign: 'center', padding: '12px 0', color: '#64748b', fontSize: 11 }}>
+                      No data available
+                    </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -644,7 +656,7 @@ function App() {
         textAlign: 'center',
       }}>
         <p style={{ margin: 0, fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <span>❤️</span> Protecting lives · Model: 99.58% accuracy
+          <span>??</span> Protecting lives � Model: 99.58% accuracy
         </p>
       </footer>
 
@@ -691,7 +703,7 @@ function App() {
                 e.target.style.borderColor = '#334155';
               }}
             >
-              ×
+              �
             </button>
             <Settings
               user={user}
@@ -719,3 +731,4 @@ function App() {
 }
 
 export default App;
+// REBUILD TRIGGER 2026-05-04 12:22:00

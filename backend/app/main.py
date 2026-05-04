@@ -25,12 +25,44 @@ EXPERIMENT_NAME = 'WeatherGuardTN'
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
-    print('ðŸš€ DÃ©marrage de WeatherGuardTN API...')
+    print('🚀 Démarrage de WeatherGuardTN API...')
     try:
         Base.metadata.create_all(bind=engine)
-        print('âœ… Tables de la base de donnÃ©es initialisÃ©es.')
+        print('✅ Tables de la base de données initialisées.')
     except Exception as e:
-        print(f'âŒ Erreur lors de la crÃ©ation des tables : {e}')
+        print(f'❌ Erreur lors de la création des tables : {e}')
+
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        if 'notifications' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('notifications')]
+            with engine.connect() as conn:
+                from sqlalchemy import text
+                # Add news_article_id column if missing
+                if 'news_article_id' not in columns:
+                    conn.execute(text("ALTER TABLE notifications ADD COLUMN news_article_id UUID REFERENCES news_articles(id) ON DELETE CASCADE"))
+                    conn.commit()
+                    print('✅ Added news_article_id column to notifications table')
+                # Fix check constraint to include 'news_update'
+                try:
+                    conn.execute(text("ALTER TABLE notifications DROP CONSTRAINT notifications_type_check"))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                try:
+                    conn.execute(text(
+                        "ALTER TABLE notifications ADD CONSTRAINT notifications_type_check "
+                        "CHECK (type IN ('post_like','post_comment','post_share','post_approved','post_rejected',"
+                        "'comment_like','new_follower','user_report_resolved','post_report_resolved','news_update'))"
+                    ))
+                    conn.commit()
+                    print('✅ Updated notifications_type_check to include news_update')
+                except Exception as e:
+                    conn.rollback()
+                    print(f'⚠️ Could not update notifications_type_check: {e}')
+    except Exception as e:
+        print(f'⚠️ Could not migrate notifications table: {e}')
 
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     try:
@@ -39,12 +71,18 @@ async def lifespan(fastapi_app: FastAPI):
             mlflow.create_experiment(EXPERIMENT_NAME)
         mlflow.set_experiment(EXPERIMENT_NAME)
         mlflow.search_experiments()
-        print('âœ… Connexion Ã  MLflow Ã©tablie')
+        print('✅ Connexion à MLflow établie')
     except Exception as e:
-        print(f'âš ï¸ MLflow non connectÃ© ou erreur : {e}')
+        print(f'⚠️ MLflow non connecté ou erreur : {e}')
+
+    # Start news scraper scheduler
+    start_scheduler(interval_hours=6)
 
     yield
-    print('ðŸ‘‹ ArrÃªt de WeatherGuardTN API...')
+
+    # Shutdown
+    stop_scheduler()
+    print('👋 Arrêt de WeatherGuardTN API...')
 
 fastapi_app = FastAPI(
     title='WeatherGuardTN API',
@@ -88,7 +126,6 @@ fastapi_app.include_router(router, prefix='/api')
 fastapi_app.include_router(google_auth_router, prefix='/api/auth', tags=['auth'])
 fastapi_app.include_router(forum_router, prefix='/api/forum', tags=['forum'])
 fastapi_app.include_router(news.router)
-# Removed - using news router instead
 
 @fastapi_app.get('/')
 def root():
@@ -111,19 +148,3 @@ def test_mlflow_connection():
         return False
 
 app = fastapi_app
-
-
-@app.on_event("startup")
-async def startup():
-    start_scheduler()
-
-@app.on_event("shutdown")
-async def shutdown():
-    stop_scheduler()
-
-# Import public news routes
-
-# Include public news routes
-
-
-

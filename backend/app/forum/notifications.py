@@ -22,19 +22,22 @@ NOTIFICATION_MESSAGES = {
     "new_follower":          "{actor} started following you.",
     "user_report_resolved":  "A report you submitted has been reviewed.",
     "post_report_resolved":  "A post you reported has been reviewed.",
+    "news_alert":            "New weather alert for {governorate}: {title}",
+    "news_update":           "Weather news for {governorate}: {title}",
 }
 
 
 def send_notification(
-    db:         Session,
+    db:             Session,
     *,
-    user_id:    UUID,          # recipient
-    type:       str,
-    actor_id:   Optional[UUID] = None,
-    actor_name: Optional[str]  = None,
-    post_id:    Optional[UUID] = None,
-    comment_id: Optional[UUID] = None,
-    extra:      Optional[dict] = None,
+    user_id:        UUID,
+    type:           str,
+    actor_id:       Optional[UUID] = None,
+    actor_name:     Optional[str]  = None,
+    post_id:        Optional[UUID] = None,
+    comment_id:     Optional[UUID] = None,
+    news_article_id: Optional[UUID] = None,
+    extra:          Optional[dict] = None,
 ) -> Notification:
     """
     Persist a notification.  actor_name is used only for message templating.
@@ -51,13 +54,50 @@ def send_notification(
         message = template
 
     notif = Notification(
-        user_id    = user_id,
-        actor_id   = actor_id,
-        type       = type,
-        post_id    = post_id,
-        comment_id = comment_id,
-        message    = message,
+        user_id         = user_id,
+        actor_id        = actor_id,
+        type            = type,
+        post_id         = post_id,
+        comment_id      = comment_id,
+        message         = message,
     )
     db.add(notif)
-    db.flush()          # get the id without committing the parent transaction
+    db.flush()
     return notif
+
+
+def notify_users_about_news(
+    db:         Session,
+    *,
+    title:      str,
+    governorates: list[str],
+    risk_level: str,
+    news_article_id: Optional[UUID] = None,
+):
+    """
+    Notify all ForumUsers whose governorate matches any of the article's governorates.
+    Uses 'news_alert' for orange/red/purple, 'news_update' for green/yellow.
+    """
+    from app.forum.models import ForumUser
+
+    if risk_level in ("red", "orange", "purple"):
+        notif_type = "news_alert"
+    else:
+        notif_type = "news_update"
+
+    users = db.query(ForumUser).filter(
+        ForumUser.governorate.in_(governorates),
+        ForumUser.is_active == True,
+    ).all()
+
+    for user in users:
+        send_notification(
+            db,
+            user_id=user.id,
+            type=notif_type,
+            news_article_id=news_article_id,
+            extra={
+                "governorate": ", ".join(governorates[:3]),
+                "title": title[:80],
+            },
+        )

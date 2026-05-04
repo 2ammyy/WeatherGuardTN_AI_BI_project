@@ -336,14 +336,15 @@ class ShareOut(BaseModel):
 # Notifications
 # ─────────────────────────────────────────────
 class NotificationOut(BaseModel):
-    id:         UUID
-    type:       str
-    message:    Optional[str] = None
-    article_id: Optional[UUID] = None
-    post_id:    Optional[UUID] = None
-    comment_id: Optional[UUID] = None
-    is_read:    bool
-    created_at: datetime
+    id:              UUID
+    type:            str
+    message:         Optional[str] = None
+    article_id:      Optional[UUID] = None
+    post_id:         Optional[UUID] = None
+    comment_id:      Optional[UUID] = None
+    news_article_id: Optional[UUID] = None
+    is_read:         bool
+    created_at:      datetime
  
     model_config = {"from_attributes": True}
  

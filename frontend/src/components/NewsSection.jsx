@@ -330,7 +330,7 @@ const NewsSection = () => {
               lineHeight: 1.6,
               fontSize: 13,
             }}>
-              {article.body.length > 200 ? article.body.substring(0, 200) + '...' : article.body}
+              {article.body && article.body.length > 200 ? article.body.substring(0, 200) + '...' : (article.body || '')}
             </p>
             
             {/* Governorates Tags */}

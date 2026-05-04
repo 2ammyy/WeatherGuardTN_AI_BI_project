@@ -182,12 +182,14 @@ class Notification(Base):
     type       = Column(String(50), nullable=False)
     post_id    = Column(UUID(as_uuid=True), ForeignKey("forum_posts.id", ondelete="CASCADE"), nullable=True)
     comment_id = Column(UUID(as_uuid=True), ForeignKey("forum_comments.id", ondelete="CASCADE"), nullable=True)
+    news_article_id = Column(UUID(as_uuid=True), ForeignKey("news_articles.id", ondelete="CASCADE"), nullable=True)
     message    = Column(Text)
     is_read    = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     recipient = relationship("ForumUser", foreign_keys=[user_id], back_populates="notifications")
     actor     = relationship("ForumUser", foreign_keys=[actor_id])
+    news_article = relationship("NewsArticle", foreign_keys=[news_article_id])
 
 # ─────────────────────────────────────────────
 # News Articles (scraped from external sources)
