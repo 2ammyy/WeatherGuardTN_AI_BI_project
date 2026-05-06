@@ -6,6 +6,7 @@ import mlflow
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.database import engine, Base
@@ -126,6 +127,11 @@ fastapi_app.include_router(router, prefix='/api')
 fastapi_app.include_router(google_auth_router, prefix='/api/auth', tags=['auth'])
 fastapi_app.include_router(forum_router, prefix='/api/forum', tags=['forum'])
 fastapi_app.include_router(news.router)
+
+# Serve uploaded forum media
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'forum')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+fastapi_app.mount('/api/forum/uploads', StaticFiles(directory=UPLOAD_DIR), name='forum-uploads')
 
 @fastapi_app.get('/')
 def root():

@@ -76,6 +76,16 @@ class UserUpdate(BaseModel):
 # ─────────────────────────────────────────────
 # Posts
 # ─────────────────────────────────────────────
+class PostMediaOut(BaseModel):
+    id:        UUID
+    file_url:  str
+    file_type: str  # "image" or "video"
+    mime_type: Optional[str]
+    file_name: Optional[str]
+
+    model_config = {"from_attributes": True}
+
+
 class PostCreate(BaseModel):
     title:       str
     body:        str
@@ -83,6 +93,7 @@ class PostCreate(BaseModel):
     governorate: Optional[str] = None
     risk_level:  Optional[str] = "green"
     image_url:   Optional[str] = None
+    media_urls:  Optional[List[str]] = None  # list of uploaded file URLs
 
     @field_validator("category")
     @classmethod
@@ -110,6 +121,13 @@ class PostUpdate(BaseModel):
     image_url:   Optional[str] = None
 
 
+class FileUploadResponse(BaseModel):
+    file_url:  str
+    file_type: str
+    mime_type: str
+    file_name: str
+
+
 class AICheckResult(BaseModel):
     approved:   bool
     reason:     str
@@ -124,6 +142,8 @@ class PostOut(BaseModel):
     governorate:    Optional[str]
     risk_level:     str
     image_url:      Optional[str]
+    media_urls:     List[str] = []
+    media_items:    List[PostMediaOut] = []
     ai_approved:    bool
     ai_reason:      Optional[str]
     likes_count:    int

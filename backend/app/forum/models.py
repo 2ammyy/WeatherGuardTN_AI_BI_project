@@ -101,6 +101,20 @@ class ForumPost(Base):
     reports  = relationship("PostReport", back_populates="post", lazy="dynamic")
 
 
+class PostMedia(Base):
+    __tablename__ = "post_media"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id     = Column(UUID(as_uuid=True), ForeignKey("forum_posts.id", ondelete="CASCADE"), nullable=False)
+    file_url    = Column(Text, nullable=False)
+    file_type   = Column(String(20), nullable=False)  # "image" or "video"
+    mime_type   = Column(String(100))
+    file_name   = Column(String(300))
+    created_at  = Column(DateTime(timezone=True), default=utcnow)
+
+    post = relationship("ForumPost", backref="media_items", lazy="select")
+
+
 class PostLike(Base):
     __tablename__ = "post_likes"
     post_id    = Column(UUID(as_uuid=True), ForeignKey("forum_posts.id", ondelete="CASCADE"), primary_key=True)

@@ -121,6 +121,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data
+      - forum_uploads:/app/uploads/forum
     depends_on:
       db:
         condition: service_healthy
@@ -157,3 +158,4 @@ volumes:
   mlflow_db:
   postgres_data:
   ollama_data:                             # persists the qwen2.5:3b model between restarts
+  forum_uploads:                           # persists uploaded forum media files

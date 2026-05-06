@@ -154,9 +154,50 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         <div style={{ fontSize: 14, color: "var(--color-text-secondary)", lineHeight: 1.65 }}>
           {post.body}
         </div>
-        {post.image_url && (
-          <img src={post.image_url} alt="" style={{ width: "100%", marginTop: 12, borderRadius: 8, maxHeight: 280, objectFit: "cover" }} />
-        )}
+
+        {/* Media gallery */}
+        {(() => {
+          const items = post.media_items && post.media_items.length > 0
+            ? post.media_items
+            : post.image_url
+              ? [{ file_url: post.image_url, file_type: "image" }]
+              : post.media_urls
+                ? post.media_urls.map((u) => ({ file_url: u, file_type: u.match(/\.(mp4|webm|mov)$/i) ? "video" : "image" }))
+                : [];
+
+          if (items.length === 0) return null;
+
+          return (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              {items.map((item, i) => {
+                const url = item.file_url;
+                if (!url) return null;
+                const isVideo = item.file_type === "video" || url.match(/\.(mp4|webm|mov)(\?|$)/i);
+                const fullUrl = url.startsWith("/") ? `http://localhost:8001${url}` : url;
+                if (isVideo) {
+                  return (
+                    <video
+                      key={i}
+                      src={fullUrl}
+                      controls
+                      preload="metadata"
+                      style={{ width: "100%", borderRadius: 8, maxHeight: 360, objectFit: "cover", background: "#0f172a" }}
+                    />
+                  );
+                }
+                return (
+                  <img
+                    key={i}
+                    src={fullUrl}
+                    alt=""
+                    style={{ width: "100%", borderRadius: 8, maxHeight: 360, objectFit: "cover" }}
+                    loading="lazy"
+                  />
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Actions */}

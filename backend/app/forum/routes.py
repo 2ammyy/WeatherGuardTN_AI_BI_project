@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.forum import models
@@ -24,6 +24,11 @@ from app.forum.auth import (
     hash_password, verify_password,
 )
 from app.forum.notifications import send_notification
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
+ALLOWED_TYPES = ALLOWED_IMAGE_TYPES | ALLOWED_VIDEO_TYPES
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
 router = APIRouter()
 
@@ -216,6 +221,54 @@ def report_user(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# FILE UPLOADS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/upload", response_model=schemas.FileUploadResponse)
+async def upload_media(
+    file: UploadFile = File(...),
+    current: models.ForumUser = Depends(get_current_user),
+):
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"File type {file.content_type} not allowed. Allowed: images (jpeg, png, gif, webp) and videos (mp4, webm)")
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(400, "File too large. Maximum size is 50 MB.")
+    if len(content) == 0:
+        raise HTTPException(400, "Empty file.")
+
+    import hashlib
+    import time
+    ext_map = {
+        "image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp",
+        "video/mp4": ".mp4", "video/webm": ".webm", "video/quicktime": ".mov",
+    }
+    ext = ext_map.get(file.content_type, ".bin")
+    file_hash = hashlib.md5(content).hexdigest()[:8]
+    timestamp = int(time.time())
+    filename = f"{timestamp}_{file_hash}_{file.filename or 'upload'}{ext}"
+
+    import os
+    upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "forum")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    file_type = "image" if file.content_type in ALLOWED_IMAGE_TYPES else "video"
+    file_url = f"/api/forum/uploads/{filename}"
+
+    return schemas.FileUploadResponse(
+        file_url=file_url,
+        file_type=file_type,
+        mime_type=file.content_type,
+        file_name=file.filename or "upload",
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # POSTS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -225,6 +278,16 @@ def _post_out(post: models.ForumPost, current: Optional[models.ForumUser], db: S
         is_liked = bool(db.query(models.PostLike).filter_by(post_id=post.id, user_id=current.id).first())
     out = schemas.PostOut.model_validate(post)
     out.is_liked = is_liked
+
+    # Populate media from PostMedia relationship
+    media_items = []
+    media_urls = []
+    for m in post.media_items:
+        media_items.append(schemas.PostMediaOut.model_validate(m))
+        media_urls.append(m.file_url)
+    out.media_items = media_items
+    out.media_urls = media_urls
+
     return out
 
 
@@ -310,6 +373,20 @@ async def create_post(
     )
     db.add(post)
     db.flush()
+
+    # Save media attachments
+    if payload.media_urls:
+        for url in payload.media_urls:
+            file_type = "video" if any(url.endswith(ext) for ext in (".mp4", ".webm", ".mov")) else "image"
+            mime = "video/mp4" if file_type == "video" else "image/jpeg"
+            media = models.PostMedia(
+                post_id   = post.id,
+                file_url  = url,
+                file_type = file_type,
+                mime_type = mime,
+                file_name = url.split("/")[-1] if "/" in url else url,
+            )
+            db.add(media)
 
     # Notify author about AI decision
     notif_type = "post_approved" if ai_result.approved else "post_rejected"
