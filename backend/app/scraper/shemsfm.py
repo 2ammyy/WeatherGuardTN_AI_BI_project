@@ -1,58 +1,71 @@
 from __future__ import annotations
-import feedparser
 import logging
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from app.scraper.governorate_mapper import extract_governorates, assess_risk
 
 logger = logging.getLogger(__name__)
 
-FEED_URLS = [
-    'https://www.shemsfm.net/ar/rss',
+WEATHER_KEYWORDS = [
+    'météo', 'meteo', 'pluie', 'vent', 'tempête', 'orage',
+    'chaleur', 'froid', 'canicule', 'neige', 'intempérie',
+    'prévisions', 'weather', 'storm', 'rain', 'temperature',
 ]
+
+EXCLUDE_KEYWORDS = [
+    'foot', 'football', 'match', 'ligue', 'politique', 'élection',
+]
+
 
 def scrape():
     articles = []
-    for feed_url in FEED_URLS:
+    urls = [
+        'https://www.shemsfm.net/',
+    ]
+
+    for base_url in urls:
         try:
-            feed = feedparser.parse(feed_url)
-            weather_keywords_ar = ['طقس', 'مطر', 'رياح', 'عواصف', 'حرارة', 'برد', 'ثلوج', 'فيضانات', 'منخفض جوي']
-            weather_keywords_fr = ['meteo', 'pluie', 'vent', 'tempete', 'chaleur', 'froid', 'neige', 'inondation']
+            resp = requests.get(base_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for entry in feed.entries[:20]:
-                title = entry.get('title', '').strip()
-                if not title:
+            for a_tag in soup.find_all('a', href=True):
+                href = a_tag.get('href', '')
+                title = a_tag.get_text(strip=True)
+                if not title or len(title) < 10:
                     continue
-                combined = title + ' ' + entry.get('summary', '')
-                is_weather = any(kw in combined for kw in weather_keywords_ar + weather_keywords_fr)
-                if not is_weather:
+
+                combined = title.lower()
+                if any(kw in combined for kw in EXCLUDE_KEYWORDS):
+                    continue
+                if not any(kw in combined for kw in WEATHER_KEYWORDS):
                     continue
 
-                summary = entry.get('summary', entry.get('description', ''))
-                link = entry.get('link', '')
-                pub_date = None
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    from calendar import timegm
-                    pub_date = datetime.fromtimestamp(timegm(entry.published_parsed), tz=timezone.utc)
+                full_url = href if href.startswith('http') else base_url.rstrip('/') + '/' + href.lstrip('/')
+                governorates = extract_governorates(title)
+                risk_level = assess_risk(title)
 
-                governorates = extract_governorates(combined)
-                risk_level = assess_risk(combined)
-                category = 'alert' if risk_level in ('red', 'orange', 'purple') else 'meteo'
-
+                category = 'weather'
                 articles.append({
                     'source_name': 'shemsfm',
-                    'source_url': link or f'{feed_url}/{title}',
+                    'source_url': full_url,
                     'title': title,
-                    'body': summary,
+                    'body': '',
                     'category': category,
                     'governorates': governorates if governorates else ['Tunis'],
                     'risk_level': risk_level,
                     'scraped_at': datetime.now(timezone.utc),
-                    'published_at': pub_date or datetime.now(timezone.utc),
+                    'published_at': datetime.now(timezone.utc),
                     'likes_count': 0,
                     'comments_count': 0,
                     'shares_count': 0,
                 })
-            logger.info(f'ShemsFM ({feed_url}): found {len(feed.entries)} entries')
+
+            logger.info(f'ShemsFM ({base_url}): found {len(articles)} relevant')
         except Exception as e:
-            logger.error(f'ShemsFM error ({feed_url}): {e}')
-    return articles
+            logger.error(f'ShemsFM error ({base_url}): {e}')
+
+    return articles[:10]

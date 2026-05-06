@@ -1,58 +1,74 @@
 ﻿from __future__ import annotations
-import feedparser
 import logging
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from app.scraper.governorate_mapper import extract_governorates, assess_risk
 
 logger = logging.getLogger(__name__)
 
-FEED_URLS = [
-    'https://www.jawharafm.net/ar/rss',
+WEATHER_KEYWORDS = [
+    'طقس', 'مطر', 'رياح', 'عواصف', 'حرارة', 'برد', 'ثلوج', 'فيضانات', 'منخفض جوي',
+    'meteo', 'pluie', 'vent', 'tempete', 'chaleur', 'froid', 'neige', 'inondation',
 ]
+
+EXCLUDE_KEYWORDS = [
+    'foot', 'football', 'match', 'ligue', 'club', 'espérance', 'étoile',
+    'politique', 'gouvernement', 'président', 'élection',
+]
+
 
 def scrape():
     articles = []
-    for feed_url in FEED_URLS:
+    urls = [
+        ('https://www.jawharafm.net/ar/', 'ar'),
+        ('https://www.jawharafm.net/fr/', 'fr'),
+    ]
+
+    for base_url, lang in urls:
         try:
-            feed = feedparser.parse(feed_url)
-            weather_keywords_ar = ['طقس', 'مطر', 'رياح', 'عواصف', 'حرارة', 'برد', 'ثلوج', 'فيضانات', 'منخفض جوي']
-            weather_keywords_fr = ['meteo', 'pluie', 'vent', 'tempete', 'chaleur', 'froid', 'neige', 'inondation']
+            resp = requests.get(base_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for entry in feed.entries[:20]:
-                title = entry.get('title', '').strip()
-                if not title:
+            for a_tag in soup.find_all('a', href=True):
+                href = a_tag.get('href', '')
+                title = a_tag.get_text(strip=True)
+                if not title or len(title) < 10:
                     continue
-                combined = title + ' ' + entry.get('summary', '')
-                is_weather = any(kw in combined for kw in weather_keywords_ar + weather_keywords_fr)
-                if not is_weather:
+                if title in [a.get_text(strip=True) for a in articles[:10]]:
                     continue
 
-                summary = entry.get('summary', entry.get('description', ''))
-                link = entry.get('link', '')
-                pub_date = None
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    from calendar import timegm
-                    pub_date = datetime.fromtimestamp(timegm(entry.published_parsed), tz=timezone.utc)
+                combined = title.lower()
+                if any(kw in combined for kw in EXCLUDE_KEYWORDS):
+                    continue
+                if not any(kw.lower() in combined for kw in WEATHER_KEYWORDS):
+                    continue
 
-                governorates = extract_governorates(combined)
-                risk_level = assess_risk(combined)
-                category = 'alert' if risk_level in ('red', 'orange', 'purple') else 'meteo'
+                full_url = href if href.startswith('http') else base_url.rstrip('/') + href
+                governorates = extract_governorates(title)
+                risk_level = assess_risk(title)
+                category = 'alert' if risk_level in ('red', 'orange', 'purple') else 'weather'
 
                 articles.append({
                     'source_name': 'jawharafm',
-                    'source_url': link or f'{feed_url}/{title}',
+                    'source_url': full_url,
                     'title': title,
-                    'body': summary,
+                    'body': '',
                     'category': category,
                     'governorates': governorates if governorates else ['Tunis'],
                     'risk_level': risk_level,
                     'scraped_at': datetime.now(timezone.utc),
-                    'published_at': pub_date or datetime.now(timezone.utc),
+                    'published_at': datetime.now(timezone.utc),
                     'likes_count': 0,
                     'comments_count': 0,
                     'shares_count': 0,
                 })
-            logger.info(f'JawharaFM ({feed_url}): found {len(feed.entries)} entries')
+
+            logger.info(f'JawharaFM ({base_url}): found {len(articles)} relevant')
         except Exception as e:
-            logger.error(f'JawharaFM error ({feed_url}): {e}')
-    return articles
+            logger.error(f'JawharaFM error ({base_url}): {e}')
+
+    return articles[:10]

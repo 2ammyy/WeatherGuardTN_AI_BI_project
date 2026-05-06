@@ -47,23 +47,37 @@ SCHOOL_KEYWORDS = [
 ]
 
 RISK_KEYWORDS = [
-    'vigilance', 'warning',
-    'risque', 'risk', 'menace', 'threat', 'catastrophe',
-    'tempête', 'storm',
-    'vague', 'wave', 'houle', 'mer agitée', 'rough sea',
-    'marée', 'tide', 'tsunami', 'ouragan', 'hurricane',
-    'cyclone', 'tornade', 'tornado', 'crue', 'oued',
-    'déborder', 'overflow', 'glissement', 'landslide',
+    'vigilance météo', 'vigilance orange', 'vigilance rouge', 'vigilance jaune',
+    'vague', 'houle', 'mer agitée', 'rough sea',
+    'marée', 'tsunami', 'ouragan', 'cyclone', 'tornade', 'tornado',
+    'crue', 'oued déborde', 'oued en crue',
+    'glissement de terrain', 'landslide',
     'risque maritime', 'navigation', 'pêche', 'coastal',
     'côtier', 'érosion', 'érosion côtière',
-    'noyade', 'incendie', 'protection civile',
-    'danger', 'catastrophe naturelle',
+    'noyade', 'noyades', 'incendie de forêt',
+    'protection civile', 'catastrophe naturelle',
+    'tempête', 'orage violent', 'pluie diluvienne',
+    'vent fort', 'vent violent', 'rafale',
+]
+
+EXCLUDE_KEYWORDS = [
+    'ukraine', 'russie', 'israël', 'palestine', 'gaza',
+    'élections', 'élection', 'parlement', 'ministre',
+    'foot', 'football', 'ligue', 'club africain', 'espérance',
+    'étoile sportive', 'cs sfaxien', 'stade', 'match',
+    'incendie au parc', 'tentative d incendie',
+    'attentat', 'drone', 'militaire', 'armée', 'guerre',
+    'emirats', 'iran', 'états-unis', 'chine', 'corée',
+    'politique', 'gouvernement', 'président',
 ]
 
 
 def classify_article(text: str) -> str:
     """Classify article into one of the 5 target categories."""
     lower = text.lower()
+
+    if any(kw in lower for kw in EXCLUDE_KEYWORDS):
+        return None
 
     if any(kw in lower for kw in SCHOOL_KEYWORDS):
         return 'school_closure'

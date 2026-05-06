@@ -12,7 +12,7 @@ import Signup from './components/Signup';
 import { fetchHazards } from './services/hazardService';
 import Settings from './components/Settings';
 import ForumPage from './forum/pages/ForumPage';
-import NewsWidget from './components/NewsWidget';
+import NewsPage from './pages/NewsPage';
 
 function App() {
   // ==================== AUTH STATE ====================
@@ -33,6 +33,7 @@ function App() {
   const [showNeighbors, setShowNeighbors] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showForum, setShowForum] = useState(false);
+  const [showNews, setShowNews] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // ==================== RISK CONFIGURATION ====================
@@ -188,6 +189,7 @@ function App() {
   }
 
   if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} />;
+  if (showNews) return <NewsPage onBack={() => setShowNews(false)} />;
 
   return (
     <div style={{
@@ -305,7 +307,35 @@ function App() {
               onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
-              <span>??</span> Forum
+              <span>💬</span> Forum
+            </button>
+
+            <button
+              onClick={() => setShowNews(true)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 10,
+                background: 'rgba(6, 182, 212, 0.1)',
+                border: '1px solid rgba(6, 182, 212, 0.3)',
+                color: '#06b6d4',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(6, 182, 212, 0.2)';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(6, 182, 212, 0.1)';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>📰</span> Actualités
             </button>
 
             <button
@@ -636,11 +666,6 @@ function App() {
             })}
           </div>
         </div>
-      </div>
-
-      {/* News Section */}
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px 24px' }}>
-        <NewsWidget />
       </div>
 
       {/* Route Checker */}

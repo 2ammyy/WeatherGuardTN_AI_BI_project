@@ -39,6 +39,7 @@ INFRASTRUCTURE_KEYWORDS = [
     'effondrement', 'collapse',
     'glissement de terrain', 'landslide', 'éboulement',
     'dégâts matériels', 'dégâts', 'destruction',
+    'coupure', 'électricité', 'eau potable', 'panne',
 ]
 
 SCHOOL_KEYWORDS = [
@@ -50,30 +51,49 @@ SCHOOL_KEYWORDS = [
 ]
 
 RISK_KEYWORDS = [
-    'vigilance', 'warning',
-    'risque', 'risk', 'menace', 'threat', 'catastrophe',
-    'tempête', 'storm',
-    'vague', 'wave', 'houle', 'mer agitée', 'rough sea',
-    'marée', 'tide', 'tsunami', 'ouragan', 'hurricane',
-    'cyclone', 'tornade', 'tornado', 'crue', 'oued',
-    'déborder', 'overflow', 'glissement', 'landslide',
+    'vigilance météo', 'vigilance orange', 'vigilance rouge', 'vigilance jaune',
+    'vague', 'houle', 'mer agitée', 'rough sea',
+    'marée', 'tsunami', 'ouragan', 'cyclone', 'tornade', 'tornado',
+    'crue', 'oued déborde', 'oued en crue',
+    'glissement de terrain', 'landslide',
     'risque maritime', 'navigation', 'pêche', 'coastal',
     'côtier', 'érosion', 'érosion côtière',
-    'noyade', 'incendie', 'protection civile',
-    'danger', 'catastrophe naturelle',
+    'noyade', 'noyades', 'incendie de forêt',
+    'protection civile', 'catastrophe naturelle',
+    'tempête', 'orage violent', 'pluie diluvienne',
+    'vent fort', 'vent violent', 'rafale',
+    'secousse', 'séisme', 'tremblement de terre',
+    'sismique', 'magnitude', 'tellurique',
+    'accident', 'collision', 'blessé', 'blessés',
 ]
 
-ARABIC_KEYWORDS = [
-    'طقس', 'مطر', 'رياح', 'عواصف', 'حرارة', 'برد',
-    'فيضان', 'موجة حر', 'ثلج', 'إنذار', 'تحذير',
-    'تغير مناخي', 'مدرسة', 'إغلاق', 'طريق',
-    'بحر', 'ساحل', 'أخطار', 'سيول',
+EXCLUDE_KEYWORDS = [
+    'ukraine', 'russie', 'israël', 'palestine', 'gaza',
+    'élections', 'élection', 'parlement', 'ministre',
+    'foot', 'football', 'ligue', 'club africain', 'espérance',
+    'étoile sportive', 'cs sfaxien', 'stade', 'match',
+    'incendie au parc', 'tentative d incendie',
+    'attentat', 'drone', 'militaire', 'armée', 'guerre',
+    'emirats', 'iran', 'états-unis', 'chine', 'corée',
+    'politique', 'gouvernement', 'président',
+    'tennis', 'sabalenka', 'handball', 'bac blanc',
+    'détroit', 'trump', 'pétrole', 'inflation',
+    'cancer', 'hôpital', 'transplant', 'médical',
+    'naturalisation', 'passeport', 'dossier',
+    'chiboub', 'démission', 'fonctions',
+    'don d organes', 'cœur', 'reins',
+    'tunisair', 'hajj', 'bagage',
+    'ligue des champions', 'arsenal', 'bayern', 'psg',
+    'libération', 'wadie', 'jary', 'caméras',
 ]
 
 
 def classify_article(text: str) -> str:
     """Classify article into one of the 5 target categories."""
     lower = text.lower()
+
+    if any(kw in lower for kw in EXCLUDE_KEYWORDS):
+        return None
 
     if any(kw in lower for kw in SCHOOL_KEYWORDS):
         return 'school_closure'
@@ -90,14 +110,10 @@ def classify_article(text: str) -> str:
     if any(kw in lower for kw in WEATHER_KEYWORDS):
         return 'weather'
 
-    if any(kw in lower for kw in ARABIC_KEYWORDS):
-        return 'weather'
-
     return None
 
 
 def is_relevant(text: str) -> bool:
-    """Check if article is relevant to Tunisia climate/weather topics."""
     return classify_article(text) is not None
 
 
@@ -161,7 +177,7 @@ def scrape():
         try:
             feed = feedparser.parse(feed_url)
 
-            for entry in feed.entries[:40]:
+            for entry in feed.entries[:50]:
                 title = entry.get('title', '').strip()
                 if not title:
                     continue

@@ -1,63 +1,72 @@
 from __future__ import annotations
-import feedparser
 import logging
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from app.scraper.governorate_mapper import extract_governorates, assess_risk
 
 logger = logging.getLogger(__name__)
 
-FEED_URLS = [
-    'https://www.tap.info.tn/fr/index.php/component/jfeed?format=feed&type=rss',
+WEATHER_KEYWORDS = [
+    'météo', 'meteo', 'pluie', 'vent', 'tempête', 'orage',
+    'chaleur', 'froid', 'canicule', 'neige', 'intempérie',
+    'prévisions', 'weather', 'storm', 'rain', 'temperature',
+    'climat', 'climate', 'sécheresse', 'drought',
 ]
+
+EXCLUDE_KEYWORDS = [
+    'foot', 'football', 'match', 'politique', 'élection',
+]
+
 
 def scrape():
     articles = []
-    for feed_url in FEED_URLS:
+    urls = [
+        'https://www.tap.info.tn/',
+    ]
+
+    for base_url in urls:
         try:
-            feed = feedparser.parse(feed_url)
-            weather_keywords = [
-                'météo', 'meteo', 'inondation', 'tempête', 'pluie', 'vent',
-                'climat', 'orage', 'canicule', 'froid', 'chaleur', 'neige',
-                'alerte', 'weather', 'storm', 'rain', 'flood', 'forecast',
-                'institut national de la météorologie', 'inm',
-                'طقس', 'مطر', 'رياح', 'عواصف',
-            ]
+            resp = requests.get(base_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }, verify=False)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, 'html.parser')
 
-            for entry in feed.entries[:20]:
-                title = entry.get('title', '').strip()
-                if not title:
-                    continue
-                combined = title + ' ' + entry.get('summary', '')
-                is_weather = any(kw in combined.lower() for kw in weather_keywords)
-                if not is_weather:
+            for a_tag in soup.find_all('a', href=True):
+                href = a_tag.get('href', '')
+                title = a_tag.get_text(strip=True)
+                if not title or len(title) < 10:
                     continue
 
-                summary = entry.get('summary', entry.get('description', ''))
-                link = entry.get('link', '')
-                pub_date = None
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    from calendar import timegm
-                    pub_date = datetime.fromtimestamp(timegm(entry.published_parsed), tz=timezone.utc)
+                combined = title.lower()
+                if any(kw in combined for kw in EXCLUDE_KEYWORDS):
+                    continue
+                if not any(kw in combined for kw in WEATHER_KEYWORDS):
+                    continue
 
-                governorates = extract_governorates(combined)
-                risk_level = assess_risk(combined)
-                category = 'alert' if risk_level in ('red', 'orange', 'purple') else 'meteo'
+                full_url = href if href.startswith('http') else base_url.rstrip('/') + '/' + href.lstrip('/')
+                governorates = extract_governorates(title)
+                risk_level = assess_risk(title)
 
+                category = 'weather'
                 articles.append({
                     'source_name': 'tap',
-                    'source_url': link or f'{feed_url}/{title}',
+                    'source_url': full_url,
                     'title': title,
-                    'body': summary,
+                    'body': '',
                     'category': category,
                     'governorates': governorates if governorates else ['Tunis'],
                     'risk_level': risk_level,
                     'scraped_at': datetime.now(timezone.utc),
-                    'published_at': pub_date or datetime.now(timezone.utc),
+                    'published_at': datetime.now(timezone.utc),
                     'likes_count': 0,
                     'comments_count': 0,
                     'shares_count': 0,
                 })
-            logger.info(f'TAP ({feed_url}): found {len(feed.entries)} entries')
+
+            logger.info(f'TAP ({base_url}): found {len(articles)} relevant')
         except Exception as e:
-            logger.error(f'TAP error ({feed_url}): {e}')
-    return articles
+            logger.error(f'TAP error ({base_url}): {e}')
+
+    return articles[:10]
