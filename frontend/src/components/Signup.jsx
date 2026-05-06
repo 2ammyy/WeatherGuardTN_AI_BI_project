@@ -118,7 +118,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
         </div>
         <div className="input-group">
           <label>Password</label>
-          <input type="password" name="password" placeholder="Min. 6 characters" onChange={handleChange} required />
+          <input type="password" name="password" placeholder="Min. 6 characters" autoComplete="new-password" onChange={handleChange} required />
         </div>
         <div className="input-group">
           <label>ðŸ“ Your Governorate</label>

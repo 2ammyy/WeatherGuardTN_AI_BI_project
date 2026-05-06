@@ -71,7 +71,8 @@ async def google_auth(request: GoogleAuthRequest):
         idinfo = id_token.verify_oauth2_token(
             request.token,
             google_requests.Request(),
-            GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10,
         )
         conn = get_db()
         cur = conn.cursor()
@@ -147,14 +148,12 @@ async def login(request: EmailAuthRequest):
             FROM users WHERE email = %s AND password_hash = %s
         """, (request.email, password_hash))
         row = cur.fetchone()
-        cur.execute("UPDATE users SET last_login = %s WHERE email = %s", (datetime.now(), request.email))
-        conn.commit()
-        cur.close()
-        conn.close()
         if not row:
             cur.close()
             conn.close()
             raise HTTPException(status_code=401, detail="Invalid email or password.")
+        cur.execute("UPDATE users SET last_login = %s WHERE email = %s", (datetime.now(), request.email))
+        conn.commit()
         _ensure_forum_user(cur, row[1], row[2], row[3])
         cur.execute("SELECT id FROM forum_users WHERE email = %s", (row[1],))
         frow = cur.fetchone()
