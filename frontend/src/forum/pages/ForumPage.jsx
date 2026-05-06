@@ -4,6 +4,7 @@ import { postsAPI } from "../api/client";
 import PostCard from "../components/PostCard";
 import ComposeModal from "../components/ComposeModal";
 import NotificationBell from "../components/NotificationBell";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const CATEGORIES = [
   { value: "", label: "All posts", icon: "📰" },
@@ -20,6 +21,7 @@ const GOVERNORATES = [
 
 // ── Forum content (user already authenticated by platform) ───────────────────────────────
 function ForumInner({ onBack, existingUser }) {
+  const { t } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -72,9 +74,9 @@ function ForumInner({ onBack, existingUser }) {
   };
 
   const sel = {
-    background: "#1e293b",
-    border: "1px solid #334155",
-    color: "white",
+    background: t.bgInput,
+    border: `1px solid ${t.border}`,
+    color: t.text,
     padding: "10px 14px",
     borderRadius: 12,
     fontSize: 13,
@@ -84,7 +86,7 @@ function ForumInner({ onBack, existingUser }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#020617", color: "white", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "sans-serif" }}>
       {/* CSS Animations */}
       <style>
         {`
@@ -101,7 +103,7 @@ function ForumInner({ onBack, existingUser }) {
             100% { background-position: 1000px 0; }
           }
           .shimmer {
-            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background: linear-gradient(90deg, ${t.bgMuted} 25%, ${t.border} 50%, ${t.bgMuted} 75%);
             background-size: 1000px 100%;
             animation: shimmer 2s infinite;
           }
@@ -109,35 +111,35 @@ function ForumInner({ onBack, existingUser }) {
       </style>
 
       {/* Top bar */}
-      <div style={{ background: "rgba(11, 17, 32, 0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e293b", padding: "0 1.5rem", display: "flex", alignItems: "center", gap: 12, height: 64, position: "sticky", top: 0, zIndex: 100 }}>
+      <div style={{ background: t.navbarBg, backdropFilter: "blur(12px)", borderBottom: `1px solid ${t.border}`, padding: "0 1.5rem", display: "flex", alignItems: "center", gap: 12, height: 64, position: "sticky", top: 0, zIndex: 100 }}>
         <button
           onClick={onBack}
-          style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "#64748b", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "8px 12px", borderRadius: 10, transition: "all 0.2s" }}
-          onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.1)"; e.target.style.color = "#fff"; }}
-          onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.color = "#64748b"; }}
+          style={{ background: "transparent", border: `1px solid ${t.border}`, color: t.textMuted, cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "8px 12px", borderRadius: 10, transition: "all 0.2s" }}
+          onMouseEnter={(e) => { e.target.style.background = t.bgHover; e.target.style.color = t.text; }}
+          onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.color = t.textMuted; }}
           title="Back to dashboard"
         >
           ←
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌦</div>
+          <div style={{ background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`, width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌦</div>
           <div>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>WeatherGuard Forum</span>
-            <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>Community Hub</span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: t.text }}>WeatherGuard Forum</span>
+            <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 8 }}>Community Hub</span>
           </div>
         </div>
         <div style={{ flex: 1 }} />
         <NotificationBell />
         <button
           onClick={handleCompose}
-          style={{ padding: "8px 18px", background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}
+          style={{ padding: "8px 18px", background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`, border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}
           onMouseEnter={(e) => e.target.style.transform = "translateY(-1px)"}
           onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
         >
           <span>✏️</span> New post
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4 }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #9FE1CB 0%, #6bc4a8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: "#0F6E56" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${t.accent}40, ${t.accent}20)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: t.accent }}>
             {(user?.display_name ?? user?.username ?? user?.name ?? "?")[0].toUpperCase()}
           </div>
         </div>
@@ -146,12 +148,12 @@ function ForumInner({ onBack, existingUser }) {
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "2rem 1rem" }}>
         {/* Hero Section */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: 32, fontWeight: 700, background: "linear-gradient(135deg, #fff 0%, #9FE1CB 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}>Community Forum</h1>
-          <p style={{ color: "#64748b", fontSize: 14 }}>Share updates, ask questions, and help your neighbors stay informed</p>
+          <h1 style={{ fontSize: 32, fontWeight: 700, background: `linear-gradient(135deg, ${t.text}, ${t.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}>Community Forum</h1>
+          <p style={{ color: t.textMuted, fontSize: 14 }}>Share updates, ask questions, and help your neighbors stay informed</p>
         </div>
 
         {/* Filters */}
-        <div style={{ display: "flex", gap: 12, marginBottom: "1.5rem", flexWrap: "wrap", background: "#0b1120", padding: "1rem", borderRadius: 16, border: "1px solid #1e293b" }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: "1.5rem", flexWrap: "wrap", background: t.bgCard, padding: "1rem", borderRadius: 16, border: `1px solid ${t.border}` }}>
           <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} style={{ ...sel, flex: 1 }}>
             {CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>{c.icon} {c.label}</option>
@@ -165,9 +167,9 @@ function ForumInner({ onBack, existingUser }) {
           </select>
           <button
             onClick={fetchPosts}
-            style={{ ...sel, background: "#1e293b", border: "1px solid #1D9E75", display: "flex", alignItems: "center", gap: 6 }}
-            onMouseEnter={(e) => e.target.style.background = "#2d3a5e"}
-            onMouseLeave={(e) => e.target.style.background = "#1e293b"}
+            style={{ ...sel, background: t.bgMuted, border: `1px solid ${t.accent}`, display: "flex", alignItems: "center", gap: 6 }}
+            onMouseEnter={(e) => e.target.style.background = t.accentBg}
+            onMouseLeave={(e) => e.target.style.background = t.bgMuted}
           >
             🔄 Refresh
           </button>
@@ -176,8 +178,8 @@ function ForumInner({ onBack, existingUser }) {
         {/* Stats Bar */}
         {!loading && posts.length > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", padding: "0 0.5rem" }}>
-            <span style={{ fontSize: 12, color: "#64748b" }}>📄 {posts.length} posts • Page {page} of {totalPages}</span>
-            <span style={{ fontSize: 12, color: "#64748b" }}>💬 Join the conversation</span>
+            <span style={{ fontSize: 12, color: t.textMuted }}>📄 {posts.length} posts • Page {page} of {totalPages}</span>
+            <span style={{ fontSize: 12, color: t.textMuted }}>💬 Join the conversation</span>
           </div>
         )}
 
@@ -189,13 +191,13 @@ function ForumInner({ onBack, existingUser }) {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 2rem", background: "#0b1120", borderRadius: 24, border: "1px solid #1e293b" }}>
+          <div style={{ textAlign: "center", padding: "3rem 2rem", background: t.bgCard, borderRadius: 24, border: `1px solid ${t.border}` }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🌱</div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No posts yet</h3>
-            <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>Be the first to share an update with your community!</p>
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: t.text }}>No posts yet</h3>
+            <p style={{ color: t.textMuted, fontSize: 14, marginBottom: 20 }}>Be the first to share an update with your community!</p>
             <button
               onClick={handleCompose}
-              style={{ padding: "8px 20px", background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)", border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+              style={{ padding: "8px 20px", background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`, border: "none", borderRadius: 12, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
             >
               Create first post →
             </button>
@@ -232,7 +234,7 @@ function ForumInner({ onBack, existingUser }) {
                       onClick={() => setPage(pageNum)}
                       style={{
                         ...sel,
-                        background: pageNum === page ? "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)" : "#1e293b",
+                        background: pageNum === page ? `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})` : t.bgMuted,
                         minWidth: 40,
                       }}
                     >
@@ -262,14 +264,14 @@ function ForumInner({ onBack, existingUser }) {
             position: "fixed",
             bottom: "2rem",
             right: "2rem",
-            background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)",
+            background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
             border: "none",
             borderRadius: 40,
             padding: "12px 16px",
             color: "white",
             cursor: "pointer",
             fontSize: 18,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            boxShadow: t.shadowCard,
             transition: "all 0.2s",
             zIndex: 99,
           }}

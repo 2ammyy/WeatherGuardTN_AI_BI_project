@@ -4,11 +4,13 @@
 
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const EMOJIS = ["👍", "🔥", "😮", "🙏", "😢"];
 
 export default function ReactionBar({ articleId, initialCounts = {}, userEmoji = null }) {
   const { isLoggedIn, authFetch } = useAuth();
+  const { t } = useTheme();
   const [counts, setCounts]       = useState(initialCounts);
   const [myEmoji, setMyEmoji]     = useState(userEmoji);
   const [loading, setLoading]     = useState(false);
@@ -99,20 +101,20 @@ export default function ReactionBar({ articleId, initialCounts = {}, userEmoji =
           gap: 3px;
           padding: 4px 10px;
           border-radius: 20px;
-          border: 1.5px solid #e0e0e0;
-          background: #f5f5f5;
+          border: 1.5px solid ${t.border};
+          background: ${t.bgMuted};
           cursor: pointer;
           font-size: 16px;
           transition: all 0.15s;
         }
         .reaction-btn:hover {
-          background: #e8f4fd;
-          border-color: #2196f3;
+          background: ${t.accentBg};
+          border-color: ${t.accentBorder};
           transform: scale(1.05);
         }
         .reaction-btn.active {
-          background: #e3f2fd;
-          border-color: #1976d2;
+          background: ${t.accentBg};
+          border-color: ${t.accent};
           font-weight: 600;
         }
         .reaction-btn:disabled {
@@ -120,8 +122,8 @@ export default function ReactionBar({ articleId, initialCounts = {}, userEmoji =
           cursor: not-allowed;
         }
         .reaction-btn .emoji { font-size: 18px; }
-        .reaction-btn .count { font-size: 12px; color: #555; }
-        .reaction-total { font-size: 12px; color: #888; margin-left: 4px; }
+        .reaction-btn .count { font-size: 12px; color: ${t.textSecondary}; }
+        .reaction-total { font-size: 12px; color: ${t.textMuted}; margin-left: 4px; }
       `}</style>
     </div>
   );

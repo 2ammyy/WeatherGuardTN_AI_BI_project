@@ -5,6 +5,7 @@ import { useState } from "react";
 import ReactionBar from "./ReactionBar";
 import CommentSection from "./CommentSection";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const RISK_CONFIG = {
   green:  { label: "Safe",    color: "#2e7d32", bg: "#e8f5e9", emoji: "🟢" },
@@ -22,6 +23,7 @@ const SOURCE_LABEL = {
 
 export default function NewsCard({ article }) {
   const { isLoggedIn, authFetch } = useAuth();
+  const { t } = useTheme();
   const [showComments, setShowComments] = useState(false);
   const [shareCount, setShareCount]     = useState(article.shares_count || 0);
   const [shareDone, setShareDone]       = useState(false);
@@ -135,35 +137,35 @@ export default function NewsCard({ article }) {
 
       <style>{`
         .news-card {
-          background: #fff; border-radius: 12px; padding: 16px 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 16px;
+          background: ${t.bgCard}; border-radius: 12px; padding: 16px 20px;
+          box-shadow: ${t.shadowCard}; margin-bottom: 16px;
           transition: box-shadow 0.2s;
         }
-        .news-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .news-card:hover { box-shadow: ${t.shadowModal}; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
         .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .risk-badge { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 12px; }
-        .source-tag { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 10px; }
-        .category-tag { font-size: 11px; color: #5c6bc0; background: #e8eaf6; padding: 2px 8px; border-radius: 10px; text-transform: capitalize; }
-        .govs { font-size: 12px; color: #888; }
+        .source-tag { font-size: 11px; color: ${t.textMuted}; background: ${t.bgMuted}; padding: 2px 8px; border-radius: 10px; }
+        .category-tag { font-size: 11px; color: ${t.accent}; background: ${t.accentBg}; padding: 2px 8px; border-radius: 10px; text-transform: capitalize; }
+        .govs { font-size: 12px; color: ${t.textMuted}; }
         .card-title {
-          display: block; font-size: 16px; font-weight: 700; color: #1a1a1a;
+          display: block; font-size: 16px; font-weight: 700; color: ${t.text};
           text-decoration: none; margin-bottom: 8px; line-height: 1.4;
           transition: color 0.15s;
         }
-        .card-title:hover { color: #1976d2; }
-        .card-body { font-size: 13px; color: #666; line-height: 1.6; margin: 0 0 8px; }
-        .card-time { font-size: 11px; color: #bbb; margin-bottom: 8px; }
-        .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+        .card-title:hover { color: ${t.accent}; }
+        .card-body { font-size: 13px; color: ${t.textSecondary}; line-height: 1.6; margin: 0 0 8px; }
+        .card-time { font-size: 11px; color: ${t.textDisabled}; margin-bottom: 8px; }
+        .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; border-top: 1px solid ${t.borderLight}; padding-top: 10px; }
         .action-pill {
-          padding: 5px 12px; border-radius: 20px; border: 1px solid #e0e0e0;
-          background: #fafafa; cursor: pointer; font-size: 13px; color: #555;
+          padding: 5px 12px; border-radius: 20px; border: 1px solid ${t.border};
+          background: ${t.bgMuted}; cursor: pointer; font-size: 13px; color: ${t.textSecondary};
           text-decoration: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 4px;
         }
-        .action-pill:hover { background: #e8f4fd; border-color: #90caf9; color: #1976d2; }
-        .action-pill.share-done { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
-        .link-pill { color: #1976d2; }
-        .card-comments { margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+        .action-pill:hover { background: ${t.accentBg}; border-color: ${t.accentBorder}; color: ${t.accent}; }
+        .action-pill.share-done { background: ${t.accentBg}; border-color: ${t.accentBorder}; color: ${t.accent}; }
+        .link-pill { color: ${t.accent}; }
+        .card-comments { margin-top: 12px; border-top: 1px solid ${t.borderLight}; padding-top: 12px; }
       `}</style>
     </article>
   );

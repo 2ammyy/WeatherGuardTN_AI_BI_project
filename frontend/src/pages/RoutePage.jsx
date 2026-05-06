@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTheme } from '../contexts/ThemeContext';
 
 const GOVERNORATES = [
   { name: 'Tunis', lat: 36.8065, lng: 10.1815 },
@@ -31,6 +32,7 @@ const GOVERNORATES = [
 const HAZARD_RADIUS_KM = 20;
 
 const RoutePage = ({ onBack, hazards = [] }) => {
+  const { t } = useTheme();
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [checking, setChecking] = useState(false);
@@ -292,14 +294,14 @@ const RoutePage = ({ onBack, hazards = [] }) => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#020617',
-      color: 'white',
+      background: t.bg,
+      color: t.text,
       fontFamily: 'sans-serif',
     }}>
       <header style={{
-        background: 'rgba(11, 17, 32, 0.95)',
+        background: t.navbarBg,
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: `1px solid ${t.border}`,
         position: 'sticky',
         top: 0,
         zIndex: 100,
@@ -317,22 +319,22 @@ const RoutePage = ({ onBack, hazards = [] }) => {
             onClick={onBack}
             style={{
               background: 'transparent',
-              border: '1px solid #334155',
+              border: `1px solid ${t.border}`,
               borderRadius: 8,
-              color: '#94a3b8',
+              color: t.textMuted,
               padding: '6px 12px',
               cursor: 'pointer',
               fontSize: 13,
               transition: 'all 0.2s',
             }}
-            onMouseEnter={(e) => { e.target.style.borderColor = '#1D9E75'; e.target.style.color = '#1D9E75'; }}
-            onMouseLeave={(e) => { e.target.style.borderColor = '#334155'; e.target.style.color = '#94a3b8'; }}
+            onMouseEnter={(e) => { e.target.style.borderColor = t.accent; e.target.style.color = t.accent; }}
+            onMouseLeave={(e) => { e.target.style.borderColor = t.border; e.target.style.color = t.textMuted; }}
           >
             ← Back
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+              background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
               width: 36,
               height: 36,
               borderRadius: 10,
@@ -348,13 +350,13 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 fontSize: 18,
                 fontWeight: 700,
                 margin: 0,
-                background: 'linear-gradient(135deg, #fff 0%, #9FE1CB 100%)',
+                background: `linear-gradient(135deg, ${t.text}, ${t.accent})`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
                 Route Safety Check
               </h1>
-              <p style={{ fontSize: 10, color: '#64748b', margin: 0 }}>Check hazards along your route</p>
+              <p style={{ fontSize: 10, color: t.textMuted, margin: 0 }}>Check hazards along your route</p>
             </div>
           </div>
         </div>
@@ -362,22 +364,22 @@ const RoutePage = ({ onBack, hazards = [] }) => {
 
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)',
+          background: t.bgCard,
           borderRadius: 20,
-          border: '1px solid rgba(29, 158, 117, 0.2)',
+          border: `1px solid ${t.border}`,
           overflow: 'hidden',
         }}>
           <style>{`
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-            .leaflet-container { background: #0f172a !important; }
+            .leaflet-container { background: ${t.mapOverlay} !important; }
           `}</style>
 
           {/* Header */}
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #1e293b', background: 'rgba(11, 17, 32, 0.5)' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: `1px solid ${t.border}`, background: `${t.bgMuted}80` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
-                background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+                background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
                 width: 40, height: 40, borderRadius: 12,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
               }}>
@@ -385,7 +387,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Route Safety Checker</h3>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: t.textMuted }}>
                   {hazardLoading ? 'Loading live hazards...' : `${allHazards.length} live hazard(s) detected`}
                 </p>
               </div>
@@ -397,7 +399,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
             {/* Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#94a3b8', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: t.textMuted, marginBottom: 6 }}>
                   🟢 From
                 </label>
                 <input
@@ -406,14 +408,14 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   onChange={(e) => { setOrigin(e.target.value); setRouteSafety(null); }}
                   placeholder="City (e.g., Tunis, Sfax)"
                   list="tunisia-cities"
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #334155', background: '#1e293b', fontSize: 14, color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
-                  onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
-                  onBlur={(e) => e.target.style.borderColor = '#334155'}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.bgMuted, fontSize: 14, color: t.text, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                  onFocus={(e) => e.target.style.borderColor = t.accent}
+                  onBlur={(e) => e.target.style.borderColor = t.border}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#94a3b8', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: t.textMuted, marginBottom: 6 }}>
                   🔴 To
                 </label>
                 <input
@@ -422,9 +424,9 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   onChange={(e) => { setDestination(e.target.value); setRouteSafety(null); }}
                   placeholder="City (e.g., Sousse, Bizerte)"
                   list="tunisia-cities"
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #334155', background: '#1e293b', fontSize: 14, color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
-                  onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
-                  onBlur={(e) => e.target.style.borderColor = '#334155'}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.bgMuted, fontSize: 14, color: t.text, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                  onFocus={(e) => e.target.style.borderColor = t.accent}
+                  onBlur={(e) => e.target.style.borderColor = t.border}
                 />
               </div>
 
@@ -437,7 +439,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 disabled={checking || !origin || !destination}
                 style={{
                   width: '100%', padding: '12px', borderRadius: 12,
-                  background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+                  background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
                   color: 'white', border: 'none', cursor: checking || !origin || !destination ? 'not-allowed' : 'pointer',
                   fontSize: 14, fontWeight: 600, fontFamily: 'sans-serif',
                   transition: 'all 0.2s',
@@ -460,9 +462,9 @@ const RoutePage = ({ onBack, hazards = [] }) => {
 
             {/* Error */}
             {routeError && (
-              <div style={{ marginTop: 20, padding: '12px 16px', borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                <div style={{ color: '#f87171', fontSize: 13, fontWeight: 600 }}>⚠ Error</div>
-                <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>{routeError}</div>
+              <div style={{ marginTop: 20, padding: '12px 16px', borderRadius: 12, background: t.dangerBg, border: `1px solid ${t.dangerBorder}` }}>
+                <div style={{ color: t.dangerText, fontSize: 13, fontWeight: 600 }}>⚠ Error</div>
+                <div style={{ color: t.textMuted, fontSize: 12, marginTop: 4 }}>{routeError}</div>
               </div>
             )}
 
@@ -471,20 +473,20 @@ const RoutePage = ({ onBack, hazards = [] }) => {
               <div style={{ marginTop: 24 }}>
                 {/* Route Info Bar */}
                 {routeInfo && (
-                  <div style={{ display: 'flex', gap: 16, marginBottom: 16, padding: '12px 16px', background: '#1e293b', borderRadius: 12, border: '1px solid #334155' }}>
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 16, padding: '12px 16px', background: t.bgMuted, borderRadius: 12, border: `1px solid ${t.border}` }}>
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>DISTANCE</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>DISTANCE</div>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{routeInfo.distance_km} km</div>
                     </div>
-                    <div style={{ width: 1, background: '#334155' }} />
+                    <div style={{ width: 1, background: t.border }} />
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>DURATION</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>DURATION</div>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{routeInfo.duration_min} min</div>
                     </div>
-                    <div style={{ width: 1, background: '#334155' }} />
+                    <div style={{ width: 1, background: t.border }} />
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>ROUTE</div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>{routeSafety.origin} → {routeSafety.destination}</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>ROUTE</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{routeSafety.origin} → {routeSafety.destination}</div>
                     </div>
                   </div>
                 )}
@@ -494,12 +496,12 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16 }}>
                     <div style={{ position: 'relative', width: 80, height: 80 }}>
                       <svg style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                        <circle cx="40" cy="40" r="36" fill="none" stroke="#1e293b" strokeWidth="6" />
+                        <circle cx="40" cy="40" r="36" fill="none" stroke={t.border} strokeWidth="6" />
                         <circle cx="40" cy="40" r="36" fill="none" stroke={getScoreColor(routeSafety.score)} strokeWidth="6" strokeDasharray={`${routeSafety.score * 2.26} 226`} strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.5s ease-out' }} />
                       </svg>
                       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
                         <div style={{ fontSize: 20, fontWeight: 700 }}>{routeSafety.score}%</div>
-                        <div style={{ fontSize: 10, color: '#64748b' }}>Safety</div>
+                        <div style={{ fontSize: 10, color: t.textMuted }}>Safety</div>
                       </div>
                     </div>
 
@@ -507,7 +509,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                       <div style={{ fontSize: 14, fontWeight: 600, color: getLevelConfig(routeSafety.level).color, marginBottom: 4 }}>
                         {getLevelConfig(routeSafety.level).icon} {routeSafety.message}
                       </div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                      <div style={{ fontSize: 12, color: t.textMuted }}>
                         Based on routing data + real-time hazard reports
                       </div>
                     </div>
@@ -516,14 +518,14 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   {/* Hazards */}
                   {routeSafety.hazards.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13, fontWeight: 500, color: '#f87171' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13, fontWeight: 500, color: t.dangerText }}>
                         ⚠ Hazards within {HAZARD_RADIUS_KM}km of route ({routeSafety.hazards.length})
                       </div>
                       <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {routeSafety.hazards.map((h, i) => (
-                          <li key={i} style={{ color: '#94a3b8', fontSize: 13, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <li key={i} style={{ color: t.textSecondary, fontSize: 13, padding: '8px 12px', background: `${t.bg}40`, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>{h.name}</span>
-                            <span style={{ fontSize: 11, color: '#64748b', marginLeft: 12 }}>{h.distance} km</span>
+                            <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 12 }}>{h.distance} km</span>
                           </li>
                         ))}
                       </ul>
@@ -537,19 +539,19 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   )}
 
                   {routeSafety.level === 'dangerous' && (
-                    <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: 10, fontSize: 12, color: '#f87171', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', background: t.dangerBg, borderRadius: 10, fontSize: 12, color: t.dangerText, display: 'flex', alignItems: 'center', gap: 8 }}>
                       💡 Consider postponing non-essential travel or finding an alternative route
                     </div>
                   )}
                   {routeSafety.level === 'risky' && (
-                    <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: 10, fontSize: 12, color: '#fb923c', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', background: t.warningBg, borderRadius: 10, fontSize: 12, color: t.warningText, display: 'flex', alignItems: 'center', gap: 8 }}>
                       💡 Drive carefully and stay alert for weather conditions
                     </div>
                   )}
                 </div>
 
                 {/* Map */}
-                <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #334155', height: 400 }}>
+                <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.border}`, height: 400 }}>
                   <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
                 </div>
               </div>

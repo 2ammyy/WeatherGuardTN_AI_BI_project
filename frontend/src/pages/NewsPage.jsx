@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CATEGORY_LABELS = {
   weather: 'Météo',
@@ -83,6 +84,7 @@ const timeAgo = (dateStr) => {
 };
 
 const NewsCard = ({ article }) => {
+  const { t } = useTheme();
   const [expanded, setExpanded] = useState(false);
 
   if (!article) return null;
@@ -108,7 +110,7 @@ const NewsCard = ({ article }) => {
   return (
     <div
       style={{
-        background: '#0f172a',
+        background: t.bgCard,
         border: `1px solid ${riskColor}22`,
         borderLeft: `4px solid ${riskColor}`,
         borderRadius: 12,
@@ -118,7 +120,7 @@ const NewsCard = ({ article }) => {
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = `${riskColor}44`;
         e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = `0 8px 25px -5px ${riskColor}15`;
+        e.currentTarget.style.boxShadow = t.shadowCard;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = `${riskColor}22`;
@@ -129,7 +131,7 @@ const NewsCard = ({ article }) => {
       <div style={{
         padding: '10px 14px',
         background: riskBg,
-        borderBottom: '1px solid #1e293b',
+        borderBottom: `1px solid ${t.border}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -162,19 +164,19 @@ const NewsCard = ({ article }) => {
             {article.risk_level}
           </span>
         </div>
-        <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>
+        <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 500 }}>
           {shortTime}
         </span>
       </div>
 
       <div style={{ padding: '12px 14px' }}>
-        <h4 style={{ margin: '0 0 8px 0', fontSize: 14, fontWeight: 700, color: '#f1f5f9', lineHeight: 1.45 }}>
+        <h4 style={{ margin: '0 0 8px 0', fontSize: 14, fontWeight: 700, color: t.text, lineHeight: 1.45 }}>
           {article.title}
         </h4>
 
-        <div style={{ fontSize: 10, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ fontSize: 10, color: t.textMuted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{
-            background: '#1e293b',
+            background: t.bgMuted,
             padding: '1px 6px',
             borderRadius: 4,
             fontSize: 9,
@@ -185,7 +187,7 @@ const NewsCard = ({ article }) => {
         </div>
 
         {hasBody && (
-          <p style={{ margin: '0 0 10px 0', color: '#94a3b8', lineHeight: 1.6, fontSize: 12, whiteSpace: 'pre-wrap' }}>
+          <p style={{ margin: '0 0 10px 0', color: t.textSecondary, lineHeight: 1.6, fontSize: 12, whiteSpace: 'pre-wrap' }}>
             {displayBody}
           </p>
         )}
@@ -194,12 +196,12 @@ const NewsCard = ({ article }) => {
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
             {governorates.slice(0, 5).map((gov, i) => (
               <span key={i} style={{
-                background: 'rgba(100, 116, 139, 0.1)',
-                border: '1px solid rgba(100, 116, 139, 0.15)',
+                background: `${t.textMuted}10`,
+                border: `1px solid ${t.border}`,
                 padding: '2px 7px',
                 borderRadius: 5,
                 fontSize: 9,
-                color: '#94a3b8',
+                color: t.textMuted,
                 fontWeight: 500,
               }}>
                 📍 {gov}
@@ -215,7 +217,7 @@ const NewsCard = ({ article }) => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#1D9E75',
+                color: t.accent,
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -232,11 +234,11 @@ const NewsCard = ({ article }) => {
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: 'rgba(29, 158, 117, 0.1)',
-                border: '1px solid rgba(29, 158, 117, 0.2)',
+                background: t.accentBg,
+                border: `1px solid ${t.accent}33`,
                 borderRadius: 6,
                 padding: '4px 10px',
-                color: '#1D9E75',
+                color: t.accent,
                 fontSize: 11,
                 fontWeight: 600,
                 textDecoration: 'none',
@@ -255,6 +257,7 @@ const NewsCard = ({ article }) => {
 };
 
 const NewsPage = ({ onBack }) => {
+  const { t } = useTheme();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -304,8 +307,8 @@ const NewsPage = ({ onBack }) => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#020617',
-      color: 'white',
+      background: t.bg,
+      color: t.text,
     }}>
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -314,9 +317,9 @@ const NewsPage = ({ onBack }) => {
       `}</style>
 
       <header style={{
-        background: 'rgba(11, 17, 32, 0.95)',
+        background: t.navbarBg,
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: `1px solid ${t.border}`,
         position: 'sticky',
         top: 0,
         zIndex: 100,
@@ -335,10 +338,10 @@ const NewsPage = ({ onBack }) => {
               onClick={onBack}
               style={{
                 background: 'transparent',
-                border: '1px solid #334155',
+                border: `1px solid ${t.border}`,
                 borderRadius: 10,
                 padding: '6px 14px',
-                color: '#94a3b8',
+                color: t.textMuted,
                 cursor: 'pointer',
                 fontSize: 13,
                 fontWeight: 500,
@@ -351,7 +354,7 @@ const NewsPage = ({ onBack }) => {
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
-                background: 'linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)',
+                background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
                 width: 36,
                 height: 36,
                 borderRadius: 10,
@@ -364,7 +367,7 @@ const NewsPage = ({ onBack }) => {
               </div>
               <div>
                 <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Actualités & Alertes</h1>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748b' }}>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: t.textMuted }}>
                   Météo • Climat • Infrastructure • Écoles • Risques
                 </p>
               </div>
@@ -376,9 +379,9 @@ const NewsPage = ({ onBack }) => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
         {loading ? (
           <div style={{
-            background: '#0f172a',
+            background: t.bgCard,
             borderRadius: 16,
-            border: '1px solid rgba(29, 158, 117, 0.2)',
+            border: `1px solid ${t.accent}33`,
             padding: '3rem',
             display: 'flex',
             alignItems: 'center',
@@ -387,20 +390,20 @@ const NewsPage = ({ onBack }) => {
           }}>
             <div style={{
               width: 28, height: 28,
-              border: '2px solid #1e293b',
-              borderTopColor: '#1D9E75',
+              border: `2px solid ${t.border}`,
+              borderTopColor: t.accent,
               borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
             }} />
-            <span style={{ color: '#64748b', fontSize: 14 }}>Chargement des actualités...</span>
+            <span style={{ color: t.textMuted, fontSize: 14 }}>Chargement des actualités...</span>
           </div>
         ) : error ? (
           <div style={{
-            background: '#0f172a',
+            background: t.bgCard,
             borderRadius: 16,
-            border: '1px solid rgba(239, 68, 68, 0.2)',
+            border: `1px solid ${t.dangerBorder}`,
             padding: '3rem',
-            color: '#f87171',
+            color: t.dangerText,
             fontSize: 14,
             textAlign: 'center',
           }}>
@@ -424,12 +427,12 @@ const NewsPage = ({ onBack }) => {
                     key={cat.key}
                     onClick={() => setFilter(cat.key)}
                     style={{
-                      background: isActive ? 'rgba(29, 158, 117, 0.15)' : 'rgba(30, 41, 59, 0.5)',
-                      border: isActive ? '1px solid rgba(29, 158, 117, 0.3)' : '1px solid #1e293b',
+                      background: isActive ? t.accentBg : `${t.bgMuted}80`,
+                      border: isActive ? `1px solid ${t.accent}50` : `1px solid ${t.border}`,
                       borderRadius: 8,
                       padding: '6px 14px',
                       fontSize: 11,
-                      color: isActive ? '#1D9E75' : '#64748b',
+                      color: isActive ? t.accent : t.textMuted,
                       fontWeight: isActive ? 700 : 500,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
@@ -442,7 +445,7 @@ const NewsPage = ({ onBack }) => {
                     <span style={{ fontSize: 13 }}>{cat.icon}</span>
                     <span>{cat.label}</span>
                     <span style={{
-                      background: isActive ? 'rgba(29, 158, 117, 0.2)' : '#1e293b',
+                      background: isActive ? `${t.accent}33` : t.bgMuted,
                       padding: '1px 6px',
                       borderRadius: 10,
                       fontSize: 10,
@@ -470,7 +473,7 @@ const NewsPage = ({ onBack }) => {
               <div style={{
                 textAlign: 'center',
                 padding: '4rem 1rem',
-                color: '#475569',
+                color: t.textDisabled,
               }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>Aucune actualité dans cette catégorie</div>

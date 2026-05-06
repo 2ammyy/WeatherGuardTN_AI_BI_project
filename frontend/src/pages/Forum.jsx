@@ -8,6 +8,7 @@ import NewsCard from "../components/forum/NewsCard";
 import NotificationBell from "../components/forum/NotificationBell";
 import { ProfileTag, ProfileSetupPrompt } from "../components/forum/ProfileTag";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../contexts/ThemeContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
@@ -37,6 +38,7 @@ const TUNISIAN_GOVS = [
 
 export default function Forum() {
   const { isLoggedIn, user, authFetch } = useAuth();
+  const { t } = useTheme();
 
   // Feed state
   const [articles, setArticles]   = useState([]);
@@ -251,11 +253,11 @@ export default function Forum() {
           margin: 0 auto;
           padding: 20px 16px 60px;
           font-family: system-ui, -apple-system, sans-serif;
-          background: #f7f9fc;
+          background: ${t.bg};
           min-height: 100vh;
         }
 
-        /* â”€â”€ Top bar â”€â”€ */
+        /* ── Top bar ── */
         .forum-topbar {
           display: flex;
           justify-content: space-between;
@@ -267,13 +269,13 @@ export default function Forum() {
         .forum-title {
           font-size: 24px;
           font-weight: 800;
-          color: #1a237e;
+          color: ${t.text};
           margin: 0;
         }
         .forum-subtitle {
           display: block;
           font-size: 13px;
-          color: #888;
+          color: ${t.textMuted};
           margin-top: 2px;
         }
         .forum-topbar-right {
@@ -284,21 +286,21 @@ export default function Forum() {
         }
         .sign-in-link {
           font-size: 13px;
-          color: #1976d2;
+          color: ${t.accent};
           text-decoration: none;
           padding: 5px 12px;
-          border: 1px solid #90caf9;
+          border: 1px solid ${t.accentBorder};
           border-radius: 20px;
           transition: all 0.15s;
         }
-        .sign-in-link:hover { background: #e3f2fd; }
+        .sign-in-link:hover { background: ${t.accentBg}; }
 
-        /* â”€â”€ Filters â”€â”€ */
+        /* ── Filters ── */
         .forum-filters {
-          background: #fff;
+          background: ${t.bgCard};
           border-radius: 12px;
           padding: 14px 16px;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+          box-shadow: ${t.shadowCard};
           margin-bottom: 16px;
           display: flex;
           flex-direction: column;
@@ -308,23 +310,24 @@ export default function Forum() {
           display: flex;
           align-items: center;
           gap: 8px;
-          background: #f5f5f5;
+          background: ${t.bgMuted};
           border-radius: 8px;
           padding: 6px 12px;
         }
-        .search-icon { font-size: 16px; color: #aaa; }
+        .search-icon { font-size: 16px; color: ${t.textMuted}; }
         .search-input {
           flex: 1;
           border: none;
           background: transparent;
           font-size: 14px;
           outline: none;
+          color: ${t.text};
         }
         .search-clear {
           background: none;
           border: none;
           cursor: pointer;
-          color: #bbb;
+          color: ${t.textMuted};
           font-size: 14px;
         }
         .filter-row {
@@ -335,76 +338,77 @@ export default function Forum() {
         .filter-pill {
           padding: 5px 12px;
           border-radius: 20px;
-          border: 1.5px solid #e0e0e0;
-          background: #fff;
+          border: 1.5px solid ${t.border};
+          background: ${t.bgCard};
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
           transition: all 0.15s;
-          color: #555;
+          color: ${t.textSecondary};
         }
-        .filter-pill:hover { border-color: #90caf9; color: #1976d2; background: #e8f4fd; }
-        .filter-pill.active { background: #1976d2; color: #fff; border-color: #1976d2; }
+        .filter-pill:hover { border-color: ${t.accentBorder}; color: ${t.accent}; background: ${t.accentBg}; }
+        .filter-pill.active { background: ${t.accent}; color: #fff; border-color: ${t.accent}; }
         .filter-row-selects { align-items: center; }
         .filter-select {
           padding: 6px 10px;
-          border: 1.5px solid #e0e0e0;
+          border: 1.5px solid ${t.border};
           border-radius: 8px;
           font-size: 13px;
-          background: #fff;
+          background: ${t.bgCard};
           cursor: pointer;
+          color: ${t.text};
         }
         .filter-reset {
           padding: 5px 12px;
-          border: 1px solid #ef9a9a;
+          border: 1px solid ${t.dangerBorder};
           border-radius: 20px;
-          background: #fff;
-          color: #d32f2f;
+          background: ${t.bgCard};
+          color: ${t.danger};
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
         }
 
-        /* â”€â”€ Stats bar â”€â”€ */
+        /* ── Stats bar ── */
         .forum-stats {
           display: flex;
           align-items: center;
           gap: 8px;
           font-size: 13px;
-          color: #888;
+          color: ${t.textMuted};
           margin-bottom: 12px;
           padding: 0 4px;
         }
-        .filter-active-note { color: #1976d2; }
+        .filter-active-note { color: ${t.accent}; }
         .refresh-btn {
           margin-left: auto;
           background: none;
-          border: 1px solid #e0e0e0;
+          border: 1px solid ${t.border};
           border-radius: 20px;
           padding: 4px 12px;
           cursor: pointer;
           font-size: 12px;
-          color: #666;
+          color: ${t.textSecondary};
           transition: all 0.15s;
         }
-        .refresh-btn:hover { border-color: #90caf9; color: #1976d2; }
+        .refresh-btn:hover { border-color: ${t.accentBorder}; color: ${t.accent}; }
         .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* â”€â”€ Feed â”€â”€ */
+        /* ── Feed ── */
         .forum-feed { display: flex; flex-direction: column; }
 
-        /* â”€â”€ Empty state â”€â”€ */
+        /* ── Empty state ── */
         .empty-state {
           text-align: center;
           padding: 60px 20px;
-          color: #aaa;
+          color: ${t.textDisabled};
         }
         .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
-        .empty-state h3 { color: #555; margin: 0 0 8px; }
+        .empty-state h3 { color: ${t.textSecondary}; margin: 0 0 8px; }
         .empty-state p  { margin: 0 0 16px; font-size: 14px; }
         .btn-reset-filters {
           padding: 8px 20px;
-          background: #1976d2;
+          background: ${t.accent};
           color: #fff;
           border: none;
           border-radius: 8px;
@@ -412,28 +416,28 @@ export default function Forum() {
           font-weight: 600;
         }
 
-        /* â”€â”€ Loader â”€â”€ */
+        /* ── Loader ── */
         .scroll-loader { padding: 20px; text-align: center; }
         .loading-spinner {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          color: #888;
+          color: ${t.textMuted};
           font-size: 14px;
         }
         .spinner {
           display: inline-block;
           width: 18px; height: 18px;
-          border: 2px solid #e0e0e0;
-          border-top-color: #1976d2;
+          border: 2px solid ${t.border};
+          border-top-color: ${t.accent};
           border-radius: 50%;
           animation: spin 0.7s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .end-of-feed { color: #ccc; font-size: 13px; }
+        .end-of-feed { color: ${t.textDisabled}; font-size: 13px; }
 
-        /* â”€â”€ Responsive â”€â”€ */
+        /* ── Responsive ── */
         @media (max-width: 480px) {
           .forum-title { font-size: 20px; }
           .forum-topbar { flex-direction: column; }

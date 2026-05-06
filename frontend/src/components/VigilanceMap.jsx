@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTheme } from '../contexts/ThemeContext';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -33,16 +34,14 @@ const TUNISIA_CITIES = {
   'Ariana': { lat: 36.8667, lng: 10.2000 },
   'Ben Arous': { lat: 36.7533, lng: 10.2219 },
   'Manouba': { lat: 36.8081, lng: 10.0972 },
-  'Tebessa': { lat: 35.4000, lng: 8.1167, country: 'Algeria' },
-  'Tripoli': { lat: 32.8872, lng: 13.1917, country: 'Libya' },
 };
 
 const RISK_CONFIG = {
-  'GREEN':  { color: '#22c55e', glow: 'rgba(34,197,94,0.4)',  label: 'Safe',    icon: '✓' },
-  'YELLOW': { color: '#eab308', glow: 'rgba(234,179,8,0.4)',  label: 'Caution', icon: '!' },
-  'ORANGE': { color: '#f97316', glow: 'rgba(249,115,22,0.4)', label: 'Warning', icon: '⚠' },
-  'RED':    { color: '#ef4444', glow: 'rgba(239,68,68,0.4)',  label: 'Alert',   icon: '✕' },
-  'PURPLE': { color: '#a855f7', glow: 'rgba(168,85,247,0.4)', label: 'Emergency', icon: '☠' },
+  'GREEN':  { color: '#16a34a', glow: 'rgba(22,163,74,0.3)',  label: 'Safe',    icon: '✓' },
+  'YELLOW': { color: '#ca8a04', glow: 'rgba(202,138,4,0.3)',  label: 'Caution', icon: '!' },
+  'ORANGE': { color: '#ea580c', glow: 'rgba(234,88,12,0.3)', label: 'Warning', icon: '⚠' },
+  'RED':    { color: '#dc2626', glow: 'rgba(220,38,38,0.3)',  label: 'Alert',   icon: '✕' },
+  'PURPLE': { color: '#9333ea', glow: 'rgba(147,51,234,0.3)', label: 'Emergency', icon: '☠' },
 };
 
 const HAZARD_ICONS = {
@@ -72,14 +71,33 @@ function getHazardType(hazard) {
 }
 
 function getHazardColor(severity) {
-  const map = { 1: '#22c55e', 2: '#eab308', 3: '#f97316', 4: '#ef4444', 5: '#a855f7' };
-  return map[severity] || '#94a3b8';
+  const map = { 1: '#16a34a', 2: '#ca8a04', 3: '#ea580c', 4: '#dc2626', 5: '#9333ea' };
+  return map[severity] || '#64748b';
 }
 
 function riskFromForecast(forecastData) {
   const rl = (forecastData?.risk_level || 'GREEN').toUpperCase();
   return RISK_CONFIG[rl] || RISK_CONFIG.GREEN;
 }
+
+const GlassPanel = ({ children, style = {} }) => {
+  const { t } = useTheme();
+  return (
+    <div style={{
+      background: t.mapOverlay,
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderRadius: 16,
+      border: `1px solid ${t.border}`,
+      boxShadow: t.shadowCard,
+      padding: 16,
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+};
 
 const VigilanceMap = ({
   selectedCities = [],
@@ -88,6 +106,7 @@ const VigilanceMap = ({
   showNeighbors = true,
   onCityClick = () => {}
 }) => {
+  const { t } = useTheme();
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
@@ -97,18 +116,19 @@ const VigilanceMap = ({
   useEffect(() => {
     if (!mapInstance.current && mapRef.current) {
       mapInstance.current = L.map(mapRef.current, {
-        center: [34.0, 9.0],
+        center: [34.5, 9.2],
         zoom: 7,
         zoomControl: false,
+        attributionControl: false,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(mapInstance.current);
 
       L.control.zoom({ position: 'topright' }).addTo(mapInstance.current);
-      L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(mapInstance.current);
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -142,45 +162,55 @@ const VigilanceMap = ({
       const fd = forecastData[city]?.weather;
       const conf = forecastData[city]?.confidence || 0;
 
-      const marker = L.circleMarker([coords.lat, coords.lng], {
-        radius: 10,
-        fillColor: rc.color,
-        color: '#fff',
-        weight: 2,
-        fillOpacity: 0.9,
-      }).addTo(mapInstance.current);
-
       const pulse = L.circleMarker([coords.lat, coords.lng], {
-        radius: 20,
+        radius: 22,
         fillColor: rc.color,
         color: rc.color,
         weight: 1,
-        fillOpacity: 0.15,
-        opacity: 0.3,
+        fillOpacity: 0.12,
+        opacity: 0.25,
         className: 'risk-pulse',
       }).addTo(mapInstance.current);
       pulseCirclesRef.current.push(pulse);
 
+      const marker = L.circleMarker([coords.lat, coords.lng], {
+        radius: 9,
+        fillColor: rc.color,
+        color: '#fff',
+        weight: 2.5,
+        fillOpacity: 1,
+      }).addTo(mapInstance.current);
+
+      const weatherCode = fd?.weather_code ?? 0;
+      const weatherIcon = weatherCode >= 95 ? '⛈️' : weatherCode >= 80 ? '🌧️' : weatherCode >= 61 ? '🌦️' : weatherCode >= 50 ? '🌧️' : weatherCode >= 10 ? '⛅' : '☀️';
+
       const popupHtml = `
-        <div style="font-family: 'Inter',sans-serif; min-width: 220px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0;">
-            <div style="width:32px;height:32px;border-radius:50%;background:${rc.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;">${rc.icon}</div>
-            <div><h3 style="margin:0;color:#1e293b;font-size:15px;">${city}</h3><span style="font-size:10px;color:${rc.color};font-weight:700;text-transform:uppercase;">${rc.label}</span></div>
+        <div style="font-family:'Inter',sans-serif;min-width:240px;">
+          <div style="background:${rc.color};margin:-12px -12px 12px;padding:12px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:700;">${rc.icon}</div>
+            <div>
+              <div style="color:rgba(255,255,255,0.8);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Risk Level</div>
+              <div style="color:#fff;font-size:15px;font-weight:700;">${city} — ${rc.label}</div>
+            </div>
           </div>
           ${fd ? `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:10px;">
-            <div style="background:#f1f5f9;padding:6px 8px;border-radius:6px;text-align:center;"><div style="font-size:9px;color:#64748b;text-transform:uppercase;">Temp</div><div style="font-weight:700;color:#0f172a;">${fd.temp_avg ?? '--'}°C</div></div>
-            <div style="background:#f1f5f9;padding:6px 8px;border-radius:6px;text-align:center;"><div style="font-size:9px;color:#64748b;text-transform:uppercase;">Wind</div><div style="font-weight:700;color:#0f172a;">${fd.wind_speed ?? '--'} km/h</div></div>
-            <div style="background:#f1f5f9;padding:6px 8px;border-radius:6px;text-align:center;"><div style="font-size:9px;color:#64748b;text-transform:uppercase;">Humidity</div><div style="font-weight:700;color:#0f172a;">${fd.humidity ?? '--'}%</div></div>
-            <div style="background:#f1f5f9;padding:6px 8px;border-radius:6px;text-align:center;"><div style="font-size:9px;color:#64748b;text-transform:uppercase;">Rain</div><div style="font-weight:700;color:#0f172a;">${fd.precipitation ?? 0} mm</div></div>
+          <div style="text-align:center;margin-bottom:12px;">
+            <div style="font-size:28px;margin-bottom:2px;">${weatherIcon}</div>
+            <div style="font-size:22px;font-weight:700;color:#0f172a;">${fd.temp_avg ?? '--'}°C</div>
+            <div style="font-size:11px;color:#64748b;">H: ${fd.temp_max ?? '--'}°  L: ${fd.temp_min ?? '--'}°</div>
           </div>
-          <div style="margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:3px;"><span>Confidence</span><span style="font-weight:600;color:${rc.color};">${conf}%</span></div>
-            <div style="height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${conf}%;background:${rc.color};border-radius:2px;"></div></div>
-          </div>` : '<p style="color:#64748b;font-size:11px;">No forecast data</p>'}
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:10px;text-align:center;"><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;font-weight:600;">Wind</div><div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;">${fd.wind_speed ?? '--'} <span style="font-size:9px;font-weight:500;">km/h</span></div></div>
+            <div style="background:#f8fafc;padding:8px;border-radius:10px;text-align:center;"><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;font-weight:600;">Humidity</div><div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;">${fd.humidity ?? '--'}<span style="font-size:9px;font-weight:500;">%</span></div></div>
+            <div style="background:#f8fafc;padding:8px;border-radius:10px;text-align:center;"><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;font-weight:600;">Rain</div><div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;">${fd.precipitation ?? 0} <span style="font-size:9px;font-weight:500;">mm</span></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:4px;font-weight:500;"><span>AI Confidence</span><span style="color:${rc.color};font-weight:700;">${conf}%</span></div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${conf}%;background:${rc.color};border-radius:3px;transition:width 0.5s ease;"></div></div>
+          </div>` : '<p style="color:#64748b;font-size:11px;text-align:center;padding:16px 0;">No forecast data</p>'}
         </div>`;
 
-      marker.bindPopup(popupHtml, { maxWidth: 260, closeButton: false });
+      marker.bindPopup(popupHtml, { maxWidth: 280, closeButton: false, className: 'modern-popup' });
       marker.on('click', () => onCityClick(city));
       markersRef.current.push(marker);
     });
@@ -190,12 +220,12 @@ const VigilanceMap = ({
         if (coords.country && !selectedCities.includes(city)) {
           const marker = L.circleMarker([coords.lat, coords.lng], {
             radius: 5,
-            fillColor: '#64748b',
-            color: '#94a3b8',
+            fillColor: '#94a3b8',
+            color: '#cbd5e1',
             weight: 1,
-            fillOpacity: 0.4,
+            fillOpacity: 0.5,
           }).addTo(mapInstance.current);
-          marker.bindTooltip(`${city} (${coords.country})`, { permanent: false, direction: 'top', className: 'neighbor-tooltip' });
+          marker.bindTooltip(`${city}`, { permanent: false, direction: 'top', className: 'neighbor-tooltip' });
           markersRef.current.push(marker);
         }
       });
@@ -217,15 +247,9 @@ const VigilanceMap = ({
 
       const icon = L.divIcon({
         className: 'hazard-marker',
-        html: `
-          <div style="position:relative;">
-            <div style="width:12px;height:12px;border-radius:50%;background:${color};position:absolute;top:-4px;right:-4px;border:2px solid #0f172a;"></div>
-            <div style="background:${color}22;border:1px solid ${color}66;border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#1e293b;backdrop-filter:blur(4px);white-space:nowrap;box-shadow:0 2px 8px ${color}33;">
-              ${hi.icon} ${hi.label}
-            </div>
-          </div>`,
-        iconSize: [120, 28],
-        iconAnchor: [60, 14],
+        html: `<div style="background:${color};border:2px solid #fff;border-radius:20px;padding:3px 10px;display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#fff;box-shadow:0 2px 8px ${color}50;white-space:nowrap;">${hi.icon} ${hi.label}</div>`,
+        iconSize: [100, 24],
+        iconAnchor: [50, 12],
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(mapInstance.current);
@@ -244,108 +268,97 @@ const VigilanceMap = ({
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes riskPulse { 0%,100%{r:20;opacity:0.15} 50%{r:30;opacity:0.05} }
-      .risk-pulse circle { animation: riskPulse 2s ease-in-out infinite; }
-      .hazard-marker { transition: transform 0.15s; }
-      .hazard-marker:hover { transform: scale(1.05); }
-      .leaflet-popup-content-wrapper { border-radius:12px !important; box-shadow:0 8px 24px rgba(0,0,0,0.15) !important; padding:0 !important; border:1px solid #e2e8f0 !important; }
-      .leaflet-popup-content { margin:12px !important; font-size:13px !important; }
-      .leaflet-popup-tip { box-shadow:0 2px 4px rgba(0,0,0,0.06) !important; }
-      .leaflet-popup-close-button { display:none !important; }
-      .neighbor-tooltip { font-size:10px !important; color:#94a3b8 !important; background:rgba(255,255,255,0.95) !important; border:1px solid #e2e8f0 !important; border-radius:4px !important; padding:2px 6px !important; color:#475569 !important; }
+      @keyframes riskPulse { 0%,100%{r:22;opacity:0.12} 50%{r:32;opacity:0.04} }
+      .risk-pulse circle { animation: riskPulse 2.5s ease-in-out infinite; }
+      .modern-popup .leaflet-popup-content-wrapper { border-radius:16px !important; box-shadow:0 12px 40px rgba(0,0,0,0.12) !important; padding:0 !important; border:none !important; overflow:hidden !important; }
+      .modern-popup .leaflet-popup-content { margin:0 !important; min-width:240px !important; }
+      .modern-popup .leaflet-popup-tip { box-shadow:0 4px 12px rgba(0,0,0,0.08) !important; }
+      .modern-popup .leaflet-popup-close-button { display:none !important; }
+      .neighbor-tooltip { font-size:10px !important; background:rgba(255,255,255,0.95) !important; border:1px solid #e2e8f0 !important; border-radius:6px !important; padding:3px 8px !important; box-shadow:0 2px 8px rgba(0,0,0,0.06) !important; }
+      .leaflet-control-zoom a { background:#fff !important; color:#334155 !important; border-color:#e2e8f0 !important; }
+      .leaflet-control-zoom a:hover { background:#f8fafc !important; }
+      .leaflet-control-attribution { display:none !important; }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
 
-  const activeHazards = hazards.filter(h => h.severity >= 3);
   const citiesByRisk = selectedCities.reduce((acc, city) => {
     const rc = riskFromForecast(forecastData[city]);
-    if (!acc[rc.label]) acc[rc.label] = { color: rc.color, count: 0, cities: [] };
-    acc[rc.label].count++;
-    acc[rc.label].cities.push(city);
+    if (!acc[rc.color]) acc[rc.color] = { label: rc.label, color: rc.color, count: 0, cities: [] };
+    acc[rc.color].count++;
+    acc[rc.color].cities.push(city);
     return acc;
   }, {});
 
+  const sortedRisks = Object.values(citiesByRisk).sort((a, b) => {
+    const order = { 'Emergency': 0, 'Alert': 1, 'Warning': 2, 'Caution': 3, 'Safe': 4 };
+    return (order[a.label] ?? 5) - (order[b.label] ?? 5);
+  });
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
   return (
-    <div style={{ position: 'relative', borderRadius: 0, overflow: 'hidden' }}>
+    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
       <div ref={mapRef} style={{ height: '620px', width: '100%' }} />
 
       <div style={{
-        position: 'absolute', top: 12, left: 12, zIndex: 1000,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
-        borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        minWidth: 180, fontFamily: "'Inter',sans-serif",
+        position: 'absolute', top: 12, left: 12, right: 12, zIndex: 1000,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12,
+        pointerEvents: 'none',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>
-          Risk Overview
-        </div>
-        {Object.entries(citiesByRisk).map(([label, data]) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: data.color }} />
-              <span style={{ fontSize: 12, color: '#1e293b' }}>{label}</span>
+        <GlassPanel style={{ pointerEvents: 'auto', padding: '14px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16 }}>🗺️</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Weather Vigilance</div>
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>{timeStr} · Updated live</div>
             </div>
-            <span style={{
-              fontSize: 10, fontWeight: 700, background: data.color + '18', color: data.color,
-              padding: '2px 8px', borderRadius: 10,
-            }}>{data.count}</span>
           </div>
-        ))}
-        {Object.keys(citiesByRisk).length === 0 && (
-          <div style={{ fontSize: 11, color: '#94a3b8' }}>No cities selected</div>
-        )}
-      </div>
 
-      {hazards.length > 0 && (
-        <div style={{
-          position: 'absolute', top: 12, right: 12, zIndex: 1000,
-          background: activeHazards.length > 0 ? 'rgba(239,68,68,0.9)' : 'rgba(34,197,94,0.9)',
-          backdropFilter: 'blur(12px)', borderRadius: 14, padding: '8px 14px',
-          display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Inter',sans-serif",
-        }}>
-          <span style={{ fontSize: 14 }}>{activeHazards.length > 0 ? '⚠️' : '✓'}</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>
-            {activeHazards.length > 0 ? `${activeHazards.length} Active Alert${activeHazards.length > 1 ? 's' : ''}` : 'All Clear'}
-          </span>
-        </div>
-      )}
+          {sortedRisks.length > 0 ? (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {sortedRisks.map(risk => (
+                <div key={risk.color} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: risk.color + '10', borderRadius: 10, padding: '6px 10px',
+                }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: risk.color }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: risk.color }}>{risk.count}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>Select governorates to view risk levels</div>
+          )}
+        </GlassPanel>
 
-      <div style={{
-        position: 'absolute', bottom: 32, right: 12, zIndex: 1000,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
-        borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        fontFamily: "'Inter',sans-serif",
-      }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-          Severity Scale
-        </div>
-        {[
-          { label: 'Minor', color: '#22c55e' },
-          { label: 'Moderate', color: '#eab308' },
-          { label: 'Severe', color: '#f97316' },
-          { label: 'Extreme', color: '#ef4444' },
-          { label: 'Catastrophic', color: '#a855f7' },
-        ].map(s => (
-          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <div style={{ width: 14, height: 4, borderRadius: 2, background: s.color }} />
-            <span style={{ fontSize: 10, color: '#64748b' }}>{s.label}</span>
+        <GlassPanel style={{ pointerEvents: 'auto', padding: '10px 14px' }}>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {[
+              { label: 'Safe', color: '#16a34a' },
+              { label: 'Caution', color: '#ca8a04' },
+              { label: 'Warning', color: '#ea580c' },
+              { label: 'Alert', color: '#dc2626' },
+            ].map(s => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: s.color }} />
+                <span style={{ fontSize: 9, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{s.label}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </GlassPanel>
       </div>
 
       {userLocation && (
         <div style={{
-          position: 'absolute', bottom: 32, left: 12, zIndex: 1000,
-          background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
-          borderRadius: 12, padding: '6px 12px', border: '1px solid rgba(59,130,246,0.2)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Inter',sans-serif",
+          position: 'absolute', bottom: 16, left: 16, zIndex: 1000,
         }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }} />
-          <span style={{ fontSize: 10, color: '#64748b' }}>📍 Location detected</span>
+          <GlassPanel style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontSize: 11, color: '#475569', fontWeight: 500 }}>📍 Location active</span>
+          </GlassPanel>
         </div>
       )}
     </div>
