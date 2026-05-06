@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
+import asyncio
 import os
 import httpx
 
@@ -215,14 +216,8 @@ async def test():
 
 @router.get("/governorates")
 async def get_governorates():
-    """Liste des gouvernorats de Tunisie"""
-    governorates = [
-        "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
-        "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
-        "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
-        "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
-    ]
-    return {"governorates": governorates}
+    """Liste des gouvernorats de Tunisie (ASCII keys matching CITY_COORDS)"""
+    return {"governorates": sorted(list(CITY_COORDS.keys()))}
 
 
 
@@ -239,111 +234,137 @@ class ForecastResponse(BaseModel):
     probabilities: Dict[str, int]
     weather: Dict[str, float]
 
+CITY_COORDS = {
+    'Tunis': (36.8065, 10.1815), 'Sfax': (34.7400, 10.7600), 'Sousse': (35.8256, 10.6411),
+    'Bizerte': (37.2744, 9.8739), 'Jendouba': (36.5011, 8.7803), 'Nabeul': (36.4561, 10.7378),
+    'Gabes': (33.8815, 10.0982), 'Medenine': (33.3549, 10.5055), 'Kairouan': (35.6781, 10.0963),
+    'Monastir': (35.7833, 10.8333), 'Mahdia': (35.5047, 11.0622), 'Gafsa': (34.4250, 8.7842),
+    'Tozeur': (33.9197, 8.1335), 'Kebili': (33.7044, 8.9692), 'Tataouine': (32.9297, 10.4518),
+    'Kasserine': (35.1676, 8.8365), 'Beja': (36.7256, 9.1817), 'Kef': (36.1741, 8.7049),
+    'Siliana': (36.0849, 9.3708), 'Zaghouan': (36.4029, 10.1429), 'Ariana': (36.8667, 10.2000),
+    'Ben Arous': (36.7533, 10.2219), 'Manouba': (36.8081, 10.0972),
+}
+
+def _compute_risk_from_weather(weather: dict) -> tuple:
+    temp_max = weather.get('temp_max', 25)
+    wind = weather.get('wind_speed', 15)
+    precip = weather.get('precipitation', 0)
+    humidity = weather.get('humidity', 50)
+    weather_code = weather.get('weather_code', 0)
+
+    score = 0
+    if precip > 30: score += 3
+    elif precip > 15: score += 2
+    elif precip > 5: score += 1
+    if wind > 70: score += 3
+    elif wind > 45: score += 2
+    elif wind > 30: score += 1
+    if weather_code >= 95: score += 3
+    elif weather_code >= 80: score += 2
+    elif weather_code >= 61: score += 1
+    if temp_max > 40: score += 2
+    elif temp_max > 35: score += 1
+    if humidity > 85: score += 1
+
+    if score >= 7: return 'PURPLE', 82
+    if score >= 5: return 'RED', 75
+    if score >= 3: return 'ORANGE', 68
+    if score >= 2: return 'YELLOW', 62
+    return 'GREEN', 78
+
+async def _fetch_city_weather(city: str, date: str, is_today: bool) -> dict:
+    coords = CITY_COORDS.get(city)
+    if not coords:
+        return None
+    lat, lng = coords
+    try:
+        if is_today:
+            url = (f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}'
+                   f'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code'
+                   f'&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto')
+        else:
+            url = (f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}'
+                   f'&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum,weathercode'
+                   f'&start_date={date}&end_date={date}&timezone=auto')
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+
+        if is_today:
+            current = data.get('current', {})
+            daily = data.get('daily', {})
+            weather = {
+                'temp_max': daily.get('temperature_2m_max', [None])[0],
+                'temp_min': daily.get('temperature_2m_min', [None])[0],
+                'temp_avg': current.get('temperature_2m', 0),
+                'wind_speed': current.get('wind_speed_10m', 0),
+                'humidity': current.get('relative_humidity_2m', 0),
+                'precipitation': current.get('precipitation', 0),
+                'weather_code': current.get('weather_code', 0),
+            }
+        else:
+            daily = data.get('daily', {})
+            if not daily.get('temperature_2m_max'):
+                return None
+            weather = {
+                'temp_max': daily['temperature_2m_max'][0],
+                'temp_min': daily['temperature_2m_min'][0],
+                'temp_avg': round((daily['temperature_2m_max'][0] + daily['temperature_2m_min'][0]) / 2, 1),
+                'wind_speed': daily.get('wind_speed_10m_max', [0])[0],
+                'humidity': 60,
+                'precipitation': daily.get('precipitation_sum', [0])[0],
+                'weather_code': daily.get('weathercode', [0])[0],
+            }
+        risk_level, confidence = _compute_risk_from_weather(weather)
+        return {
+            'forecast_date': date,
+            'city': city,
+            'risk_level': risk_level,
+            'confidence': confidence,
+            'probabilities': {risk_level: confidence},
+            'weather': weather,
+        }
+    except Exception:
+        return None
+
+@router.post("/current-weather")
+async def current_weather(request: ForecastRequest):
+    result = await _fetch_city_weather(request.city, request.date or datetime.now().strftime('%Y-%m-%d'), True)
+    if not result:
+        raise HTTPException(status_code=502, detail="Failed to fetch weather data")
+    return result
+
 @router.post("/forecast-by-date", response_model=ForecastResponse)
 async def forecast_by_date(request: ForecastRequest):
-    """
-    Prédiction personnalisée pour une date et une ville spécifiques
-    """
     try:
-        # Valider la date
-        try:
-            parsed_date = datetime.strptime(request.date, "%Y-%m-%d")
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Format de date invalide. Utilisez YYYY-MM-DD")
-        
-        # Ici, vous appellerez votre vrai modèle ML
-        # Pour l'instant, on utilise des données simulées
-        # Mais basées sur la ville et la date pour que ce soit cohérent
-        
-        # Utiliser la ville et la date pour générer une prédiction semi-déterministe
-        city_seed = sum(ord(c) for c in request.city)
-        date_seed = parsed_date.timetuple().tm_yday
-        random.seed(city_seed + date_seed)
-        
-        # Générer les probabilités
-        probs = {
-            "GREEN": random.randint(0, 100),
-            "YELLOW": random.randint(0, 100),
-            "ORANGE": random.randint(0, 100),
-            "RED": random.randint(0, 100),
-            "PURPLE": random.randint(0, 100)
-        }
-        
-        # Normaliser pour que la somme = 100
-        total = sum(probs.values())
-        probs = {k: int(v * 100 / total) for k, v in probs.items()}
-        
-        # Ajuster pour que la somme soit exactement 100
-        diff = 100 - sum(probs.values())
-        if diff != 0:
-            # Ajouter la différence au plus grand
-            max_key = max(probs, key=probs.get)
-            probs[max_key] += diff
-        
-        # Déterminer le niveau de risque dominant
-        risk_level = max(probs, key=probs.get)
-        
-        # Générer les conditions météo (simulées)
-        weather = {
-            "temp_max": round(random.uniform(15, 35), 1),
-            "temp_min": round(random.uniform(5, 20), 1),
-            "temp_avg": round(random.uniform(10, 25), 1),
-            "wind_speed": round(random.uniform(0, 30), 1),
-            "humidity": random.randint(30, 90)
-        }
-        
-        # Réinitialiser le seed aléatoire
-        random.seed()
-        
-        return {
-            "forecast_date": request.date,
-            "city": request.city,
-            "risk_level": risk_level,
-            "confidence": random.randint(65, 95),
-            "probabilities": probs,
-            "weather": weather
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
+        datetime.strptime(request.date, '%Y-%m-%d')
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    result = await _fetch_city_weather(request.city, request.date, False)
+    if not result:
+        raise HTTPException(status_code=502, detail="Failed to fetch forecast data")
+    return result
 
-# Optionnel: endpoint pour les dates disponibles
-@router.get("/available-dates/{city}")
-async def get_available_dates(city: str):
-    """
-    Retourne les dates disponibles pour une ville
-    """
-    from datetime import datetime, timedelta
-    
-    today = datetime.now()
-    dates = []
-    for i in range(5):  # 5 jours à l'avance
-        date = today + timedelta(days=i)
-        dates.append(date.strftime("%Y-%m-%d"))
-    
-    return {"city": city, "available_dates": dates}
-class WeatherRequest(BaseModel):
-    city: str
+class BatchForecastRequest(BaseModel):
+    cities: List[str]
     date: str = None
 
-@router.post('/current-weather')
-async def current_weather(request: WeatherRequest):
-    import random
-    from datetime import datetime
-    city_seed = sum(ord(c) for c in request.city)
-    random.seed(city_seed + datetime.now().timetuple().tm_yday)
-    risk_levels = ['GREEN', 'YELLOW', 'ORANGE', 'RED']
-    risk_level = random.choice(risk_levels)
-    weather = {
-        'temp_max': round(random.uniform(15, 38), 1),
-        'temp_min': round(random.uniform(8, 20), 1),
-        'temp_avg': round(random.uniform(12, 28), 1),
-        'wind_speed': round(random.uniform(5, 45), 1),
-        'humidity': random.randint(30, 90),
-        'precipitation': round(random.uniform(0, 20), 1)
-    }
-    random.seed()
-    return {'city': request.city, 'risk_level': risk_level, 'weather': weather, 'date': request.date or str(datetime.now().date())}
+_semaphore = asyncio.Semaphore(6)
+
+async def _fetch_with_semaphore(city: str, date: str, is_today: bool) -> dict:
+    async with _semaphore:
+        return await _fetch_city_weather(city, date, is_today)
+
+@router.post("/weather/batch")
+async def batch_weather(request: BatchForecastRequest):
+    date = request.date or datetime.now().strftime('%Y-%m-%d')
+    is_today = date == datetime.now().strftime('%Y-%m-%d')
+    tasks = [_fetch_with_semaphore(city, date, is_today) for city in request.cities]
+    results = await asyncio.gather(*tasks)
+    forecasts = {r['city']: r for r in results if r is not None}
+    return {'forecasts': forecasts, 'count': len(forecasts), 'date': date}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ROUTING PROXY (OSRM + Photon — free, no key needed)
@@ -615,27 +636,3 @@ async def tmaps_route(req: RouteRequest):
             raise
         except Exception as e:
             raise HTTPException(502, f'Routing failed: {str(e)}')
-
-@router.post('/current-weather')
-async def current_weather(request: WeatherRequest):
-    import random
-    from datetime import datetime
-    city_seed = sum(ord(c) for c in request.city)
-    random.seed(city_seed + datetime.now().timetuple().tm_yday)
-    risk_levels = ['GREEN', 'YELLOW', 'ORANGE', 'RED']
-    risk_level = random.choice(risk_levels)
-    weather = {
-        'temp_max': round(random.uniform(15, 38), 1),
-        'temp_min': round(random.uniform(8, 20), 1),
-        'temp_avg': round(random.uniform(12, 28), 1),
-        'wind_speed': round(random.uniform(5, 45), 1),
-        'humidity': random.randint(30, 90),
-        'precipitation': round(random.uniform(0, 20), 1)
-    }
-    random.seed()
-    return {
-        'city': request.city,
-        'risk_level': risk_level,
-        'weather': weather,
-        'date': request.date or str(datetime.now().date())
-    }

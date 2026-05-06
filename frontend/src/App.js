@@ -114,40 +114,40 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchForecasts = async () => {
       if (!user || selectedCities.length === 0 || apiStatus !== 'connected' || !selectedDate) {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
         return;
       }
-      setLoading(true);
-      const forecasts = {};
-      const failed = [];
-      const todayStr = new Date().toISOString().split('T')[0];
-      const isToday = selectedDate === todayStr;
-
-      for (const city of selectedCities) {
-        try {
-          const endpoint = isToday ? '/api/current-weather' : '/api/forecast-by-date';
-          const response = await axios.post(`${apiUrl}${endpoint}`, { date: selectedDate, city: city }, { timeout: 5000 });
-          if (response.data) forecasts[city] = response.data;
-        } catch (err) { failed.push(city); }
+      if (!cancelled) setLoading(true);
+      try {
+        const response = await axios.post(`${apiUrl}/api/weather/batch`, { cities: selectedCities, date: selectedDate }, { timeout: 15000 });
+        if (!cancelled) {
+          setForecastData(response.data.forecasts || {});
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Could not load weather data');
+          setForecastData({});
+        }
       }
-      setForecastData(forecasts);
-      setLoading(false);
-      setError(failed.length > 0 ? `Could not load: ${failed.join(', ')}` : null);
+      if (!cancelled) setLoading(false);
     };
     fetchForecasts();
+    return () => { cancelled = true; };
   }, [selectedCities, selectedDate, apiUrl, apiStatus, user]);
 
   useEffect(() => {
     const loadHazards = async () => {
-      const hazardData = await fetchHazards();
+      const hazardData = await fetchHazards(apiUrl);
       setHazards(hazardData);
     };
     loadHazards();
     const interval = setInterval(loadHazards, 300000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiUrl]);
 
   // ==================== HANDLERS ====================
   const toggleCity = (city) => {
