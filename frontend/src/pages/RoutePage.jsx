@@ -39,9 +39,32 @@ const RoutePage = ({ onBack, hazards = [] }) => {
   const [originCoords, setOriginCoords] = useState(null);
   const [destCoords, setDestCoords] = useState(null);
   const [routeError, setRouteError] = useState(null);
+  const [liveHazards, setLiveHazards] = useState([]);
+  const [hazardLoading, setHazardLoading] = useState(true);
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const routeLayer = useRef(null);
+
+  useEffect(() => {
+    const fetchLiveHazards = async () => {
+      try {
+        const res = await fetch('/api/hazards/realtime');
+        if (res.ok) {
+          const data = await res.json();
+          setLiveHazards(data.hazards || []);
+        }
+      } catch {
+        setLiveHazards([]);
+      } finally {
+        setHazardLoading(false);
+      }
+    };
+    fetchLiveHazards();
+    const interval = setInterval(fetchLiveHazards, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const allHazards = liveHazards.length > 0 ? liveHazards : hazards;
 
   const haversineKm = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
@@ -122,7 +145,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
       });
 
       const nearbyHazards = [];
-      for (const h of hazards) {
+      for (const h of allHazards) {
         const hLat = h.geometry?.coordinates?.[1] || h.latitude;
         const hLng = h.geometry?.coordinates?.[0] || h.longitude;
         if (!hLat || !hLng) continue;
@@ -244,7 +267,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
         }).addTo(map);
         routeLayer.current.push(polyline);
 
-        hazards.forEach((h) => {
+        allHazards.forEach((h) => {
           const hLat = h.geometry?.coordinates?.[1] || h.latitude;
           const hLng = h.geometry?.coordinates?.[0] || h.longitude;
           if (hLat && hLng) {
@@ -264,7 +287,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
     });
 
     map.invalidateSize();
-  }, [routeSafety, originCoords, destCoords, routeInfo, hazards]);
+  }, [routeSafety, originCoords, destCoords, routeInfo, allHazards, liveHazards]);
 
   return (
     <div style={{
@@ -362,7 +385,9 @@ const RoutePage = ({ onBack, hazards = [] }) => {
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Route Safety Checker</h3>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>Powered by OSRM + OpenStreetMap</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+                  {hazardLoading ? 'Loading live hazards...' : `${allHazards.length} live hazard(s) detected`}
+                </p>
               </div>
             </div>
           </div>

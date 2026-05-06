@@ -366,6 +366,135 @@ def _build_geocode_url(query: str) -> str:
     return f'{PHOTON_BASE}?q={url_quote(q)}&limit=1'
 
 
+TUNISIAN_CITIES = [
+    {'name': 'Tunis', 'lat': 36.8065, 'lng': 10.1815},
+    {'name': 'Sfax', 'lat': 34.7400, 'lng': 10.7600},
+    {'name': 'Sousse', 'lat': 35.8256, 'lng': 10.6411},
+    {'name': 'Bizerte', 'lat': 37.2744, 'lng': 9.8739},
+    {'name': 'Gabes', 'lat': 33.8815, 'lng': 10.0982},
+    {'name': 'Gafsa', 'lat': 34.4250, 'lng': 8.7842},
+    {'name': 'Kairouan', 'lat': 35.6781, 'lng': 10.0963},
+    {'name': 'Monastir', 'lat': 35.7833, 'lng': 10.8333},
+    {'name': 'Nabeul', 'lat': 36.4561, 'lng': 10.7378},
+    {'name': 'Jendouba', 'lat': 36.5011, 'lng': 8.7803},
+    {'name': 'Kasserine', 'lat': 35.1676, 'lng': 8.8365},
+    {'name': 'Tozeur', 'lat': 33.9197, 'lng': 8.1335},
+    {'name': 'Medenine', 'lat': 33.3549, 'lng': 10.5055},
+    {'name': 'Beja', 'lat': 36.7256, 'lng': 9.1817},
+    {'name': 'Le Kef', 'lat': 36.1741, 'lng': 8.7049},
+]
+
+@router.get('/hazards/realtime')
+async def get_realtime_hazards():
+    """Aggregate real-time hazards from free open sources."""
+    hazards = []
+
+    async with httpx.AsyncClient(timeout=15, headers={'User-Agent': 'WeatherGuardTN/1.0'}) as client:
+        # 1. Open-Meteo severe weather warnings for Tunisia regions
+        open_meteo_regions = [
+            (36.8, 10.2, 'Tunis'), (34.7, 10.8, 'Sfax'), (35.8, 10.6, 'Sousse'),
+            (37.3, 9.9, 'Bizerte'), (33.9, 10.1, 'Gabes'), (34.4, 8.8, 'Gafsa'),
+            (35.7, 10.1, 'Kairouan'), (36.5, 8.8, 'Jendouba'), (35.2, 8.8, 'Kasserine'),
+            (33.9, 8.1, 'Tozeur'), (36.7, 9.2, 'Beja'), (36.2, 8.7, 'Le Kef'),
+        ]
+        for lat, lng, city in open_meteo_regions:
+            try:
+                url = f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}&hourly=wind_speed_10m,precipitation,weathercode&daily=weathercode&forecast_days=1'
+                resp = await client.get(url)
+                data = resp.json()
+                daily_code = data.get('daily', {}).get('weathercode', [])
+                hourly_precip = data.get('hourly', {}).get('precipitation', [])
+                hourly_wind = data.get('hourly', {}).get('wind_speed_10m', [])
+
+                if daily_code and daily_code[0] >= 80:
+                    sev = 4 if daily_code[0] >= 95 else 3
+                    evt = 'Thunderstorm' if daily_code[0] >= 95 else 'Heavy Rain'
+                    hazards.append({
+                        'properties': {'what': f'{evt} warning — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'weather',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+
+                max_wind = max(hourly_wind) if hourly_wind else 0
+                if max_wind > 60:
+                    sev = 4 if max_wind > 80 else 3
+                    hazards.append({
+                        'properties': {'what': f'Strong wind warning ({max_wind:.0f} km/h) — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'wind',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+
+                max_precip = max(hourly_precip) if hourly_precip else 0
+                if max_precip > 20:
+                    sev = 4 if max_precip > 40 else 3
+                    hazards.append({
+                        'properties': {'what': f'Heavy precipitation ({max_precip:.0f} mm/h) — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'flood',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+            except Exception:
+                pass
+
+        # 2. GDACS global disaster alerts (filter for Tunisia/North Africa)
+        try:
+            resp = await client.get('https://www.gdacs.org/gdacs/xml/VO_EVENTSONLY.xml')
+            if resp.status_code == 200:
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(resp.text)
+                for event in root.findall('.//{http://gdacs.org}event'):
+                    country = event.find('{http://gdacs.org}country')
+                    if country is not None and country.text and any(c in country.text.upper() for c in ['TN', 'TUN', 'DZ', 'LY']):
+                        event_type = event.find('{http://gdacs.org}eventtype')
+                        subtype = event.find('{http://gdacs.org}subtype')
+                        alert = event.find('{http://gdacs.org}alertlevel')
+                        lat_el = event.find('{http://gdacs.org}eventlatitude')
+                        lng_el = event.find('{http://gdacs.org}eventlongitude')
+                        lat = float(lat_el.text) if lat_el is not None and lat_el.text else 34.0
+                        lng = float(lng_el.text) if lng_el is not None and lng_el.text else 9.0
+                        sev_map = {'Red': 5, 'Orange': 4, 'Green': 3}
+                        sev = sev_map.get(alert.text if alert is not None else '', 2)
+                        hazards.append({
+                            'properties': {'what': f'{event_type.text or "Disaster"} — {subtype.text or ""}', 'severity': sev},
+                            'geometry': {'coordinates': [lng, lat]},
+                            'type': (event_type.text or 'disaster').lower(),
+                            'severity': sev,
+                            'source': 'gdacs',
+                        })
+        except Exception:
+            pass
+
+        # 3. EMSC earthquakes (Mediterranean region)
+        try:
+            url = 'https://www.seismicportal.eu/fdsnws/event/1/query'
+            params = {'format': 'geojson', 'minlatitude': 30, 'maxlatitude': 40, 'minlongitude': 5, 'maxlongitude': 15, 'orderby': 'time', 'limit': 30, 'minmagnitude': 2.0}
+            resp = await client.get(url, params=params)
+            data = resp.json()
+            for feat in data.get('features', []):
+                mag = feat.get('properties', {}).get('mag', 0) or 0
+                if mag >= 2.0:
+                    coords = feat.get('geometry', {}).get('coordinates', [0, 0, 0])
+                    sev = min(5, max(1, int(mag)))
+                    place = feat.get('properties', {}).get('flynn_region', 'Mediterranean')
+                    hazards.append({
+                        'properties': {'what': f'Earthquake M{mag:.1f} — {place}', 'severity': sev},
+                        'geometry': {'coordinates': [coords[0], coords[1]]},
+                        'type': 'earthquake',
+                        'severity': sev,
+                        'source': 'emsc',
+                        'timestamp': feat.get('properties', {}).get('time', 0),
+                    })
+        except Exception:
+            pass
+
+    return {'hazards': hazards, 'count': len(hazards), 'sources': ['open-meteo', 'gdacs', 'emsc'], 'timestamp': datetime.now().isoformat()}
+
+
 @router.get('/tmaps/geocode')
 async def tmaps_geocode(q: str = Query(..., min_length=1)):
     """Proxy Photon geocoding endpoint."""
