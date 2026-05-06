@@ -20,6 +20,37 @@ def _row_to_dict(row):
         "source_url": row[9] if len(row) > 9 else "",
     }
 
+POSITIVE_KEYWORDS = [
+    'météo', 'meteo', 'pluie', 'vent', 'tempête', 'orage',
+    'chaleur', 'froid', 'canicule', 'neige', 'intempérie',
+    'prévisions', 'weather', 'storm', 'rain', 'temperature',
+    'changement climatique', 'climate', 'réchauffement', 'drought',
+    'route coupée', 'route fermée', 'inondation', 'flood',
+    'suspension des cours', 'fermeture école', 'école fermée',
+    'vigilance', 'crue', 'glissement', 'catastrophe',
+    'protection civile', 'incendie de forêt', 'pluie diluvienne',
+    'vent fort', 'séisme', 'tremblement', 'secousse',
+]
+
+NEGATIVE_KEYWORDS = [
+    'fadhel chaker', 'chaker', 'kaïs saïed', 'saïed', 'hachani',
+    'ministre de', 'conseil des ministres', 'président de la république',
+    'économie', 'bourse', 'budget', 'pib', 'inflation', 'chômage',
+    'foot', 'football', 'match', 'ligue', 'club africain',
+    'espérance sportive', 'étoile sportive', 'stade',
+    'cinéma', 'festival', 'concert', 'théâtre', 'exposition',
+    'procès', 'tribunal', 'prison', 'arrestation', 'jugement',
+    'ambassadeur', 'diplomatie', 'sommet', 'élections',
+]
+
+
+def _is_relevant_db_article(row):
+    """Secondary filter: ensure article contains at least one positive weather/climate/infra keyword
+    and no negative (politics/business/sports) keywords. Catches miscategorized DB entries."""
+    text = ((row[1] or '') + ' ' + (row[2] or '')).lower()
+    if any(kw in text for kw in NEGATIVE_KEYWORDS):
+        return False
+    return any(kw in text for kw in POSITIVE_KEYWORDS)
 CATEGORY_LABELS = {
     "meteo": "Météo",
     "weather": "Météo",
@@ -61,7 +92,7 @@ async def get_all_news(db: Session = Depends(get_db)):
             LIMIT 50
         """))
         
-        articles = [_row_to_dict(row) for row in result]
+        articles = [_row_to_dict(row) for row in result if _is_relevant_db_article(row)]
         count_result = db.execute(text("SELECT COUNT(*) FROM news_articles"))
         total = count_result.scalar()
         
@@ -88,7 +119,7 @@ async def get_relevant_news(db: Session = Depends(get_db)):
             LIMIT 30
         """))
         
-        articles = [_row_to_dict(row) for row in result]
+        articles = [_row_to_dict(row) for row in result if _is_relevant_db_article(row)]
         
         # Enrich with display labels
         for a in articles:
@@ -116,7 +147,7 @@ async def get_alerts(db: Session = Depends(get_db)):
             LIMIT 20
         """))
         
-        articles = [_row_to_dict(row) for row in result]
+        articles = [_row_to_dict(row) for row in result if _is_relevant_db_article(row)]
         for a in articles:
             a["category_label"] = CATEGORY_LABELS.get(a["category"], a["category"])
             a["category_icon"] = CATEGORY_ICONS.get(a["category"], "📰")
@@ -138,7 +169,7 @@ async def get_news_by_region(governorate: str, db: Session = Depends(get_db)):
             LIMIT 30
         """), {"gov": governorate})
         
-        articles = [_row_to_dict(row) for row in result]
+        articles = [_row_to_dict(row) for row in result if _is_relevant_db_article(row)]
         for a in articles:
             a["category_label"] = CATEGORY_LABELS.get(a["category"], a["category"])
             a["category_icon"] = CATEGORY_ICONS.get(a["category"], "📰")

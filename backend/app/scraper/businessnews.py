@@ -61,14 +61,46 @@ RISK_KEYWORDS = [
 ]
 
 EXCLUDE_KEYWORDS = [
+    # International conflicts
     'ukraine', 'russie', 'israël', 'palestine', 'gaza',
-    'élections', 'élection', 'parlement', 'ministre',
+    # Politics & government
+    'élections', 'élection', 'parlement', 'ministre', 'président',
+    'gouvernement', 'politique', 'assemblée', 'député', 'sénat',
+    'ambassadeur', 'consul', 'diplomatie', 'sommet',
+    'fadhel chaker', 'chaker', 'kaïs saïed', 'saïed', 'ahmed hachani',
+    'hachani', 'nawaf salam', 'salah gouuez', 'gouuez',
+    # Economy & business (non-weather)
+    'économie', 'bourse', 'budget', 'fiscalité', 'impôts', 'taxe',
+    'investisseur', 'startup', 'entrepreneuriat', 'marché',
+    'banque centrale', 'taux', 'dollar', 'euro', 'dinar',
+    'entreprises', 'société', 'actionnaires', 'dividende',
+    'pib', 'croissance économique', 'chômage', 'inflation',
+    # Sports
     'foot', 'football', 'ligue', 'club africain', 'espérance',
-    'étoile sportive', 'cs sfaxien', 'stade', 'match',
-    'incendie au parc', 'tentative d incendie',
+    'étoile sportive', 'cs sfaxien', 'stade', 'match', 'tennis',
+    'handball', 'basket', 'natation', 'olympique', 'jo',
+    'ligue des champions', 'arsenal', 'bayern', 'psg',
+    # Health (non-disaster)
+    'cancer', 'hôpital', 'transplant', 'médical', 'vaccin',
+    'don d organes', 'cœur', 'reins', 'maladie',
+    # Culture & entertainment
+    'cinéma', 'festival', 'concert', 'théâtre', 'exposition',
+    'art', 'musique', 'celebrity', 'célébrité', 'people',
+    # Travel (non-weather disruption)
+    'tunisair', 'hajj', 'bagage', 'vol', 'aéroport',
+    'tourisme', 'hôtel', 'vacances', 'visa', 'passeport',
+    # Crime & legal (non-disaster)
     'attentat', 'drone', 'militaire', 'armée', 'guerre',
+    'procès', 'tribunal', 'prison', 'arrestation', 'jugement',
+    # International news
     'emirats', 'iran', 'états-unis', 'chine', 'corée',
-    'politique', 'gouvernement', 'président',
+    'trump', 'macron', 'putin', 'netanyahu',
+    'pétrole', 'opec', 'détroit', 'naturalisation',
+    # Miscellaneous non-relevant
+    'incendie au parc', 'tentative d incendie',
+    'chiboub', 'démission', 'fonctions',
+    'libération', 'wadie', 'jary', 'caméras',
+    'recensement', 'census', 'sondage', 'poll',
 ]
 
 

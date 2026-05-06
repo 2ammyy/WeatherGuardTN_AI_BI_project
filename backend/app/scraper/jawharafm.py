@@ -12,9 +12,20 @@ WEATHER_KEYWORDS = [
     'meteo', 'pluie', 'vent', 'tempete', 'chaleur', 'froid', 'neige', 'inondation',
 ]
 
-EXCLUDE_KEYWORDS = [
+EXCLUDE_KEYWORDS_FR = [
     'foot', 'football', 'match', 'ligue', 'club', 'espérance', 'étoile',
-    'politique', 'gouvernement', 'président', 'élection',
+    'politique', 'gouvernement', 'président', 'élection', 'ministre',
+    'économie', 'bourse', 'budget', 'société', 'entreprises',
+    'cinéma', 'festival', 'concert', 'tourisme', 'hôtel',
+    'fadhel chaker', 'chaker', 'kaïs saïed', 'saïed',
+    'procès', 'tribunal', 'prison', 'arrestation',
+]
+
+EXCLUDE_KEYWORDS_AR = [
+    'كرة القدم', 'مباراة', 'سياسة', 'حكومة', 'رئيس', 'انتخابات',
+    'اقتصاد', 'بورصة', 'مجتمع', 'شركات', 'سياحة', 'فندق',
+    'فاضل شاكر', 'شاكر', 'قيس سعيد', 'سعيد',
+    'محكمة', 'سجن', 'اعتقال',
 ]
 
 
@@ -42,7 +53,9 @@ def scrape():
                     continue
 
                 combined = title.lower()
-                if any(kw in combined for kw in EXCLUDE_KEYWORDS):
+                if any(kw in combined for kw in EXCLUDE_KEYWORDS_FR):
+                    continue
+                if any(kw in combined for kw in EXCLUDE_KEYWORDS_AR):
                     continue
                 if not any(kw.lower() in combined for kw in WEATHER_KEYWORDS):
                     continue
