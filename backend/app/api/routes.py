@@ -1,13 +1,14 @@
-# from fastapi import APIRouter, HTTPException
-# from pydantic import BaseModel
-# from typing import Optional, Dict, List
-# from datetime import datetime
-# from ..utils.mlflow_loader import best_model, model_type
-# import numpy as np
-# import logging
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+from typing import Optional, Dict, List
+from datetime import datetime
+import os
+import httpx
 
-# logger = logging.getLogger(__name__)
-# router = APIRouter(prefix="/api", tags=["predictions"])
+import logging
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["predictions"])
 
 # class PredictRequest(BaseModel):
 #     city: str
@@ -344,9 +345,147 @@ async def current_weather(request: WeatherRequest):
     random.seed()
     return {'city': request.city, 'risk_level': risk_level, 'weather': weather, 'date': request.date or str(datetime.now().date())}
 
-class WeatherRequest(BaseModel):
-    city: str
-    date: str = None
+# ══════════════════════════════════════════════════════════════════════════════
+# ROUTING PROXY (OSRM + Photon — free, no key needed)
+# ══════════════════════════════════════════════════════════════════════════════
+
+from urllib.parse import quote as url_quote
+PHOTON_BASE = 'https://photon.komoot.io/api'
+OSRM_BASE = 'https://router.project-osrm.org/route/v1'
+PHOTON_HEADERS = {'User-Agent': 'WeatherGuardTN/1.0'}
+
+
+class RouteRequest(BaseModel):
+    origin: str
+    destination: str
+    profile: str = 'driving'
+
+
+def _build_geocode_url(query: str) -> str:
+    q = f'{query}, Tunisia'
+    return f'{PHOTON_BASE}?q={url_quote(q)}&limit=1'
+
+
+@router.get('/tmaps/geocode')
+async def tmaps_geocode(q: str = Query(..., min_length=1)):
+    """Proxy Photon geocoding endpoint."""
+    url = _build_geocode_url(q)
+    async with httpx.AsyncClient(timeout=10, headers=PHOTON_HEADERS) as client:
+        try:
+            resp = await client.get(url)
+            data = resp.json()
+            results = []
+            for feat in data.get('features', []):
+                p = feat.get('properties', {})
+                coords = feat.get('geometry', {}).get('coordinates', [])
+                if p.get('countrycode') == 'TN':
+                    results.append({
+                        'lat': coords[1] if len(coords) > 1 else 0,
+                        'lng': coords[0] if len(coords) > 0 else 0,
+                        'formatted': p.get('name', ''),
+                        'confidence': 0.9,
+                    })
+            return {'results': results}
+        except Exception as e:
+            raise HTTPException(502, f'Geocoding failed: {str(e)}')
+
+
+@router.post('/tmaps/route')
+async def tmaps_route(req: RouteRequest):
+    """Proxy OSRM routing endpoint with city name resolution via Photon."""
+    CITY_COORDS = {
+        'tunis': (36.8065, 10.1815), 'ariana': (36.8625, 10.1956),
+        'ben arous': (36.7459, 10.2214), 'manouba': (36.8081, 10.0972),
+        'sfax': (34.7400, 10.7600), 'sousse': (35.8256, 10.6411),
+        'bizerte': (37.2744, 9.8739), 'nabeul': (36.4561, 10.7378),
+        'monastir': (35.7833, 10.8333), 'mahdia': (35.5047, 11.0622),
+        'kairouan': (35.6781, 10.0963), 'jendouba': (36.5011, 8.7803),
+        'gafsa': (34.4250, 8.7842), 'gabes': (33.8815, 10.0982),
+        'medenine': (33.3549, 10.5055), 'tataouine': (32.9297, 10.4518),
+        'tozeur': (33.9197, 8.1335), 'kebili': (33.7044, 8.9692),
+        'beja': (36.7256, 9.1817), 'le kef': (36.1741, 8.7049),
+        'siliana': (36.0849, 9.3708), 'zaghouan': (36.4029, 10.1429),
+        'kasserine': (35.1676, 8.8365),
+    }
+
+    def resolve(name):
+        lower = name.lower().strip()
+        if lower in CITY_COORDS:
+            return CITY_COORDS[lower]
+        return None
+
+    async with httpx.AsyncClient(timeout=15, headers=PHOTON_HEADERS) as client:
+        o_coords = resolve(req.origin)
+        d_coords = resolve(req.destination)
+
+        if not o_coords:
+            try:
+                url = _build_geocode_url(req.origin)
+                resp = await client.get(url)
+                data = resp.json()
+                for feat in data.get('features', []):
+                    p = feat.get('properties', {})
+                    coords = feat.get('geometry', {}).get('coordinates', [])
+                    if p.get('countrycode') == 'TN' and len(coords) == 2:
+                        o_coords = (coords[1], coords[0])
+                        break
+            except Exception:
+                pass
+
+        if not d_coords:
+            try:
+                url = _build_geocode_url(req.destination)
+                resp = await client.get(url)
+                data = resp.json()
+                for feat in data.get('features', []):
+                    p = feat.get('properties', {})
+                    coords = feat.get('geometry', {}).get('coordinates', [])
+                    if p.get('countrycode') == 'TN' and len(coords) == 2:
+                        d_coords = (coords[1], coords[0])
+                        break
+            except Exception:
+                pass
+
+    if not o_coords or not d_coords:
+        raise HTTPException(400, f"Could not resolve {'origin' if not o_coords else 'destination'}: {req.origin if not o_coords else req.destination}")
+
+    # OSRM uses lng,lat ordering
+    url = f'{OSRM_BASE}/driving/{o_coords[1]},{o_coords[0]};{d_coords[1]},{d_coords[0]}'
+    params = {'steps': True, 'geometries': 'geojson', 'overview': 'full'}
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url, params=params)
+            data = resp.json()
+
+            routes = data.get('routes', [])
+            if not routes:
+                raise HTTPException(404, f'OSRM: {data.get("code", "No route found")}')
+
+            route = routes[0]
+            coords = route.get('geometry', {}).get('coordinates', [])
+
+            steps = []
+            for leg in route.get('legs', []):
+                for step in leg.get('steps', []):
+                    steps.append({
+                        'instruction': step.get('maneuver', {}).get('instruction', '') or step.get('name', ''),
+                        'distance_m': step.get('distance', 0),
+                        'duration_s': step.get('duration', 0),
+                    })
+
+            return {
+                'distance_km': round(route.get('distance', 0) / 1000, 1),
+                'duration_min': round(route.get('duration', 0) / 60),
+                'coordinates': coords,
+                'origin': {'name': req.origin, 'lat': o_coords[0], 'lng': o_coords[1]},
+                'destination': {'name': req.destination, 'lat': d_coords[0], 'lng': d_coords[1]},
+                'steps': steps,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(502, f'Routing failed: {str(e)}')
 
 @router.post('/current-weather')
 async def current_weather(request: WeatherRequest):

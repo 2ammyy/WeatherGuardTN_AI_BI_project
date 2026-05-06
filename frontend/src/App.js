@@ -6,13 +6,13 @@ import './App.css';
 // Import components
 import VigilanceMap from './components/VigilanceMap';
 import HazardLegend from './components/HazardLegend';
-import RouteChecker from './components/RouteChecker';
 import Login from './components/Login'; 
 import Signup from './components/Signup'; 
 import { fetchHazards } from './services/hazardService';
 import Settings from './components/Settings';
 import ForumPage from './forum/pages/ForumPage';
 import NewsPage from './pages/NewsPage';
+import RoutePage from './pages/RoutePage';
 
 function App() {
   // ==================== AUTH STATE ====================
@@ -34,6 +34,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showForum, setShowForum] = useState(false);
   const [showNews, setShowNews] = useState(false);
+  const [showRoute, setShowRoute] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // ==================== RISK CONFIGURATION ====================
@@ -190,6 +191,7 @@ function App() {
 
   if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} />;
   if (showNews) return <NewsPage onBack={() => setShowNews(false)} />;
+  if (showRoute) return <RoutePage onBack={() => setShowRoute(false)} hazards={hazards} />;
 
   return (
     <div style={{
@@ -336,6 +338,34 @@ function App() {
               }}
             >
               <span>📰</span> Actualités
+            </button>
+
+            <button
+              onClick={() => setShowRoute(true)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 10,
+                background: 'rgba(29, 158, 117, 0.1)',
+                border: '1px solid rgba(29, 158, 117, 0.3)',
+                color: '#1D9E75',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(29, 158, 117, 0.2)';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(29, 158, 117, 0.1)';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🛣</span> Route Safety
             </button>
 
             <button
@@ -666,11 +696,6 @@ function App() {
             })}
           </div>
         </div>
-      </div>
-
-      {/* Route Checker */}
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px 24px' }}>
-        <RouteChecker hazards={hazards} />
       </div>
 
       {/* Footer */}
