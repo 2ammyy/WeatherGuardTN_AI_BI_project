@@ -1,6 +1,7 @@
 // frontend/src/forum/components/ComposeModal.jsx
 import { useState, useRef, useCallback } from "react";
 import { postsAPI, uploadAPI } from "../api/client";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const CATEGORIES = [
   { value: "school_closure",  label: "School closure", icon: "🏫" },
@@ -33,10 +34,11 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 const MAX_FILES = 5;
 
 export default function ComposeModal({ onClose, onPublished }) {
+  const { t } = useTheme();
   const [form, setForm] = useState({
     title: "", body: "", category: "", risk_level: "green", governorate: "",
   });
-  const [mediaFiles, setMediaFiles] = useState([]); // { file, preview, url, type, name, uploading, progress, error }
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [aiStatus, setAiStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -160,29 +162,6 @@ export default function ComposeModal({ onClose, onPublished }) {
     return risk ? risk.icon : "⚪";
   };
 
-  const fieldStyle = {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 12,
-    border: "1px solid #334155",
-    background: "#1e293b",
-    fontFamily: "sans-serif",
-    fontSize: 14,
-    color: "white",
-    boxSizing: "border-box",
-    transition: "all 0.2s",
-    outline: "none",
-  };
-
-  const labelStyle = {
-    display: "block",
-    fontSize: 12,
-    fontWeight: 500,
-    color: "#94a3b8",
-    marginBottom: 6,
-    letterSpacing: "0.3px",
-  };
-
   const uploadedUrls = mediaFiles.filter((f) => f.url && !f.error);
   const uploadInProgress = mediaFiles.some((f) => f.uploading);
 
@@ -203,31 +182,68 @@ export default function ComposeModal({ onClose, onPublished }) {
     >
       <style>
         {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          .compose-field {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
           }
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+          .compose-field:focus {
+            box-shadow: 0 0 0 3px ${t.accent}20;
           }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+          .compose-select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
           }
+          .compose-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+          }
+          .compose-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all 0.2s;
+            cursor: pointer;
+          }
+          .compose-btn:hover { transform: translateY(-1px); }
+          .compose-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+          .compose-section { margin-bottom: 20px; }
         `}
       </style>
 
       <div
         style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%)",
+          background: t.bgCard,
           borderRadius: 24,
-          border: "1px solid rgba(29, 158, 117, 0.2)",
-          width: 640,
+          border: `1px solid ${t.border}`,
+          width: 680,
           maxWidth: "95vw",
           maxHeight: "90vh",
           overflowY: "auto",
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+          boxShadow: t.shadowModal,
           animation: "slideUp 0.3s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -235,19 +251,19 @@ export default function ComposeModal({ onClose, onPublished }) {
         {/* Header */}
         <div
           style={{
-            padding: "1.25rem 1.5rem",
-            borderBottom: "1px solid #1e293b",
+            padding: "20px 24px",
+            borderBottom: `1px solid ${t.border}`,
             display: "flex",
             alignItems: "center",
-            background: "rgba(11, 17, 32, 0.5)",
+            background: t.bgMuted,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
             <div
               style={{
-                background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)",
-                width: 36,
-                height: 36,
+                background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
+                width: 40,
+                height: 40,
                 borderRadius: 12,
                 display: "flex",
                 alignItems: "center",
@@ -258,47 +274,48 @@ export default function ComposeModal({ onClose, onPublished }) {
               ✏️
             </div>
             <div>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "white" }}>Create a post</span>
-              <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Share information with your community</p>
+              <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Create a post</span>
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>Share information with your community</p>
             </div>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "none",
+              background: "transparent",
+              border: `1px solid ${t.border}`,
               borderRadius: 10,
               cursor: "pointer",
               fontSize: 20,
-              color: "#94a3b8",
+              color: t.textMuted,
               lineHeight: 1,
               padding: "6px 12px",
               transition: "all 0.2s",
             }}
-            onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.1)"; e.target.style.color = "#fff"; }}
-            onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.color = "#94a3b8"; }}
+            onMouseEnter={(e) => { e.target.style.background = t.bgHover; e.target.style.color = t.text; }}
+            onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.color = t.textMuted; }}
           >
             ×
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: "1.5rem" }}>
+        <div style={{ padding: 24 }}>
           {/* Category */}
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={labelStyle}>
-              <span style={{ marginRight: 4 }}>📂</span> Category <span style={{ color: "#ef4444" }}>*</span>
+          <div className="compose-section">
+            <label className="compose-label" style={{ color: t.textMuted }}>
+              <span style={{ marginRight: 4 }}>📂</span> Category <span style={{ color: t.danger }}>*</span>
             </label>
             <select
               value={form.category}
               onChange={set("category")}
-              style={fieldStyle}
-              onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-              onBlur={(e) => e.target.style.borderColor = "#334155"}
+              className="compose-select"
+              style={{ background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
+              onFocus={(e) => e.target.style.borderColor = t.accent}
+              onBlur={(e) => e.target.style.borderColor = t.border}
             >
-              <option value="" style={{ color: "#94a3b8" }}>Select a category…</option>
+              <option value="">Select a category…</option>
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value} style={{ color: "white" }}>
+                <option key={c.value} value={c.value}>
                   {c.icon} {c.label}
                 </option>
               ))}
@@ -306,77 +323,81 @@ export default function ComposeModal({ onClose, onPublished }) {
           </div>
 
           {/* Title */}
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={labelStyle}>
-              <span style={{ marginRight: 4 }}>📌</span> Title <span style={{ color: "#ef4444" }}>*</span>
+          <div className="compose-section">
+            <label className="compose-label" style={{ color: t.textMuted }}>
+              <span style={{ marginRight: 4 }}>📌</span> Title <span style={{ color: t.danger }}>*</span>
             </label>
             <input
               value={form.title}
               onChange={set("title")}
               placeholder="Clear, descriptive title…"
-              style={fieldStyle}
-              onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-              onBlur={(e) => e.target.style.borderColor = "#334155"}
+              className="compose-field"
+              style={{ background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
+              onFocus={(e) => e.target.style.borderColor = t.accent}
+              onBlur={(e) => e.target.style.borderColor = t.border}
             />
           </div>
 
           {/* Body */}
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={labelStyle}>
-              <span style={{ marginRight: 4 }}>💬</span> Content <span style={{ color: "#ef4444" }}>*</span>
+          <div className="compose-section">
+            <label className="compose-label" style={{ color: t.textMuted }}>
+              <span style={{ marginRight: 4 }}>💬</span> Content <span style={{ color: t.danger }}>*</span>
             </label>
             <textarea
               value={form.body}
               onChange={set("body")}
               placeholder="Describe what's happening…"
-              style={{ ...fieldStyle, height: 120, resize: "vertical", fontFamily: "sans-serif" }}
-              onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-              onBlur={(e) => e.target.style.borderColor = "#334155"}
+              className="compose-field"
+              style={{ height: 120, resize: "vertical", background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
+              onFocus={(e) => e.target.style.borderColor = t.accent}
+              onBlur={(e) => e.target.style.borderColor = t.border}
             />
           </div>
 
           {/* Row: risk + governorate */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
             <div>
-              <label style={labelStyle}>
+              <label className="compose-label" style={{ color: t.textMuted }}>
                 <span style={{ marginRight: 4 }}>⚠️</span> Risk level
               </label>
               <select
                 value={form.risk_level}
                 onChange={set("risk_level")}
-                style={{ ...fieldStyle, borderLeft: `3px solid ${RISK_LEVELS.find(r => r.value === form.risk_level)?.color || "#64748b"}` }}
-                onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-                onBlur={(e) => e.target.style.borderColor = "#334155"}
+                className="compose-select"
+                style={{ background: t.bgInput, color: t.text, border: `1px solid ${t.border}`, borderLeft: `3px solid ${RISK_LEVELS.find(r => r.value === form.risk_level)?.color || t.textMuted}` }}
+                onFocus={(e) => e.target.style.borderColor = t.accent}
+                onBlur={(e) => e.target.style.borderColor = t.border}
               >
                 {RISK_LEVELS.map((r) => (
-                  <option key={r.value} value={r.value} style={{ color: "white" }}>
+                  <option key={r.value} value={r.value}>
                     {r.icon} {r.label}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={labelStyle}>
+              <label className="compose-label" style={{ color: t.textMuted }}>
                 <span style={{ marginRight: 4 }}>📍</span> Governorate
               </label>
               <select
                 value={form.governorate}
                 onChange={set("governorate")}
-                style={fieldStyle}
-                onFocus={(e) => e.target.style.borderColor = "#1D9E75"}
-                onBlur={(e) => e.target.style.borderColor = "#334155"}
+                className="compose-select"
+                style={{ background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
+                onFocus={(e) => e.target.style.borderColor = t.accent}
+                onBlur={(e) => e.target.style.borderColor = t.border}
               >
-                <option value="" style={{ color: "#94a3b8" }}>All governorates</option>
+                <option value="">All governorates</option>
                 {GOVERNORATES.map((g) => (
-                  <option key={g} value={g} style={{ color: "white" }}>{g}</option>
+                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
           </div>
 
           {/* Media Upload */}
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={labelStyle}>
+          <div className="compose-section">
+            <label className="compose-label" style={{ color: t.textMuted }}>
               <span style={{ marginRight: 4 }}>📎</span> Photos & Videos ({mediaFiles.length}/{MAX_FILES})
             </label>
 
@@ -387,12 +408,12 @@ export default function ComposeModal({ onClose, onPublished }) {
               onDragLeave={handleDragLeave}
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: `2px dashed ${dragOver ? "#1D9E75" : "#334155"}`,
-                borderRadius: 12,
-                padding: mediaFiles.length > 0 ? "12px" : "24px",
+                border: `2px dashed ${dragOver ? t.accent : t.border}`,
+                borderRadius: 16,
+                padding: mediaFiles.length > 0 ? 12 : 28,
                 textAlign: "center",
                 cursor: "pointer",
-                background: dragOver ? "rgba(29, 158, 117, 0.05)" : "rgba(30, 41, 59, 0.3)",
+                background: dragOver ? t.accentBg : t.bgMuted,
                 transition: "all 0.2s",
               }}
             >
@@ -406,16 +427,16 @@ export default function ComposeModal({ onClose, onPublished }) {
               />
               {mediaFiles.length === 0 ? (
                 <div>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
-                  <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
+                  <div style={{ fontSize: 14, color: t.textSecondary, fontWeight: 600 }}>
                     Drag & drop photos/videos here
                   </div>
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>
                     or click to browse • JPG, PNG, GIF, WebP, MP4, WebM • Max 50 MB
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: 12, color: "#64748b" }}>
+                <div style={{ fontSize: 12, color: t.textMuted }}>
                   + Click or drop to add more files
                 </div>
               )}
@@ -434,10 +455,10 @@ export default function ComposeModal({ onClose, onPublished }) {
                     key={idx}
                     style={{
                       position: "relative",
-                      borderRadius: 8,
+                      borderRadius: 12,
                       overflow: "hidden",
-                      background: "#1e293b",
-                      border: mf.error ? "1px solid #ef4444" : "1px solid #334155",
+                      background: t.bgMuted,
+                      border: mf.error ? `1px solid ${t.dangerBorder}` : `1px solid ${t.border}`,
                       aspectRatio: mf.type === "video" ? "16/9" : "1",
                     }}
                   >
@@ -455,7 +476,7 @@ export default function ComposeModal({ onClose, onPublished }) {
                         width: 22,
                         height: 22,
                         cursor: "pointer",
-                        color: "#f87171",
+                        color: t.danger,
                         fontSize: 14,
                         display: "flex",
                         alignItems: "center",
@@ -469,19 +490,17 @@ export default function ComposeModal({ onClose, onPublished }) {
                     {/* Preview content */}
                     {mf.error ? (
                       <div style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                        <div style={{ textAlign: "center", color: "#f87171", fontSize: 10 }}>
+                        <div style={{ textAlign: "center", color: t.danger, fontSize: 10 }}>
                           <div style={{ fontSize: 18, marginBottom: 4 }}>❌</div>
                           {mf.error}
                         </div>
                       </div>
                     ) : mf.type === "video" ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "#0f172a" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: t.bg }}>
                         {mf.url ? (
                           <video src={mf.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
-                        ) : mf.preview ? (
-                          <div style={{ fontSize: 32, color: "#64748b" }}>🎬</div>
                         ) : (
-                          <div style={{ fontSize: 32, color: "#64748b" }}>🎬</div>
+                          <div style={{ fontSize: 32, color: t.textMuted }}>🎬</div>
                         )}
                       </div>
                     ) : mf.preview ? (
@@ -504,7 +523,7 @@ export default function ComposeModal({ onClose, onPublished }) {
                           width: 24,
                           height: 24,
                           border: "2px solid rgba(255,255,255,0.3)",
-                          borderTopColor: "#1D9E75",
+                          borderTopColor: t.accent,
                           borderRadius: "50%",
                           animation: "spin 0.8s linear infinite",
                         }} />
@@ -518,7 +537,7 @@ export default function ComposeModal({ onClose, onPublished }) {
                         position: "absolute",
                         bottom: 4,
                         right: 4,
-                        background: "rgba(29, 158, 117, 0.8)",
+                        background: `${t.accent}cc`,
                         borderRadius: "50%",
                         width: 18,
                         height: 18,
@@ -534,13 +553,13 @@ export default function ComposeModal({ onClose, onPublished }) {
 
                     {/* File name */}
                     <div style={{
-                      padding: "4px 6px",
+                      padding: "4px 8px",
                       fontSize: 9,
-                      color: "#94a3b8",
+                      color: t.textMuted,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      background: "#0f172a",
+                      background: t.bg,
                     }}>
                       {mf.name}
                     </div>
@@ -554,14 +573,14 @@ export default function ComposeModal({ onClose, onPublished }) {
           {aiStatus && aiStatus !== "checking" && (
             <div
               style={{
-                padding: "12px 16px",
+                padding: "14px 16px",
                 borderRadius: 12,
                 fontSize: 13,
                 display: "flex",
                 gap: 10,
                 alignItems: "flex-start",
-                background: aiStatus.approved ? "rgba(29, 158, 117, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                border: `1px solid ${aiStatus.approved ? "rgba(29, 158, 117, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+                background: aiStatus.approved ? t.accentBg : t.dangerBg,
+                border: `1px solid ${aiStatus.approved ? t.accentBorder : t.dangerBorder}`,
                 marginBottom: 16,
               }}
             >
@@ -569,10 +588,10 @@ export default function ComposeModal({ onClose, onPublished }) {
                 {aiStatus.approved ? "✅" : "❌"}
               </span>
               <div>
-                <div style={{ fontWeight: 600, color: aiStatus.approved ? "#4ade80" : "#f87171", marginBottom: 4 }}>
+                <div style={{ fontWeight: 600, color: aiStatus.approved ? t.accent : t.danger, marginBottom: 4 }}>
                   {aiStatus.approved ? "Approved by AI moderation" : "Not approved"}
                 </div>
-                <div style={{ color: "#94a3b8", fontSize: 12 }}>
+                <div style={{ color: t.textSecondary, fontSize: 12 }}>
                   {aiStatus.reason}
                 </div>
               </div>
@@ -582,31 +601,31 @@ export default function ComposeModal({ onClose, onPublished }) {
           {aiStatus === "checking" && (
             <div
               style={{
-                padding: "12px 16px",
+                padding: "14px 16px",
                 borderRadius: 12,
                 fontSize: 13,
-                background: "rgba(59, 130, 246, 0.1)",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
+                background: `${t.accent}10`,
+                border: `1px solid ${t.accentBorder}`,
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
               }}
             >
-              <div style={{ width: 20, height: 20, border: "2px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              <span style={{ color: "#60a5fa" }}>AI is reviewing your post for relevance…</span>
+              <div style={{ width: 20, height: 20, border: `2px solid ${t.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <span style={{ color: t.accent }}>AI is reviewing your post for relevance…</span>
             </div>
           )}
 
           {error && (
             <div
               style={{
-                padding: "12px 16px",
+                padding: "14px 16px",
                 borderRadius: 12,
                 fontSize: 13,
-                background: "rgba(239, 68, 68, 0.1)",
-                border: "1px solid rgba(239, 68, 68, 0.3)",
-                color: "#f87171",
+                background: t.dangerBg,
+                border: `1px solid ${t.dangerBorder}`,
+                color: t.danger,
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
@@ -621,30 +640,24 @@ export default function ComposeModal({ onClose, onPublished }) {
         {/* Footer */}
         <div
           style={{
-            padding: "1rem 1.5rem",
-            borderTop: "1px solid #1e293b",
+            padding: "16px 24px",
+            borderTop: `1px solid ${t.border}`,
             display: "flex",
             gap: 12,
             justifyContent: "flex-end",
-            background: "rgba(11, 17, 32, 0.3)",
+            background: t.bgMuted,
           }}
         >
           <button
             onClick={onClose}
+            className="compose-btn"
             style={{
-              padding: "10px 20px",
-              borderRadius: 12,
-              border: "1px solid #334155",
+              border: `1px solid ${t.border}`,
               background: "transparent",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: "sans-serif",
-              color: "#94a3b8",
-              transition: "all 0.2s",
+              color: t.textMuted,
             }}
-            onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.borderColor = "#475569"; e.target.style.color = "#fff"; }}
-            onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.borderColor = "#334155"; e.target.style.color = "#94a3b8"; }}
+            onMouseEnter={(e) => { e.target.style.background = t.bgHover; e.target.style.borderColor = t.textMuted; e.target.style.color = t.text; }}
+            onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.borderColor = t.border; e.target.style.color = t.textMuted; }}
           >
             Cancel
           </button>
@@ -652,20 +665,14 @@ export default function ComposeModal({ onClose, onPublished }) {
           <button
             onClick={check}
             disabled={aiStatus === "checking" || uploadInProgress}
+            className="compose-btn"
             style={{
-              padding: "10px 20px",
-              borderRadius: 12,
-              border: "1px solid #1D9E75",
+              border: `1px solid ${t.accent}`,
               background: "transparent",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: "sans-serif",
-              color: "#1D9E75",
-              transition: "all 0.2s",
+              color: t.accent,
               opacity: aiStatus === "checking" || uploadInProgress ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (aiStatus !== "checking" && !uploadInProgress) { e.target.style.background = "rgba(29, 158, 117, 0.1)"; e.target.style.transform = "translateY(-1px)"; } }}
+            onMouseEnter={(e) => { if (aiStatus !== "checking" && !uploadInProgress) { e.target.style.background = t.accentBg; e.target.style.transform = "translateY(-1px)"; } }}
             onMouseLeave={(e) => { if (aiStatus !== "checking" && !uploadInProgress) { e.target.style.background = "transparent"; e.target.style.transform = "translateY(0)"; } }}
           >
             🤖 Check with AI
@@ -674,17 +681,12 @@ export default function ComposeModal({ onClose, onPublished }) {
           <button
             onClick={submit}
             disabled={submitting || !aiStatus || aiStatus === "checking" || !aiStatus.approved || uploadInProgress || hasErrors}
+            className="compose-btn"
             style={{
-              padding: "10px 24px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #1D9E75 0%, #0f6e56 100%)",
+              background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`,
               color: "white",
               border: "none",
-              cursor: "pointer",
-              fontSize: 13,
               fontWeight: 600,
-              fontFamily: "sans-serif",
-              transition: "all 0.2s",
               opacity: (submitting || !aiStatus || aiStatus === "checking" || !aiStatus.approved || uploadInProgress || hasErrors) ? 0.5 : 1,
             }}
             onMouseEnter={(e) => { if (!submitting && aiStatus && aiStatus !== "checking" && aiStatus.approved && !uploadInProgress) e.target.style.transform = "translateY(-1px)"; }}
@@ -694,15 +696,6 @@ export default function ComposeModal({ onClose, onPublished }) {
           </button>
         </div>
       </div>
-
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}
-      </style>
     </div>
   );
 }

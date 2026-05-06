@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { postsAPI } from "../api/client";
 import CommentsSection from "./CommentsSection";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const RISK_STYLES = {
   green:  { bg: "#E1F5EE", color: "#0F6E56", dot: "🟢" },
@@ -50,6 +51,7 @@ function Avatar({ name = "?", size = 32 }) {
 }
 
 export default function PostCard({ post: initial, onProfileClick, user }) {
+  const { t } = useTheme();
   const [post,          setPost]          = useState(initial);
   const [showComments,  setShowComments]  = useState(false);
   const [reportReason,  setReportReason]  = useState("");
@@ -96,9 +98,9 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
 
   return (
     <div style={{
-      background: "var(--color-background-primary)",
-      borderRadius: "var(--border-radius-lg)",
-      border: "0.5px solid var(--color-border-tertiary)",
+      background: t.bgCard,
+      borderRadius: 16,
+      border: `1px solid ${t.border}`,
       overflow: "hidden",
       position: "relative",
     }}>
@@ -106,7 +108,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
       {toast && (
         <div style={{
           position: "absolute", top: 10, right: 12, zIndex: 10,
-          background: "#1D9E75", color: "white", padding: "6px 14px",
+          background: t.accent, color: "white", padding: "6px 14px",
           borderRadius: 8, fontSize: 13,
         }}>{toast}</div>
       )}
@@ -117,12 +119,12 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span
-              style={{ fontSize: 13, fontWeight: 500, cursor: "pointer", color: "var(--color-text-primary)" }}
+              style={{ fontSize: 13, fontWeight: 500, cursor: "pointer", color: t.text }}
               onClick={() => onProfileClick?.(post.author?.username)}
             >
               {post.author?.display_name ?? post.author?.username}
             </span>
-            <span style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>
+            <span style={{ fontSize: 12, color: t.textMuted }}>
               {new Date(post.created_at).toLocaleDateString("fr-TN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
             </span>
           </div>
@@ -131,7 +133,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
               {label}
             </span>
             {post.governorate && (
-              <span style={{ fontSize: 12, color: "var(--color-text-secondary)", background: "var(--color-background-secondary)", padding: "2px 7px", borderRadius: 10 }}>
+              <span style={{ fontSize: 12, color: t.textSecondary, background: t.bgMuted, padding: "2px 7px", borderRadius: 10 }}>
                 📍 {post.governorate}
               </span>
             )}
@@ -148,10 +150,10 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         }}>
           {risk.dot} {post.risk_level.charAt(0).toUpperCase() + post.risk_level.slice(1)} risk
         </span>
-        <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, lineHeight: 1.4, color: "var(--color-text-primary)" }}>
+        <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, lineHeight: 1.4, color: t.text }}>
           {post.title}
         </div>
-        <div style={{ fontSize: 14, color: "var(--color-text-secondary)", lineHeight: 1.65 }}>
+        <div style={{ fontSize: 14, color: t.textSecondary, lineHeight: 1.65 }}>
           {post.body}
         </div>
 
@@ -181,7 +183,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
                       src={fullUrl}
                       controls
                       preload="metadata"
-                      style={{ width: "100%", borderRadius: 8, maxHeight: 360, objectFit: "cover", background: "#0f172a" }}
+                      style={{ width: "100%", borderRadius: 8, maxHeight: 360, objectFit: "cover", background: t.bg }}
                     />
                   );
                 }
@@ -201,44 +203,43 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
       </div>
 
       {/* Actions */}
-      <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "0.5rem 1rem", display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ borderTop: `1px solid ${t.border}`, padding: "0.5rem 1rem", display: "flex", alignItems: "center", gap: 4 }}>
         <button onClick={handleLike} disabled={loading}
           style={{
             display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
             borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
-            fontSize: 13, color: post.is_liked ? "#D85A30" : "var(--color-text-secondary)",
-            fontFamily: "var(--font-sans)",
+            fontSize: 13, color: post.is_liked ? t.danger : t.textSecondary,
           }}>
           {post.is_liked ? "♥" : "♡"} {post.likes_count}
         </button>
         <button onClick={() => setShowComments((s) => !s)}
-          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color:"var(--color-text-secondary)", fontFamily:"var(--font-sans)" }}>
+          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
           💬 {post.comments_count}
         </button>
         <button onClick={handleShare}
-          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color:"var(--color-text-secondary)", fontFamily:"var(--font-sans)" }}>
+          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
           ↗ {post.shares_count}
         </button>
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowReport((s) => !s)}
-          style={{ padding:"5px 8px", border:"none", background:"transparent", cursor:"pointer", fontSize:12, color:"var(--color-text-tertiary)", fontFamily:"var(--font-sans)" }}>
+          style={{ padding:"5px 8px", border:"none", background:"transparent", cursor:"pointer", fontSize:12, color: t.textMuted }}>
           ⚑ Report
         </button>
       </div>
 
       {/* Report form */}
       {showReport && (
-        <div style={{ padding:"0.75rem 1.25rem", borderTop:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-secondary)" }}>
-          <div style={{ fontSize:13, fontWeight:500, marginBottom:6 }}>Why are you reporting this post?</div>
+        <div style={{ padding:"0.75rem 1.25rem", borderTop:`1px solid ${t.border}`, background: t.bgMuted }}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:6, color: t.text }}>Why are you reporting this post?</div>
           <textarea
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             placeholder="Optional reason…"
-            style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:"0.5px solid var(--color-border-secondary)", fontSize:13, fontFamily:"var(--font-sans)", resize:"none", height:70, background:"var(--color-background-primary)", color:"var(--color-text-primary)" }}
+            style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:`1px solid ${t.border}`, fontSize:13, resize:"none", height:70, background: t.bgInput, color: t.text }}
           />
           <div style={{ display:"flex", gap:8, marginTop:8 }}>
-            <button onClick={handleReport} style={{ padding:"6px 16px", borderRadius:8, background:"#E24B4A", color:"white", border:"none", cursor:"pointer", fontSize:13, fontFamily:"var(--font-sans)" }}>Submit report</button>
-            <button onClick={() => setShowReport(false)} style={{ padding:"6px 12px", borderRadius:8, background:"transparent", border:"0.5px solid var(--color-border-secondary)", cursor:"pointer", fontSize:13, fontFamily:"var(--font-sans)", color:"var(--color-text-primary)" }}>Cancel</button>
+            <button onClick={handleReport} style={{ padding:"6px 16px", borderRadius:8, background: t.danger, color:"white", border:"none", cursor:"pointer", fontSize:13 }}>Submit report</button>
+            <button onClick={() => setShowReport(false)} style={{ padding:"6px 12px", borderRadius:8, background:"transparent", border:`1px solid ${t.border}`, cursor:"pointer", fontSize:13, color: t.text }}>Cancel</button>
           </div>
         </div>
       )}
