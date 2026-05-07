@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report, confusion_matrix
 
 logger = logging.getLogger(__name__)
 
@@ -110,13 +111,15 @@ def _get_pipeline():
     return _PIPELINE
 
 
-def classify_priority(reason_text: str) -> dict:
+def classify_priority(reason_text: str, detailed: bool = False) -> dict:
     """
-    Returns {'priority': 'high'|'medium'|'low', 'score': int 0-100}
-    score represents probability confidence for the predicted class.
+    Returns priority classification for the given text.
+
+    If detailed=False: {'priority': str, 'score': int}
+    If detailed=True:  {'priority': str, 'score': int, 'probabilities': dict, 'method': str, 'top_features': list}
     """
     if not reason_text or not reason_text.strip():
-        return {"priority": "medium", "score": 50}
+        return {"priority": "medium", "score": 50, "method": "fallback", "probabilities": {"high": 0, "medium": 1, "low": 0}}
 
     pipe = _get_pipeline()
 
@@ -125,11 +128,59 @@ def classify_priority(reason_text: str) -> dict:
             probs = pipe.predict_proba([reason_text])[0]
             pred = pipe.predict([reason_text])[0]
             confidence = int(round(max(probs) * 100))
-            return {"priority": pred, "score": min(confidence, 100)}
+            classes = pipe.classes_.tolist()
+            prob_dict = {cls: round(float(p), 4) for cls, p in zip(classes, probs)}
+
+            if not detailed:
+                return {"priority": pred, "score": min(confidence, 100)}
+
+            # Top features for explanation
+            top_features = _get_top_features(pipe, reason_text, top_n=5)
+
+            return {
+                "priority": pred,
+                "score": min(confidence, 100),
+                "probabilities": prob_dict,
+                "method": "ml",
+                "top_features": top_features,
+            }
         except Exception as e:
             logger.warning("Priority prediction error: %s", e)
 
-    return _rule_based_fallback(reason_text)
+    result = _rule_based_fallback(reason_text)
+    if detailed:
+        result["method"] = "rule"
+        result["probabilities"] = {result["priority"]: result["score"] / 100}
+    return result
+
+
+def _get_top_features(pipe: Pipeline, text: str, top_n: int = 5) -> list:
+    """Extract top TF-IDF features that influenced the prediction."""
+    try:
+        vectorizer = pipe.named_steps["tfidf"]
+        clf = pipe.named_steps["clf"]
+        text_vec = vectorizer.transform([text])
+        feature_names = vectorizer.get_feature_names_out()
+
+        # Get coefficients for the predicted class
+        pred = clf.predict([text])[0]
+        class_idx = list(clf.classes_).index(pred)
+        coefs = clf.coef_[class_idx]
+
+        # Score each feature
+        scores = (text_vec.toarray() * coefs).flatten()
+        top_indices = scores.argsort()[-top_n:][::-1]
+
+        features = []
+        for idx in top_indices:
+            if abs(scores[idx]) > 0:
+                features.append({
+                    "feature": feature_names[idx],
+                    "weight": round(float(scores[idx]), 4),
+                })
+        return features
+    except Exception:
+        return []
 
 
 def _rule_based_fallback(text: str) -> dict:
@@ -166,3 +217,72 @@ def classify_reports_bulk(reports: list) -> list:
         result = classify_priority(reason)
         results.append((rid, result["priority"], result["score"]))
     return results
+
+
+def evaluate_model() -> dict:
+    """Evaluate model accuracy on its own training data (self-test)."""
+    pipe = _get_pipeline()
+    if not pipe or pipe is False:
+        return {"error": "Model not available"}
+
+    texts = [t for t, _ in SEED_DATA]
+    labels = [l for _, l in SEED_DATA]
+
+    preds = pipe.predict(texts)
+    probs = pipe.predict_proba(texts)
+
+    # Per-class accuracy
+    correct = sum(1 for p, l in zip(preds, labels) if p == l)
+    accuracy = round(correct / len(labels), 4)
+
+    # Confusion matrix
+    cm = confusion_matrix(labels, preds, labels=_LABELS)
+
+    # Per-class metrics
+    report = classification_report(labels, preds, labels=_LABELS, output_dict=True, zero_division=0)
+
+    # Confidence analysis
+    confidences = [float(max(p)) for p in probs]
+    avg_confidence = round(sum(confidences) / len(confidences), 4)
+
+    # Top typical examples per class
+    examples = {}
+    for cls in _LABELS:
+        cls_indices = [i for i, l in enumerate(labels) if l == cls]
+        cls_scores = [(confidences[i], texts[i]) for i in cls_indices]
+        cls_scores.sort(reverse=True)
+        examples[cls] = [
+            {"text": t[:80], "confidence": round(c, 4)}
+            for c, t in cls_scores[:3]
+        ]
+
+    return {
+        "model_type": "TF-IDF + LogisticRegression",
+        "seed_examples": len(SEED_DATA),
+        "classes": _LABELS,
+        "accuracy": accuracy,
+        "avg_confidence": avg_confidence,
+        "correct": int(correct),
+        "total": len(labels),
+        "confusion_matrix": cm.tolist(),
+        "per_class": {
+            cls: {
+                "precision": round(report[cls]["precision"], 4),
+                "recall": round(report[cls]["recall"], 4),
+                "f1_score": round(report[cls]["f1-score"], 4),
+                "support": int(report[cls]["support"]),
+            }
+            for cls in _LABELS
+        },
+        "example_predictions": examples,
+    }
+
+
+def test_custom_text(text: str) -> dict:
+    """Test the model on arbitrary text with detailed output."""
+    result = classify_priority(text, detailed=True)
+    if "method" not in result:
+        result["method"] = "fallback"
+    result["input"] = text
+    result["input_length"] = len(text)
+    return result

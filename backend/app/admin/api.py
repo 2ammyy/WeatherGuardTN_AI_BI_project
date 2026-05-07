@@ -7,13 +7,21 @@ from app.forum.models import (
     UserReport, ForumUser, Notification, NewsArticle, Message
 )
 from app.models.ml_model import MLModel
-from app.admin.priority import classify_priority, classify_reports_bulk
+from app.admin.priority import classify_priority, classify_reports_bulk, evaluate_model, test_custom_text
 from datetime import datetime, timedelta
 import jwt
 import os
 
 SECRET_KEY = os.getenv('FORUM_SECRET_KEY', 'weatherguardtn-admin-secret-2026')
 ALGORITHM = 'HS256'
+
+from pydantic import BaseModel
+
+class DryRunInput(BaseModel):
+    text: str
+
+class BatchTestInput(BaseModel):
+    reasons: list[str]
 
 router = APIRouter()
 
@@ -377,3 +385,54 @@ def reports_summary(_=Depends(require_admin)):
         }
     finally:
         db.close()
+
+@router.post("/priority/dry-run")
+def dry_run_priority(body: DryRunInput, _=Depends(require_admin)):
+    """Test AI priority classification on arbitrary text without saving."""
+    result = test_custom_text(body.text)
+    return result
+
+@router.get("/priority/model-info")
+def model_info(_=Depends(require_admin)):
+    """Get model evaluation metrics and information."""
+    return evaluate_model()
+
+@router.post("/priority/batch-test")
+def batch_test(body: BatchTestInput, _=Depends(require_admin)):
+    """Test AI on multiple texts at once."""
+    results = []
+    for text in body.reasons:
+        r = test_custom_text(text)
+        results.append(r)
+    return {
+        "total": len(results),
+        "distribution": {
+            "high": sum(1 for r in results if r["priority"] == "high"),
+            "medium": sum(1 for r in results if r["priority"] == "medium"),
+            "low": sum(1 for r in results if r["priority"] == "low"),
+        },
+        "avg_confidence": round(sum(r["score"] for r in results) / max(len(results), 1), 1),
+        "results": results,
+    }
+
+@router.get("/test/demo-cases")
+def demo_test_cases(_=Depends(require_admin)):
+    """Return curated test cases for the moderation test page."""
+    test_cases = [
+        {"text": "This user posted my private phone number and home address without consent. I feel unsafe.", "expected": "high"},
+        {"text": "Death threats and violent language in the comments section", "expected": "high"},
+        {"text": "Hate speech targeting people based on their religion", "expected": "high"},
+        {"text": "Someone is planning to cause physical harm to others in the community", "expected": "high"},
+        {"text": "This post contains false information about the upcoming storm in Tunis", "expected": "medium"},
+        {"text": "User is spreading rumors about the flood damage that are not true", "expected": "medium"},
+        {"text": "This comment is rude and disrespectful but not threatening", "expected": "medium"},
+        {"text": "Suspicious account activity, possible bot or fake account", "expected": "medium"},
+        {"text": "Minor typo in the post title, just letting you know", "expected": "low"},
+        {"text": "This is just spam advertising a weather product, nothing dangerous", "expected": "low"},
+        {"text": "Small formatting issue with the image placement", "expected": "low"},
+        {"text": "The post is in the wrong category, should be under alerts", "expected": "medium"},
+        {"text": "Child safety concern - inappropriate content targeting minors", "expected": "high"},
+        {"text": "Fraud alert - someone is impersonating an admin and asking for money", "expected": "high"},
+        {"text": "Duplicate post, already been shared by another user last week", "expected": "low"},
+    ]
+    return [{"id": i + 1, **tc} for i, tc in enumerate(test_cases)]
