@@ -185,6 +185,23 @@ class CommentReport(Base):
 
 
 # ─────────────────────────────────────────────
+# Messages (private user-to-user)
+# ─────────────────────────────────────────────
+class Message(Base):
+    __tablename__ = "messages"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sender_id   = Column(UUID(as_uuid=True), ForeignKey("forum_users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(UUID(as_uuid=True), ForeignKey("forum_users.id", ondelete="CASCADE"), nullable=False)
+    body        = Column(Text, nullable=False)
+    is_read     = Column(Boolean, default=False)
+    created_at  = Column(DateTime(timezone=True), default=utcnow)
+
+    sender   = relationship("ForumUser", foreign_keys=[sender_id])
+    receiver = relationship("ForumUser", foreign_keys=[receiver_id])
+
+
+# ─────────────────────────────────────────────
 # Notifications
 # ─────────────────────────────────────────────
 class Notification(Base):

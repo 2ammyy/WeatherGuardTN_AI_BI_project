@@ -4,6 +4,7 @@ import { postsAPI } from "../api/client";
 import PostCard from "../components/PostCard";
 import ComposeModal from "../components/ComposeModal";
 import NotificationBell from "../components/NotificationBell";
+import InboxModal from "../components/InboxModal";
 import SearchBar from "../components/SearchBar";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -31,6 +32,7 @@ function ForumInner({ onBack, existingUser, onProfileClick }) {
   const [governorate, setGovernorate] = useState("");
   const [compose, setCompose] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
 
   const user = existingUser;
 
@@ -132,6 +134,9 @@ function ForumInner({ onBack, existingUser, onProfileClick }) {
         <div style={{ flex: 1 }} />
         <SearchBar onClose={() => {}} onNavigateToProfile={onProfileClick} />
         <div style={{ flex: 1 }} />
+        <button onClick={() => setShowInbox(true)}
+          style={{ background: "transparent", border: `1px solid ${t.border}`, color: t.textMuted, cursor: "pointer", fontSize: 16, padding: "8px 10px", borderRadius: 10, lineHeight: 1 }}
+          title="Messages">✉</button>
         <NotificationBell />
         <button
           onClick={handleCompose}
@@ -286,6 +291,7 @@ function ForumInner({ onBack, existingUser, onProfileClick }) {
       )}
 
       {compose && <ComposeModal onClose={() => setCompose(false)} onPublished={handlePublished} />}
+      {showInbox && <InboxModal onClose={() => setShowInbox(false)} onNavigateToProfile={onProfileClick} />}
     </div>
   );
 }

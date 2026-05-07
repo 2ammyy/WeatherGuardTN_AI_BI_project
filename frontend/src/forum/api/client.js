@@ -100,3 +100,16 @@ export const notifsAPI = {
   readAll:    ()       => api.post("/notifications/read-all").then((r) => r.data),
   read:       (id)     => api.post(`/notifications/${id}/read`).then((r) => r.data),
 };
+
+// ── Messages ─────────────────────────────────────────────────────────
+export const messagesAPI = {
+  conversations: ()        => api.get("/messages").then((r) => r.data),
+  conversation:  (otherId) => api.get(`/messages/${otherId}`).then((r) => r.data),
+  send:          (receiverId, body) => api.post(`/messages/${receiverId}`, { body }).then((r) => r.data),
+  markRead:      (msgId)   => api.put(`/messages/${msgId}/read`).then((r) => r.data),
+};
+
+// ── Activity (profile feed) ─────────────────────────────────────────
+export const activityAPI = {
+  list: (username, params) => api.get(`/users/${username}/activity`, { params }).then((r) => r.data),
+};

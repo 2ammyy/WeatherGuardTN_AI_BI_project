@@ -1,32 +1,39 @@
 import { useState, useEffect } from "react";
-import { usersAPI, postsAPI } from "../api/client";
+import { usersAPI, activityAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import ConversationModal from "../components/ConversationModal";
 
 export default function UserProfilePage({ username, onBack, currentUser }) {
   const { t } = useTheme();
   const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showConversation, setShowConversation] = useState(false);
+
+  const isOwn = currentUser?.username === username;
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  const loadProfile = async () => {
-    setLoading(true);
-    try {
-      const p = await usersAPI.profile(username);
-      setProfile(p);
-      const postData = await postsAPI.list({ username, page: 1, size: 20 });
-      setPosts(postData.items || []);
-    } catch (e) {
-      showToast(e.response?.data?.detail || "User not found");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadProfile(); }, [username]);
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [p, acts] = await Promise.all([
+          usersAPI.profile(username),
+          activityAPI.list(username),
+        ]);
+        setProfile(p);
+        setActivity(acts || []);
+      } catch (e) {
+        showToast(e.response?.data?.detail || "User not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [username]);
 
   const handleFollow = async () => {
     if (!profile) return;
@@ -76,10 +83,6 @@ export default function UserProfilePage({ username, onBack, currentUser }) {
     }
   };
 
-  const handleMessage = () => {
-    showToast("Messaging feature coming soon!");
-  };
-
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading...</div>;
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>User not found</div>;
 
@@ -95,6 +98,13 @@ export default function UserProfilePage({ username, onBack, currentUser }) {
           background: t.accent, color: "#fff", padding: "10px 20px",
           borderRadius: 8, fontSize: 13,
         }}>{toast}</div>
+      )}
+
+      {showConversation && (
+        <ConversationModal
+          otherUser={{ id: profile.id, username: profile.username, display_name: profile.display_name }}
+          onClose={() => setShowConversation(false)}
+        />
       )}
 
       <button onClick={onBack}
@@ -127,55 +137,85 @@ export default function UserProfilePage({ username, onBack, currentUser }) {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {profile.is_following ? (
-              <button onClick={handleFollow} disabled={actionLoading}
+            {isOwn ? (
+              <button
                 style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-                ✓ Following
+                ✏ Edit Profile
               </button>
             ) : (
-              <button onClick={handleFollow} disabled={actionLoading}
-                style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: t.accent, color: t.accentText, cursor: "pointer", fontSize: 13 }}>
-                + Follow
-              </button>
+              <>
+                {profile.is_following ? (
+                  <button onClick={handleFollow} disabled={actionLoading}
+                    style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
+                    ✓ Following
+                  </button>
+                ) : (
+                  <button onClick={handleFollow} disabled={actionLoading}
+                    style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: t.accent, color: t.accentText, cursor: "pointer", fontSize: 13 }}>
+                    + Follow
+                  </button>
+                )}
+                <button onClick={() => setShowConversation(true)}
+                  style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
+                  ✉ Message
+                </button>
+                <button onClick={handleBlock} disabled={actionLoading}
+                  style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${profile.is_blocked ? t.danger : t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
+                  {profile.is_blocked ? "Unblock" : "Block"}
+                </button>
+                <button onClick={handleReport}
+                  style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.textMuted }}>
+                  ⚑ Report
+                </button>
+              </>
             )}
-            <button onClick={handleMessage}
-              style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-              ✉ Message
-            </button>
-            <button onClick={handleBlock} disabled={actionLoading}
-              style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${profile.is_blocked ? t.danger : t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-              {profile.is_blocked ? "Unblock" : "Block"}
-            </button>
-            <button onClick={handleReport}
-              style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.textMuted }}>
-              ⚑ Report
-            </button>
           </div>
         </div>
       </div>
 
-      {/* User Posts */}
-      <h3 style={{ color: t.text, fontSize: 16, marginBottom: 12 }}>Posts ({profile.posts_count})</h3>
-      {posts.length === 0 ? (
+      {/* Activity Feed */}
+      <h3 style={{ color: t.text, fontSize: 16, marginBottom: 12 }}>Activity</h3>
+      {activity.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: t.textMuted, background: t.bgCard, borderRadius: 12, border: `1px solid ${t.border}` }}>
-          No posts yet.
+          No activity yet.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {posts.map((post) => (
-            <div key={post.id}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {activity.map((item, i) => (
+            <div key={`${item.type}-${item.post?.id || item.comment?.id || i}`}
               style={{
                 background: t.bgCard, border: `1px solid ${t.border}`,
-                borderRadius: 12, padding: 16, cursor: "pointer",
+                borderRadius: 12, padding: 16,
               }}>
-              <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 8, color: t.text }}>{post.title}</div>
-              <div style={{ fontSize: 13, color: t.textSecondary, marginBottom: 8 }}>{post.body.substring(0, 150)}{post.body.length > 150 && "..."}</div>
-              <div style={{ display: "flex", gap: 16, fontSize: 12, color: t.textMuted }}>
-                <span>♥ {post.likes_count}</span>
-                <span>🗨 {post.comments_count}</span>
-                <span>↗ {post.shares_count}</span>
-                <span>{new Date(post.created_at).toLocaleDateString()}</span>
-              </div>
+              {item.type === "post" && item.post ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 16 }}>📝</span>
+                    <span style={{ fontSize: 12, color: t.textMuted }}>Posted</span>
+                    <span style={{ fontSize: 11, color: t.textMuted }}>{new Date(item.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: t.text }}>{item.post.title}</div>
+                  <div style={{ fontSize: 13, color: t.textSecondary, marginBottom: 6 }}>{item.post.body.substring(0, 200)}{item.post.body.length > 200 && "..."}</div>
+                  <div style={{ display: "flex", gap: 16, fontSize: 12, color: t.textMuted }}>
+                    <span>♥ {item.post.likes_count}</span>
+                    <span>🗨 {item.post.comments_count}</span>
+                    <span>↗ {item.post.shares_count}</span>
+                  </div>
+                </div>
+              ) : item.type === "comment" && item.comment ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 16 }}>💬</span>
+                    <span style={{ fontSize: 12, color: t.textMuted }}>Commented on</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
+                      {item.comment.post_title || "a post"}
+                    </span>
+                    <span style={{ fontSize: 11, color: t.textMuted }}>{new Date(item.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: t.textSecondary }}>{item.comment.body.substring(0, 300)}{item.comment.body.length > 300 && "..."}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>♥ {item.comment.likes_count}</div>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

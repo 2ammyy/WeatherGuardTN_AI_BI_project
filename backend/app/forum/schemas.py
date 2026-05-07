@@ -185,6 +185,7 @@ class CommentOut(BaseModel):
     author:      UserPublic
     replies:     List["CommentOut"] = []
     is_liked:    bool = False
+    post_title:  Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -200,6 +201,37 @@ class ReportCreate(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+# ─────────────────────────────────────────────
+# Messages (private user-to-user)
+# ─────────────────────────────────────────────
+class MessageSend(BaseModel):
+    body: str = Field(..., min_length=1, max_length=5000)
+
+
+class MessageOut(BaseModel):
+    id:          UUID
+    sender_id:   UUID
+    receiver_id: UUID
+    body:        str
+    is_read:     bool
+    created_at:  datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationOut(BaseModel):
+    other_user: UserPublic
+    last_message: Optional[MessageOut] = None
+    unread_count: int = 0
+
+
+class ActivityItem(BaseModel):
+    type: str  # "post" | "comment"
+    post: Optional[PostOut] = None
+    comment: Optional[CommentOut] = None
+    created_at: datetime
 
 
 # ─────────────────────────────────────────────

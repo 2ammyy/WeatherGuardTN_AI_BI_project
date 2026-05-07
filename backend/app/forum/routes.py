@@ -236,6 +236,164 @@ def report_user(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MESSAGING (private user-to-user)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/messages", response_model=list[schemas.ConversationOut])
+def list_conversations(
+    db:      Session = Depends(get_db),
+    current: models.ForumUser = Depends(get_current_user),
+):
+    sent = (
+        db.query(models.Message)
+        .filter(models.Message.sender_id == current.id)
+        .with_entities(models.Message.receiver_id)
+        .distinct()
+        .subquery()
+    )
+    received = (
+        db.query(models.Message)
+        .filter(models.Message.receiver_id == current.id)
+        .with_entities(models.Message.sender_id)
+        .distinct()
+        .subquery()
+    )
+    other_ids = set(
+        row[0] for row in db.query(sent.c.receiver_id).all()
+    ) | set(
+        row[0] for row in db.query(received.c.sender_id).all()
+    )
+
+    conversations = []
+    for oid in other_ids:
+        other = db.query(models.ForumUser).get(oid)
+        if not other:
+            continue
+        last_msg = (
+            db.query(models.Message)
+            .filter(
+                ((models.Message.sender_id == current.id) & (models.Message.receiver_id == oid)) |
+                ((models.Message.sender_id == oid) & (models.Message.receiver_id == current.id))
+            )
+            .order_by(models.Message.created_at.desc())
+            .first()
+        )
+        unread = db.query(models.Message).filter(
+            models.Message.sender_id == oid,
+            models.Message.receiver_id == current.id,
+            models.Message.is_read == False,
+        ).count()
+        conversations.append(schemas.ConversationOut(
+            other_user=schemas.UserPublic.model_validate(other),
+            last_message=schemas.MessageOut.model_validate(last_msg) if last_msg else None,
+            unread_count=unread,
+        ))
+
+    conversations.sort(key=lambda c: c.last_message.created_at if c.last_message else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return conversations
+
+
+@router.get("/messages/{other_id}", response_model=list[schemas.MessageOut])
+def get_conversation(
+    other_id: UUID,
+    db:       Session = Depends(get_db),
+    current:  models.ForumUser = Depends(get_current_user),
+):
+    messages = (
+        db.query(models.Message)
+        .filter(
+            ((models.Message.sender_id == current.id) & (models.Message.receiver_id == other_id)) |
+            ((models.Message.sender_id == other_id) & (models.Message.receiver_id == current.id))
+        )
+        .order_by(models.Message.created_at.asc())
+        .all()
+    )
+    return [schemas.MessageOut.model_validate(m) for m in messages]
+
+
+@router.post("/messages/{receiver_id}", response_model=schemas.MessageOut, status_code=201)
+def send_message(
+    receiver_id: UUID,
+    payload:     schemas.MessageSend,
+    db:          Session = Depends(get_db),
+    current:     models.ForumUser = Depends(get_current_user),
+):
+    if current.id == receiver_id:
+        raise HTTPException(400, "Cannot message yourself")
+    receiver = db.query(models.ForumUser).get(receiver_id)
+    if not receiver:
+        raise HTTPException(404, "User not found")
+    msg = models.Message(sender_id=current.id, receiver_id=receiver_id, body=payload.body)
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return schemas.MessageOut.model_validate(msg)
+
+
+@router.put("/messages/{message_id}/read", response_model=schemas.MessageOut)
+def mark_message_read(
+    message_id: UUID,
+    db:         Session = Depends(get_db),
+    current:    models.ForumUser = Depends(get_current_user),
+):
+    msg = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not msg or msg.receiver_id != current.id:
+        raise HTTPException(404, "Message not found")
+    msg.is_read = True
+    db.commit()
+    return schemas.MessageOut.model_validate(msg)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# USER ACTIVITY (posts + comments)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/users/{username}/activity", response_model=list[schemas.ActivityItem])
+def user_activity(
+    username: str,
+    limit:    int = Query(20, ge=1, le=50),
+    db:       Session = Depends(get_db),
+    current:  Optional[models.ForumUser] = Depends(get_current_user_optional),
+):
+    user = db.query(models.ForumUser).filter(models.ForumUser.username == username).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    items = []
+
+    posts = (
+        db.query(models.ForumPost)
+        .filter(models.ForumPost.author_id == user.id, models.ForumPost.is_published == True, models.ForumPost.is_deleted == False)
+        .order_by(models.ForumPost.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for p in posts:
+        items.append(schemas.ActivityItem(
+            type="post", post=_post_out(p, current, db), created_at=p.created_at
+        ))
+
+    comments = (
+        db.query(models.ForumComment)
+        .filter(models.ForumComment.author_id == user.id, models.ForumComment.is_deleted == False)
+        .order_by(models.ForumComment.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for c in comments:
+        post = db.query(models.ForumPost).get(c.post_id)
+        co = schemas.CommentOut.model_validate(c)
+        if post:
+            co.post_title = post.title
+        items.append(schemas.ActivityItem(
+            type="comment", comment=co, created_at=c.created_at
+        ))
+
+    items.sort(key=lambda x: x.created_at, reverse=True)
+    return items[:limit]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # FILE UPLOADS
 # ══════════════════════════════════════════════════════════════════════════════
 
