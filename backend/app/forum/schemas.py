@@ -228,9 +228,11 @@ class ConversationOut(BaseModel):
 
 
 class ActivityItem(BaseModel):
-    type: str  # "post" | "comment"
+    type: str  # "post" | "comment" | "like" | "share" | "follow"
     post: Optional[PostOut] = None
     comment: Optional[CommentOut] = None
+    target_user: Optional[UserPublic] = None
+    post_title: Optional[str] = None
     created_at: datetime
 
 

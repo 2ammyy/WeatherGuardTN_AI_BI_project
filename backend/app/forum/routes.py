@@ -389,8 +389,103 @@ def user_activity(
             type="comment", comment=co, created_at=c.created_at
         ))
 
+    likes = (
+        db.query(models.PostLike)
+        .filter(models.PostLike.user_id == user.id)
+        .order_by(models.PostLike.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for lk in likes:
+        post = db.query(models.ForumPost).get(lk.post_id)
+        if post and not post.is_deleted:
+            items.append(schemas.ActivityItem(
+                type="like",
+                post=_post_out(post, current, db),
+                post_title=post.title,
+                created_at=lk.created_at,
+            ))
+
+    shares = (
+        db.query(models.PostShare)
+        .filter(models.PostShare.user_id == user.id)
+        .order_by(models.PostShare.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for sh in shares:
+        post = db.query(models.ForumPost).get(sh.post_id)
+        if post and not post.is_deleted:
+            items.append(schemas.ActivityItem(
+                type="share",
+                post=_post_out(post, current, db),
+                post_title=post.title,
+                created_at=sh.created_at,
+            ))
+
+    follows = (
+        db.query(models.UserFollow)
+        .filter(models.UserFollow.follower_id == user.id)
+        .order_by(models.UserFollow.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for fw in follows:
+        target = db.query(models.ForumUser).get(fw.following_id)
+        if target:
+            items.append(schemas.ActivityItem(
+                type="follow",
+                target_user=schemas.UserPublic.model_validate(target),
+                created_at=fw.created_at,
+            ))
+
     items.sort(key=lambda x: x.created_at, reverse=True)
     return items[:limit]
+
+
+# ── Followers / Following lists ─────────────────────────────────────────
+
+
+@router.get("/users/{username}/followers", response_model=list[schemas.UserPublic])
+def user_followers(
+    username: str,
+    limit:    int = Query(50, ge=1, le=200),
+    offset:   int = Query(0, ge=0),
+    db:       Session = Depends(get_db),
+):
+    user = db.query(models.ForumUser).filter(models.ForumUser.username == username).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    rows = (
+        db.query(models.ForumUser)
+        .join(models.UserFollow, models.UserFollow.follower_id == models.ForumUser.id)
+        .filter(models.UserFollow.following_id == user.id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(r) for r in rows]
+
+
+@router.get("/users/{username}/following", response_model=list[schemas.UserPublic])
+def user_following(
+    username: str,
+    limit:    int = Query(50, ge=1, le=200),
+    offset:   int = Query(0, ge=0),
+    db:       Session = Depends(get_db),
+):
+    user = db.query(models.ForumUser).filter(models.ForumUser.username == username).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    rows = (
+        db.query(models.ForumUser)
+        .join(models.UserFollow, models.UserFollow.following_id == models.ForumUser.id)
+        .filter(models.UserFollow.follower_id == user.id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(r) for r in rows]
 
 
 # ══════════════════════════════════════════════════════════════════════════════

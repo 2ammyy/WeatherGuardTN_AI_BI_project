@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { usersAPI, activityAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
 import ConversationModal from "../components/ConversationModal";
+import UserListModal from "../components/UserListModal";
 
 export default function UserProfilePage({ username, onBack, isOwn, onEditProfile }) {
   const { t } = useTheme();
@@ -11,6 +12,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [showConversation, setShowConversation] = useState(false);
+  const [listModal, setListModal] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -90,6 +92,22 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
   const colors = ["#9FE1CB", "#B5D4F4", "#FAC775", "#F5C4B3", "#F4C0D1", "#CECBF6"];
   const avatarBg = colors[profile.username.charCodeAt(0) % colors.length];
 
+  const ACTIVITY_ICONS = {
+    post: "📝",
+    comment: "💬",
+    like: "♥",
+    share: "↗",
+    follow: "👤",
+  };
+
+  const ACTIVITY_LABELS = {
+    post: "Posted",
+    comment: "Commented",
+    like: "Liked a post",
+    share: "Shared a post",
+    follow: "Followed",
+  };
+
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
       {toast && (
@@ -104,6 +122,15 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
         <ConversationModal
           otherUser={{ id: profile.id, username: profile.username, display_name: profile.display_name }}
           onClose={() => setShowConversation(false)}
+        />
+      )}
+
+      {listModal && (
+        <UserListModal
+          username={profile.username}
+          type={listModal}
+          onClose={() => setListModal(null)}
+          onNavigateToProfile={(u) => { setListModal(null); /* re-trigger load */ }}
         />
       )}
 
@@ -131,8 +158,12 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
             {profile.bio && <p style={{ margin: "8px 0", fontSize: 14, color: t.textSecondary }}>{profile.bio}</p>}
             <div style={{ display: "flex", gap: 16, fontSize: 13, color: t.textMuted, flexWrap: "wrap" }}>
               <span><strong style={{ color: t.text }}>{profile.posts_count}</strong> posts</span>
-              <span><strong style={{ color: t.text }}>{profile.followers_count}</strong> followers</span>
-              <span><strong style={{ color: t.text }}>{profile.following_count}</strong> following</span>
+              <span onClick={() => setListModal("followers")} style={{ cursor: "pointer" }} onMouseEnter={(e) => e.target.style.color = t.accent} onMouseLeave={(e) => e.target.style.color = t.textMuted}>
+                <strong style={{ color: t.text }}>{profile.followers_count}</strong> followers
+              </span>
+              <span onClick={() => setListModal("following")} style={{ cursor: "pointer" }} onMouseEnter={(e) => e.target.style.color = t.accent} onMouseLeave={(e) => e.target.style.color = t.textMuted}>
+                <strong style={{ color: t.text }}>{profile.following_count}</strong> following
+              </span>
               {profile.governorate && <span>📍 {profile.governorate}</span>}
             </div>
           </div>
@@ -182,18 +213,28 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {activity.map((item, i) => (
-            <div key={`${item.type}-${item.post?.id || item.comment?.id || i}`}
+            <div key={`${item.type}-${item.post?.id || item.comment?.id || item.target_user?.id || i}`}
               style={{
                 background: t.bgCard, border: `1px solid ${t.border}`,
                 borderRadius: 12, padding: 16,
               }}>
-              {item.type === "post" && item.post ? (
+              {/* Header line */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 16 }}>{ACTIVITY_ICONS[item.type] || "•"}</span>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{ACTIVITY_LABELS[item.type] || item.type}</span>
+                {item.post_title && (
+                  <span style={{ fontSize: 12, fontWeight: 500, color: t.textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 250 }}>
+                    {item.post_title}
+                  </span>
+                )}
+                <span style={{ fontSize: 11, color: t.textMuted, marginLeft: "auto" }}>
+                  {new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+
+              {/* Content */}
+              {item.type === "post" && item.post && (
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <span style={{ fontSize: 16 }}>📝</span>
-                    <span style={{ fontSize: 12, color: t.textMuted }}>Posted</span>
-                    <span style={{ fontSize: 11, color: t.textMuted }}>{new Date(item.created_at).toLocaleDateString()}</span>
-                  </div>
                   <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: t.text }}>{item.post.title}</div>
                   <div style={{ fontSize: 13, color: t.textSecondary, marginBottom: 6 }}>{item.post.body.substring(0, 200)}{item.post.body.length > 200 && "..."}</div>
                   <div style={{ display: "flex", gap: 16, fontSize: 12, color: t.textMuted }}>
@@ -202,20 +243,39 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
                     <span>↗ {item.post.shares_count}</span>
                   </div>
                 </div>
-              ) : item.type === "comment" && item.comment ? (
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <span style={{ fontSize: 16 }}>💬</span>
-                    <span style={{ fontSize: 12, color: t.textMuted }}>Commented on</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
-                      {item.comment.post_title || "a post"}
-                    </span>
-                    <span style={{ fontSize: 11, color: t.textMuted }}>{new Date(item.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: t.textSecondary }}>{item.comment.body.substring(0, 300)}{item.comment.body.length > 300 && "..."}</div>
+              )}
+              {item.type === "comment" && item.comment && (
+                <div style={{ fontSize: 13, color: t.textSecondary }}>
+                  {item.comment.body.substring(0, 300)}{item.comment.body.length > 300 && "..."}
                   <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>♥ {item.comment.likes_count}</div>
                 </div>
-              ) : null}
+              )}
+              {item.type === "like" && item.post && (
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: t.text, marginBottom: 4 }}>{item.post.title}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>♥ {item.post.likes_count} likes</div>
+                </div>
+              )}
+              {item.type === "share" && item.post && (
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: t.text, marginBottom: 4 }}>{item.post.title}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>↗ {item.post.shares_count} shares</div>
+                </div>
+              )}
+              {item.type === "follow" && item.target_user && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: "50%",
+                    background: t.accent, color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 600, flexShrink: 0,
+                  }}>
+                    {(item.target_user.display_name || item.target_user.username).charAt(0).toUpperCase()}
+                  </div>
+                  <span style={{ fontSize: 13, color: t.text }}>{item.target_user.display_name || item.target_user.username}</span>
+                  <span style={{ fontSize: 12, color: t.textMuted }}>@{item.target_user.username}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>

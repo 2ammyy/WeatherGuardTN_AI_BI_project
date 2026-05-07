@@ -113,3 +113,9 @@ export const messagesAPI = {
 export const activityAPI = {
   list: (username, params) => api.get(`/users/${username}/activity`, { params }).then((r) => r.data),
 };
+
+// ── Followers / Following ─────────────────────────────────────────
+export const followsAPI = {
+  followers: (username, params) => api.get(`/users/${username}/followers`, { params }).then((r) => r.data),
+  following: (username, params) => api.get(`/users/${username}/following`, { params }).then((r) => r.data),
+};
