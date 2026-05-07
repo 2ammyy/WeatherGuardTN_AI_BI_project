@@ -2,9 +2,11 @@
 import { useState, useEffect, useRef } from "react";
 import { commentsAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 function CommentBubble({ comment, postId, onReply, depth = 0, user }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [liked,  setLiked]  = useState(comment.is_liked ?? false);
   const [likes,  setLikes]  = useState(comment.likes_count ?? 0);
   const [showRep, setShowRep] = useState(false);
@@ -51,7 +53,7 @@ function CommentBubble({ comment, postId, onReply, depth = 0, user }) {
             </button>
             {depth < 2 && (
               <button onClick={() => setShowRep((s) => !s)} style={{ fontSize:12, color: t.textMuted, background:"transparent", border:"none", cursor:"pointer", padding:0 }}>
-                Reply
+                {__('reply')}
               </button>
             )}
             <span style={{ fontSize:11, color: t.textMuted }}>
@@ -72,6 +74,7 @@ function CommentBubble({ comment, postId, onReply, depth = 0, user }) {
 
 function CommentInput({ postId, parentId = null, onSuccess, small = false, user }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [body,    setBody]    = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
@@ -87,8 +90,8 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false, user 
       onSuccess?.();
     } catch (e) {
       const detail = e.response?.data?.detail;
-      if (typeof detail === "object") setError(detail.ai_reason ?? "Comment not approved by AI moderation.");
-      else setError(detail ?? "Error posting comment");
+      if (typeof detail === "object") setError(detail.ai_reason ?? __('commentNotApproved'));
+      else setError(detail ?? __('errorPostingComment'));
     } finally { setLoading(false); }
   };
 
@@ -100,7 +103,7 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false, user 
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder={small ? "Write a reply…" : "Write a comment…"}
+          placeholder={small ? __('writeReply') : __('writeComment')}
           style={{
             flex:1, padding:"8px 12px", borderRadius:8,
             border: `1px solid ${t.border}`,
@@ -114,7 +117,7 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false, user 
             border:"none", borderRadius:8, cursor:"pointer", fontSize:13,
             opacity: loading ? 0.6 : 1,
           }}>
-          {loading ? "…" : "Send"}
+          {loading ? "…" : __('send')}
         </button>
       </div>
       {error && (
@@ -128,6 +131,7 @@ function CommentInput({ postId, parentId = null, onSuccess, small = false, user 
 
 export default function CommentsSection({ postId, user }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [data,    setData]    = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
@@ -143,12 +147,12 @@ export default function CommentsSection({ postId, user }) {
   return (
     <div style={{ borderTop: `1px solid ${t.border}`, padding:"0.75rem 1.25rem", background: t.bgMuted }}>
       <div style={{ fontSize:13, fontWeight:500, marginBottom:10, color: t.text }}>
-        {data.total} comment{data.total !== 1 ? "s" : ""}
+        {data.total} {__('commentCount').replace('{n}', data.total)}
       </div>
       {loading ? (
-        <div style={{ fontSize:13, color: t.textMuted }}>Loading…</div>
+        <div style={{ fontSize:13, color: t.textMuted }}>{__('loading')}…</div>
       ) : data.items.length === 0 ? (
-        <div style={{ fontSize:13, color: t.textMuted, marginBottom:10 }}>No comments yet. Be the first!</div>
+        <div style={{ fontSize:13, color: t.textMuted, marginBottom:10 }}>{__('noComments')}</div>
       ) : (
         data.items.map((c) => (
           <CommentBubble key={c.id} comment={c} postId={postId} user={user} />

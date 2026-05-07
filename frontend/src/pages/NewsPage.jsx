@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const CATEGORY_LABELS = {
   weather: 'Météo',
@@ -258,6 +259,7 @@ const NewsCard = ({ article }) => {
 
 const NewsPage = ({ onBack }) => {
   const { t } = useTheme();
+  const { t: __, dir } = useTranslation();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -277,11 +279,11 @@ const NewsPage = ({ onBack }) => {
         setNews(data.articles);
         setError(null);
       } else {
-        setError('Aucune actualité disponible');
+        setError(__('noNews'));
       }
     } catch (err) {
       console.error('News fetch error:', err);
-      setError('Impossible de charger les actualités');
+      setError(__('newsLoadError'));
     } finally {
       setLoading(false);
     }
@@ -292,12 +294,12 @@ const NewsPage = ({ onBack }) => {
     : news.filter((a) => a.category === filter);
 
   const categories = [
-    { key: 'all', label: 'Tout', icon: '📋' },
-    { key: 'risk', label: 'Risques', icon: '⚠' },
-    { key: 'school_closure', label: 'Écoles', icon: '🏫' },
-    { key: 'infrastructure', label: 'Infrastructure', icon: '🏗' },
-    { key: 'weather', label: 'Météo', icon: '🌤' },
-    { key: 'climate_change', label: 'Climat', icon: '🌍' },
+    { key: 'all', label: __('allNews'), icon: '📋' },
+    { key: 'risk', label: __('riskNews'), icon: '⚠' },
+    { key: 'school_closure', label: __('schools'), icon: '🏫' },
+    { key: 'infrastructure', label: __('infrastructure'), icon: '🏗' },
+    { key: 'weather', label: __('weatherNews'), icon: '🌤' },
+    { key: 'climate_change', label: __('climate'), icon: '🌍' },
   ];
 
   const categoriesPresent = categories.filter(
@@ -305,7 +307,7 @@ const NewsPage = ({ onBack }) => {
   );
 
   return (
-    <div style={{
+    <div dir={dir} style={{
       minHeight: '100vh',
       background: t.bg,
       color: t.text,
@@ -350,7 +352,7 @@ const NewsPage = ({ onBack }) => {
                 gap: 6,
               }}
             >
-              ← Dashboard
+              ← {__('backToDashboard')}
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
@@ -366,7 +368,7 @@ const NewsPage = ({ onBack }) => {
                 📰
               </div>
               <div>
-                <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Actualités & Alertes</h1>
+                <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{__('newsTitle')}</h1>
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: t.textMuted }}>
                   Météo • Climat • Infrastructure • Écoles • Risques
                 </p>
@@ -395,7 +397,7 @@ const NewsPage = ({ onBack }) => {
               borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
             }} />
-            <span style={{ color: t.textMuted, fontSize: 14 }}>Chargement des actualités...</span>
+            <span style={{ color: t.textMuted, fontSize: 14 }}>{__('loadingNews')}</span>
           </div>
         ) : error ? (
           <div style={{
@@ -476,7 +478,7 @@ const NewsPage = ({ onBack }) => {
                 color: t.textDisabled,
               }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>Aucune actualité dans cette catégorie</div>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>{__('noNewsInCategory')}</div>
               </div>
             )}
           </>

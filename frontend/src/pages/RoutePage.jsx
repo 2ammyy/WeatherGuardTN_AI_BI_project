@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const GOVERNORATES = [
   { name: 'Tunis', lat: 36.8065, lng: 10.1815 },
@@ -33,6 +34,7 @@ const HAZARD_RADIUS_KM = 20;
 
 const RoutePage = ({ onBack, hazards = [] }) => {
   const { t } = useTheme();
+  const { t: __, dir } = useTranslation();
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [checking, setChecking] = useState(false);
@@ -292,11 +294,10 @@ const RoutePage = ({ onBack, hazards = [] }) => {
   }, [routeSafety, originCoords, destCoords, routeInfo, allHazards, liveHazards]);
 
   return (
-    <div style={{
+    <div dir={dir} style={{
       minHeight: '100vh',
       background: t.bg,
       color: t.text,
-      fontFamily: 'sans-serif',
     }}>
       <header style={{
         background: t.navbarBg,
@@ -354,9 +355,9 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
-                Route Safety Check
+                {__('routesTitle')}
               </h1>
-              <p style={{ fontSize: 10, color: t.textMuted, margin: 0 }}>Check hazards along your route</p>
+              <p style={{ fontSize: 10, color: t.textMuted, margin: 0 }}>{__('routesDesc')}</p>
             </div>
           </div>
         </div>
@@ -386,9 +387,9 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 🗺
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Route Safety Checker</h3>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{__('checkerTitle')}</h3>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: t.textMuted }}>
-                  {hazardLoading ? 'Loading live hazards...' : `${allHazards.length} live hazard(s) detected`}
+                  {hazardLoading ? __('loadingHazards') : `${allHazards.length} ${__('hazardsDetected').replace('{n}', allHazards.length)}`}
                 </p>
               </div>
             </div>
@@ -400,13 +401,13 @@ const RoutePage = ({ onBack, hazards = [] }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: t.textMuted, marginBottom: 6 }}>
-                  🟢 From
+                  🟢 {__('from')}
                 </label>
                 <input
                   type="text"
                   value={origin}
                   onChange={(e) => { setOrigin(e.target.value); setRouteSafety(null); }}
-                  placeholder="City (e.g., Tunis, Sfax)"
+                  placeholder={__('cityFromPlaceholder')}
                   list="tunisia-cities"
                   style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.bgMuted, fontSize: 14, color: t.text, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
                   onFocus={(e) => e.target.style.borderColor = t.accent}
@@ -416,13 +417,13 @@ const RoutePage = ({ onBack, hazards = [] }) => {
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: t.textMuted, marginBottom: 6 }}>
-                  🔴 To
+                  🔴 {__('to')}
                 </label>
                 <input
                   type="text"
                   value={destination}
                   onChange={(e) => { setDestination(e.target.value); setRouteSafety(null); }}
-                  placeholder="City (e.g., Sousse, Bizerte)"
+                  placeholder={__('cityToPlaceholder')}
                   list="tunisia-cities"
                   style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.bgMuted, fontSize: 14, color: t.text, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
                   onFocus={(e) => e.target.style.borderColor = t.accent}
@@ -452,10 +453,10 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 {checking ? (
                   <>
                     <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    Calculating route...
+                    {__('calculatingRoute')}
                   </>
                 ) : (
-                  <>🚗 Check Route Safety</>
+                  <>🚗 {__('checkRouteSafety')}</>
                 )}
               </button>
             </div>
@@ -475,17 +476,17 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                 {routeInfo && (
                   <div style={{ display: 'flex', gap: 16, marginBottom: 16, padding: '12px 16px', background: t.bgMuted, borderRadius: 12, border: `1px solid ${t.border}` }}>
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>DISTANCE</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{__('distance')}</div>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{routeInfo.distance_km} km</div>
                     </div>
                     <div style={{ width: 1, background: t.border }} />
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>DURATION</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{__('duration')}</div>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{routeInfo.duration_min} min</div>
                     </div>
                     <div style={{ width: 1, background: t.border }} />
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>ROUTE</div>
+                      <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{__('route')}</div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{routeSafety.origin} → {routeSafety.destination}</div>
                     </div>
                   </div>
@@ -501,7 +502,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                       </svg>
                       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
                         <div style={{ fontSize: 20, fontWeight: 700 }}>{routeSafety.score}%</div>
-                        <div style={{ fontSize: 10, color: t.textMuted }}>Safety</div>
+                        <div style={{ fontSize: 10, color: t.textMuted }}>{__('safety')}</div>
                       </div>
                     </div>
 
@@ -510,7 +511,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                         {getLevelConfig(routeSafety.level).icon} {routeSafety.message}
                       </div>
                       <div style={{ fontSize: 12, color: t.textMuted }}>
-                        Based on routing data + real-time hazard reports
+                        {__('routesDesc')}
                       </div>
                     </div>
                   </div>
@@ -519,7 +520,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                   {routeSafety.hazards.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13, fontWeight: 500, color: t.dangerText }}>
-                        ⚠ Hazards within {HAZARD_RADIUS_KM}km of route ({routeSafety.hazards.length})
+                        ⚠ {__('hazardsDetected').replace('{n}', `within ${HAZARD_RADIUS_KM}km`)} ({routeSafety.hazards.length})
                       </div>
                       <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {routeSafety.hazards.map((h, i) => (

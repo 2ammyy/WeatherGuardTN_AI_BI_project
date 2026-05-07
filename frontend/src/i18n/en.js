@@ -42,6 +42,16 @@ const en = {
   back: "Back",
   loadingProfile: "Loading...",
 
+  deleteAccount: "Delete Account",
+  confirmDeleteAccount: "Yes, Delete My Account",
+  deleting: "Deleting...",
+  deleteAccountWarning: "This action will permanently delete your WeatherGuardTN account and all associated data. This cannot be undone.",
+  connectedWithGoogle: "Connected with Google",
+  emailAccount: "Email Account",
+  alerts: "Alerts",
+  permanentAction: "This action is permanent and cannot be undone",
+  user: "User",
+
   // Activity labels
   posted: "Posted",
   commented: "Commented on",
@@ -63,6 +73,33 @@ const en = {
   google: "Google",
   noAccount: "Don't have an account?",
   haveAccount: "Already have an account?",
+  welcome: "Welcome",
+  profileCompletionPrompt: "One last step — tell us about yourself so we can personalize your alerts",
+  yourGovernorate: "Your Governorate",
+  selectGovernorate: "-- Select your governorate --",
+  yourSituation: "Your Situation",
+  selectSituation: "-- Select your situation --",
+  saving: "Saving...",
+  enterDashboard: "Enter Dashboard",
+  yourPassword: "Your password",
+  signingIn: "Signing in...",
+  or: "OR",
+  continueWithGoogle: "Continue with Google",
+
+  // Signup form
+  fullName: "Full Name",
+  fullNamePlaceholder: "Your full name",
+  emailPlaceholder: "your@email.com",
+  passwordPlaceholder: "Min. 6 characters",
+  creatingAccount: "Creating account...",
+  joinNetwork: "Join the Tunisian weather vigilance network",
+  welcomeName: "Welcome, {name}!",
+  accountCreated: "Your account has been created successfully.",
+  region: "Region",
+  welcomeEmailSent: "A welcome email has been sent to your inbox",
+  weatherAlertsForRegion: "You'll receive personalized weather alerts for your region",
+  earlyDangerPredictions: "Stay safe with early danger predictions",
+  loginToDashboard: "Login to Dashboard →",
 
   // Settings / Edit profile
   settings: "Settings",
@@ -190,6 +227,46 @@ const en = {
   moderationError: "Moderation service error. Please retry.",
   errorCreatingPost: "Error creating post",
   maxFiles: "Maximum {n} files allowed.",
+
+  // NewsPage
+  allNews: "All",
+  riskNews: "Risks",
+  schools: "Schools",
+  weatherNews: "Weather",
+  climate: "Climate",
+  loadingNews: "Loading news...",
+  noNews: "No news available",
+  newsLoadError: "Unable to load news",
+  noNewsInCategory: "No news in this category",
+
+  // RoutePage
+  checkerTitle: "Route Safety Checker",
+  loadingHazards: "Loading live hazards...",
+  hazardsDetected: "{n} live hazard(s) detected",
+  from: "From",
+  to: "To",
+  cityFromPlaceholder: "City (e.g., Tunis, Sfax)",
+  cityToPlaceholder: "City (e.g., Sousse, Bizerte)",
+  calculatingRoute: "Calculating route...",
+  checkRouteSafety: "Check Route Safety",
+  distance: "DISTANCE",
+  duration: "DURATION",
+  route: "ROUTE",
+  safety: "Safety",
+  safeRoute: "Safe Route",
+  cautionRoute: "Caution",
+  warningRoute: "Warning",
+  unsafeRoute: "Unsafe",
+  checkRoute: "Check Route",
+
+  // CommentsSection
+  reply: "Reply",
+  writeReply: "Write a reply…",
+  writeComment: "Write a comment…",
+  noComments: "No comments yet. Be the first!",
+  commentNotApproved: "Comment not approved by AI moderation.",
+  errorPostingComment: "Error posting comment",
+  commentCount: "{n} comment(s)",
 };
 
 export default en;

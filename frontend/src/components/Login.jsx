@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const GOVERNORATES = [
   "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
@@ -20,6 +21,7 @@ const USER_TYPES = [
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
 const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
+  const { t: __ } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -224,10 +226,10 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             />
           )}
           <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', marginBottom: 8 }}>
-            👋 Welcome, {googleProfile?.name}!
+            👋 {__('welcome')}, {googleProfile?.name}!
           </h2>
           <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-            One last step — tell us about yourself so we can personalize your alerts
+            {__('profileCompletionPrompt')}
           </p>
         </div>
 
@@ -251,7 +253,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         <form onSubmit={handleProfileCompletion}>
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>
-              <span style={{ marginRight: 4 }}>📍</span> Your Governorate
+              <span style={{ marginRight: 4 }}>📍</span> {__('yourGovernorate')}
             </label>
             <select
               value={profileData.governorate}
@@ -261,14 +263,14 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
               onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
               onBlur={(e) => e.target.style.borderColor = '#334155'}
             >
-              <option value="" style={{ color: '#94a3b8' }}>-- Select your governorate --</option>
+              <option value="" style={{ color: '#94a3b8' }}>{__('selectGovernorate')}</option>
               {GOVERNORATES.map(g => <option key={g} value={g} style={{ color: 'white' }}>{g}</option>)}
             </select>
           </div>
 
           <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>
-              <span style={{ marginRight: 4 }}>👤</span> Your Situation
+              <span style={{ marginRight: 4 }}>👤</span> {__('yourSituation')}
             </label>
             <select
               value={profileData.user_type}
@@ -278,7 +280,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
               onFocus={(e) => e.target.style.borderColor = '#1D9E75'}
               onBlur={(e) => e.target.style.borderColor = '#334155'}
             >
-              <option value="" style={{ color: '#94a3b8' }}>-- Select your situation --</option>
+              <option value="" style={{ color: '#94a3b8' }}>{__('selectSituation')}</option>
               {USER_TYPES.map(t => (
                 <option key={t.value} value={t.value} style={{ color: 'white' }}>
                   {t.icon} {t.label}
@@ -306,7 +308,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             onMouseEnter={(e) => { if (!loading) e.target.style.transform = 'translateY(-1px)'; }}
             onMouseLeave={(e) => { if (!loading) e.target.style.transform = 'translateY(0)'; }}
           >
-            {loading ? '⏳ Saving...' : '🚀 Enter Dashboard'}
+            {loading ? '⏳ ' + __('saving') : '🚀 ' + __('enterDashboard')}
           </button>
         </form>
       </div>
@@ -352,10 +354,10 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
           🌦️
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 600, color: 'white', marginBottom: 8 }}>
-          Welcome Back
+          {__('loginTitle')}
         </h2>
         <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-          Sign in to access WeatherGuardTN Dashboard
+          {__('loginSubtitle')}
         </p>
       </div>
 
@@ -379,7 +381,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>
-            <span style={{ marginRight: 4 }}>📧</span> Email
+            <span style={{ marginRight: 4 }}>📧</span> {__('email')}
           </label>
           <input
             type="email"
@@ -396,12 +398,12 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
 
         <div style={{ marginBottom: 20 }}>
           <label style={labelStyle}>
-            <span style={{ marginRight: 4 }}>🔒</span> Password
+            <span style={{ marginRight: 4 }}>🔒</span> {__('password')}
           </label>
           <input
             type="password"
             value={password}
-            placeholder="Your password"
+            placeholder={__('yourPassword')}
             autoComplete="current-password"
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
             required
@@ -431,7 +433,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
           onMouseEnter={(e) => { if (!loading) e.target.style.transform = 'translateY(-1px)'; }}
           onMouseLeave={(e) => { if (!loading) e.target.style.transform = 'translateY(0)'; }}
         >
-          {loading ? '⏳ Signing in...' : 'Sign In'}
+          {loading ? '⏳ ' + __('signingIn') : __('signIn')}
         </button>
       </form>
 
@@ -452,7 +454,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             fontSize: 11,
             color: '#64748b',
           }}>
-            OR
+            {__('or')}
           </span>
         </div>
       </div>
@@ -491,7 +493,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Continue with Google
+          {__('continueWithGoogle')}
         </button>
       </div>
 
@@ -501,7 +503,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         color: '#64748b',
         margin: 0,
       }}>
-        Don't have an account?{' '}
+        {__('noAccount')}{' '}
         <span
           onClick={onSwitchToSignup}
           style={{
@@ -513,7 +515,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
           onMouseEnter={(e) => e.target.style.color = '#4ade80'}
           onMouseLeave={(e) => e.target.style.color = '#1D9E75'}
         >
-          Sign Up
+          {__('signUp')}
         </span>
       </p>
     </div>

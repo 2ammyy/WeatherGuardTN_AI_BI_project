@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../contexts/LanguageContext';
 import axios from 'axios';
 
 const Profile = ({ user, onLogout }) => {
+    const { t: __ } = useTranslation();
     const [name, setName] = useState(user?.name || "");
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -75,10 +77,10 @@ const Profile = ({ user, onLogout }) => {
                     ⚠️
                 </div>
                 <h3 style={{ color: '#f87171', marginBottom: 12, fontSize: 20, fontWeight: 700 }}>
-                    Delete Account
+                    {__('deleteAccount')}
                 </h3>
                 <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 24, lineHeight: 1.5 }}>
-                    This action will permanently delete your WeatherGuardTN account and all associated data. This cannot be undone.
+                    {__('deleteAccountWarning')}
                 </p>
                 <div style={{ display: 'flex', gap: 12 }}>
                     <button
@@ -106,7 +108,7 @@ const Profile = ({ user, onLogout }) => {
                             e.target.style.color = '#94a3b8';
                         }}
                     >
-                        Cancel
+                        {__('cancel')}
                     </button>
                     <button
                         onClick={handleDelete}
@@ -137,7 +139,7 @@ const Profile = ({ user, onLogout }) => {
                             }
                         }}
                     >
-                        {isDeleting ? 'Deleting...' : 'Yes, Delete My Account'}
+                        {isDeleting ? __('deleting') : __('confirmDeleteAccount')}
                     </button>
                 </div>
             </div>
@@ -172,7 +174,7 @@ const Profile = ({ user, onLogout }) => {
                     {user?.avatar_url ? (
                         <img
                             src={user.avatar_url}
-                            alt="Profile"
+                            alt={__('myProfile')}
                             style={{
                                 width: 96,
                                 height: 96,
@@ -224,7 +226,7 @@ const Profile = ({ user, onLogout }) => {
                     fontWeight: 700,
                     color: 'white',
                 }}>
-                    {user?.name || 'User'}
+                    {user?.name || __('user')}
                 </h3>
 
                 {/* Email */}
@@ -248,7 +250,7 @@ const Profile = ({ user, onLogout }) => {
                 }}>
                     <span style={{ fontSize: 12 }}>🔗</span>
                     <span style={{ fontSize: 11, color: '#1D9E75', fontWeight: 500 }}>
-                        {user?.google_id ? 'Connected with Google' : 'Email Account'}
+                        {user?.google_id ? __('connectedWithGoogle') : __('emailAccount')}
                     </span>
                 </div>
 
@@ -263,15 +265,15 @@ const Profile = ({ user, onLogout }) => {
                 }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: 'white' }}>0</div>
-                        <div style={{ fontSize: 10, color: '#64748b' }}>Posts</div>
+                        <div style={{ fontSize: 10, color: '#64748b' }}>{__('posts')}</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: 'white' }}>0</div>
-                        <div style={{ fontSize: 10, color: '#64748b' }}>Comments</div>
+                        <div style={{ fontSize: 10, color: '#64748b' }}>{__('comments')}</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: 'white' }}>0</div>
-                        <div style={{ fontSize: 10, color: '#64748b' }}>Alerts</div>
+                        <div style={{ fontSize: 10, color: '#64748b' }}>{__('alerts')}</div>
                     </div>
                 </div>
 
@@ -305,7 +307,7 @@ const Profile = ({ user, onLogout }) => {
                         e.target.style.transform = 'translateY(0)';
                     }}
                 >
-                    <span>🗑️</span> Delete Account
+                    <span>🗑️</span> {__('deleteAccount')}
                 </button>
 
                 {/* Note */}
@@ -314,7 +316,7 @@ const Profile = ({ user, onLogout }) => {
                     fontSize: 10,
                     color: '#64748b',
                 }}>
-                    This action is permanent and cannot be undone
+                    {__('permanentAction')}
                 </p>
             </div>
         </>

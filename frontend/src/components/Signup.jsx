@@ -1,5 +1,6 @@
 ﻿import React, { useState } from 'react';
 import axios from 'axios';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const GOVERNORATES = [
   "Ariana", "BÃ©ja", "Ben Arous", "Bizerte", "GabÃ¨s", "Gafsa",
@@ -19,27 +20,30 @@ const USER_TYPES = [
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
-const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => (
-  <div className="auth-card" style={{ textAlign: 'center' }}>
+const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => {
+  const { t: __ } = useTranslation();
+  return (
+    <div className="auth-card" style={{ textAlign: 'center' }}>
     <div style={{ fontSize: 64, marginBottom: 12 }}>ðŸŽ‰</div>
-    <h2 style={{ color: '#10b981', marginBottom: 8 }}>Welcome, {name}!</h2>
+    <h2 style={{ color: '#10b981', marginBottom: 8 }}>{__('welcomeName').replace('{name}', name)}</h2>
     <p style={{ color: '#6b7280', marginBottom: 20 }}>
-      Your account has been created successfully.
+      {__('accountCreated')}
     </p>
     <div style={{
       background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12,
       padding: '16px 20px', marginBottom: 20, textAlign: 'left'
     }}>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“ Region: <strong>{governorate}</strong></p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“§ A welcome email has been sent to your inbox</p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸŒ¦ï¸ You'll receive personalized weather alerts for your region</p>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ›¡ï¸ Stay safe with early danger predictions</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“ {__('region')}: <strong>{governorate}</strong></p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“§ {__('welcomeEmailSent')}</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸŒ¦ï¸ {__('weatherAlertsForRegion')}</p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ›¡ï¸ {__('earlyDangerPredictions')}</p>
     </div>
     <button className="auth-btn" onClick={onSwitchToLogin} style={{ width: '100%' }}>
-      Login to Dashboard â†’
+      {__('loginToDashboard')} â†’
     </button>
   </div>
-);
+  );
+};
 
 const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -48,6 +52,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const { t: __ } = useTranslation();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -95,8 +100,8 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
 
   return (
     <div className="auth-card" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-      <h2><i className="fas fa-user-plus"></i> Sign Up</h2>
-      <p>Join the Tunisian weather vigilance network</p>
+      <h2><i className="fas fa-user-plus"></i> {__('signUp')}</h2>
+      <p>{__('joinNetwork')}</p>
 
       {error && (
         <div style={{
@@ -109,40 +114,40 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
 
       <form onSubmit={handleSubmit}>
         <div className="input-group">
-          <label>Full Name</label>
-          <input type="text" name="name" placeholder="Your full name" onChange={handleChange} required />
+          <label>{__('fullName')}</label>
+          <input type="text" name="name" placeholder={__('fullNamePlaceholder')} onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>Email</label>
-          <input type="email" name="email" placeholder="your@email.com" onChange={handleChange} required />
+          <label>{__('email')}</label>
+          <input type="email" name="email" placeholder={__('emailPlaceholder')} onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="Min. 6 characters" autoComplete="new-password" onChange={handleChange} required />
+          <label>{__('password')}</label>
+          <input type="password" name="password" placeholder={__('passwordPlaceholder')} autoComplete="new-password" onChange={handleChange} required />
         </div>
         <div className="input-group">
-          <label>ðŸ“ Your Governorate</label>
+          <label>ðŸ“ {__('governorate')}</label>
           <select name="governorate" value={formData.governorate} onChange={handleChange} required style={selectStyle}>
-            <option value="">-- Select your governorate --</option>
+            <option value="">{__('selectGovernorate')}</option>
             {GOVERNORATES.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
         <div className="input-group">
-          <label>ðŸ‘¤ Your Situation</label>
+          <label>ðŸ‘¤ {__('yourSituation')}</label>
           <select name="user_type" value={formData.user_type} onChange={handleChange} required style={selectStyle}>
-            <option value="">-- Select your situation --</option>
+            <option value="">{__('selectSituation')}</option>
             {USER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
         <button type="submit" className="auth-btn signup" disabled={loading} style={{ marginTop: '8px' }}>
-          {loading ? 'â³ Creating account...' : 'ðŸš€ Create Account'}
+          {loading ? '⏳ ' + __('creatingAccount') : '🚀 ' + __('signupTitle')}
         </button>
       </form>
 
       <p className="auth-footer">
-        Already have an account?{' '}
+        {__('haveAccount')}{' '}
         <span onClick={onSwitchToLogin} style={{ cursor: 'pointer', color: '#2563eb', fontWeight: 600 }}>
-          Login here
+          {__('signIn')}
         </span>
       </p>
     </div>
