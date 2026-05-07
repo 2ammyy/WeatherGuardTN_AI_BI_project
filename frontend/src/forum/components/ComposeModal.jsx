@@ -2,29 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { postsAPI, uploadAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
-
-const CATEGORIES = [
-  { value: "school_closure",  label: "School closure", icon: "🏫" },
-  { value: "community_aid",   label: "Community aid", icon: "🤝" },
-  { value: "infrastructure",  label: "Infrastructure", icon: "🏗" },
-  { value: "weather_alert",   label: "Weather alert", icon: "⚠️" },
-  { value: "other",           label: "Other", icon: "📝" },
-];
-
-const RISK_LEVELS = [
-  { value: "green",  label: "Green – Safe", icon: "🟢", color: "#22c55e" },
-  { value: "yellow", label: "Yellow – Be aware", icon: "🟡", color: "#eab308" },
-  { value: "orange", label: "Orange – Be prepared", icon: "🟠", color: "#f97316" },
-  { value: "red",    label: "Red – Take action", icon: "🔴", color: "#ef4444" },
-  { value: "purple", label: "Purple – Emergency", icon: "🟣", color: "#a855f7" },
-];
-
-const GOVERNORATES = [
-  "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte",
-  "Béja", "Jendouba", "Le Kef", "Siliana", "Sousse", "Monastir", "Mahdia",
-  "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid", "Gabès", "Medenine",
-  "Tataouine", "Gafsa", "Tozeur", "Kébili",
-];
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -35,6 +13,31 @@ const MAX_FILES = 5;
 
 export default function ComposeModal({ onClose, onPublished }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
+
+  const CATEGORIES = [
+    { value: "school_closure",  label: __("schoolClosureSingle"), icon: "🏫" },
+    { value: "community_aid",   label: __("communityAidSingle"), icon: "🤝" },
+    { value: "infrastructure",  label: __("infrastructureSingle"), icon: "🏗" },
+    { value: "weather_alert",   label: __("weatherAlertSingle"), icon: "⚠️" },
+    { value: "other",           label: __("other"), icon: "📝" },
+  ];
+
+  const RISK_LEVELS = [
+    { value: "green",  label: `🟢 ${__('safe')}`, icon: "🟢", color: "#22c55e" },
+    { value: "yellow", label: `🟡 ${__('caution')}`, icon: "🟡", color: "#eab308" },
+    { value: "orange", label: `🟠 ${__('warning')}`, icon: "🟠", color: "#f97316" },
+    { value: "red",    label: `🔴 ${__('alert')}`, icon: "🔴", color: "#ef4444" },
+    { value: "purple", label: `🟣 ${__('emergency')}`, icon: "🟣", color: "#a855f7" },
+  ];
+
+  const GOVERNORATES = [
+    "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte",
+    "Béja", "Jendouba", "Le Kef", "Siliana", "Sousse", "Monastir", "Mahdia",
+    "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid", "Gabès", "Medenine",
+    "Tataouine", "Gafsa", "Tozeur", "Kébili",
+  ];
+
   const [form, setForm] = useState({
     title: "", body: "", category: "", risk_level: "green", governorate: "",
   });
@@ -53,7 +56,7 @@ export default function ComposeModal({ onClose, onPublished }) {
   const handleFiles = useCallback(async (files) => {
     const remaining = MAX_FILES - mediaFiles.length;
     if (remaining <= 0) {
-      setError(`Maximum ${MAX_FILES} files allowed.`);
+      setError(__(`Maximum ${MAX_FILES} files allowed.`));
       return;
     }
 
@@ -62,11 +65,11 @@ export default function ComposeModal({ onClose, onPublished }) {
 
     for (const file of selected) {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        newFiles.push({ file, preview: null, url: null, type: "unknown", name: file.name, uploading: false, progress: 0, error: "File type not supported" });
+        newFiles.push({ file, preview: null, url: null, type: "unknown", name: file.name, uploading: false, progress: 0, error: __('fileNotSupported') });
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
-        newFiles.push({ file, preview: null, url: null, type: "unknown", name: file.name, uploading: false, progress: 0, error: "File too large (max 50 MB)" });
+        newFiles.push({ file, preview: null, url: null, type: "unknown", name: file.name, uploading: false, progress: 0, error: __('fileTooLarge') });
         continue;
       }
 
@@ -92,7 +95,7 @@ export default function ComposeModal({ onClose, onPublished }) {
         });
         setMediaFiles((prev) => prev.map((f, j) => j === idx ? { ...f, uploading: false, url: result.file_url } : f));
       } catch (e) {
-        const msg = e.response?.data?.detail || "Upload failed";
+        const msg = e.response?.data?.detail || __('uploadFailed');
         setMediaFiles((prev) => prev.map((f, j) => j === idx ? { ...f, uploading: false, error: msg } : f));
       }
     }
@@ -120,7 +123,7 @@ export default function ComposeModal({ onClose, onPublished }) {
 
   const check = async () => {
     if (!form.title || !form.body || !form.category) {
-      setError("Please fill in title, content, and category before checking.");
+      setError(__('fillRequired'));
       return;
     }
     setError(null);
@@ -129,7 +132,7 @@ export default function ComposeModal({ onClose, onPublished }) {
       const result = await postsAPI.check(form);
       setAiStatus(result);
     } catch {
-      setAiStatus({ approved: false, reason: "Moderation service error. Please retry." });
+      setAiStatus({ approved: false, reason: __('moderationError') });
     }
   };
 
@@ -150,7 +153,7 @@ export default function ComposeModal({ onClose, onPublished }) {
         setAiStatus({ approved: false, reason: detail.ai_reason });
         setError(detail.message);
       } else {
-        setError(detail ?? "Error creating post");
+        setError(detail ?? __('errorCreatingPost'));
       }
     } finally {
       setSubmitting(false);
@@ -274,8 +277,8 @@ export default function ComposeModal({ onClose, onPublished }) {
               ✏️
             </div>
             <div>
-              <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Create a post</span>
-              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>Share information with your community</p>
+              <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>{__('createPost')}</span>
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>{__('shareInfo')}</p>
             </div>
           </div>
           <button
@@ -303,7 +306,7 @@ export default function ComposeModal({ onClose, onPublished }) {
           {/* Category */}
           <div className="compose-section">
             <label className="compose-label" style={{ color: t.textMuted }}>
-              <span style={{ marginRight: 4 }}>📂</span> Category <span style={{ color: t.danger }}>*</span>
+              <span style={{ marginRight: 4 }}>📂</span> {__('category')} <span style={{ color: t.danger }}>*</span>
             </label>
             <select
               value={form.category}
@@ -313,7 +316,7 @@ export default function ComposeModal({ onClose, onPublished }) {
               onFocus={(e) => e.target.style.borderColor = t.accent}
               onBlur={(e) => e.target.style.borderColor = t.border}
             >
-              <option value="">Select a category…</option>
+              <option value="">{__('selectCategory')}</option>
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.icon} {c.label}
@@ -325,12 +328,12 @@ export default function ComposeModal({ onClose, onPublished }) {
           {/* Title */}
           <div className="compose-section">
             <label className="compose-label" style={{ color: t.textMuted }}>
-              <span style={{ marginRight: 4 }}>📌</span> Title <span style={{ color: t.danger }}>*</span>
+              <span style={{ marginRight: 4 }}>📌</span> {__('title')} <span style={{ color: t.danger }}>*</span>
             </label>
             <input
               value={form.title}
               onChange={set("title")}
-              placeholder="Clear, descriptive title…"
+              placeholder={__('titlePlaceholder')}
               className="compose-field"
               style={{ background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
               onFocus={(e) => e.target.style.borderColor = t.accent}
@@ -341,12 +344,12 @@ export default function ComposeModal({ onClose, onPublished }) {
           {/* Body */}
           <div className="compose-section">
             <label className="compose-label" style={{ color: t.textMuted }}>
-              <span style={{ marginRight: 4 }}>💬</span> Content <span style={{ color: t.danger }}>*</span>
+              <span style={{ marginRight: 4 }}>💬</span> {__('content')} <span style={{ color: t.danger }}>*</span>
             </label>
             <textarea
               value={form.body}
               onChange={set("body")}
-              placeholder="Describe what's happening…"
+              placeholder={__('contentPlaceholder')}
               className="compose-field"
               style={{ height: 120, resize: "vertical", background: t.bgInput, color: t.text, border: `1px solid ${t.border}` }}
               onFocus={(e) => e.target.style.borderColor = t.accent}
@@ -358,7 +361,7 @@ export default function ComposeModal({ onClose, onPublished }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
             <div>
               <label className="compose-label" style={{ color: t.textMuted }}>
-                <span style={{ marginRight: 4 }}>⚠️</span> Risk level
+                <span style={{ marginRight: 4 }}>⚠️</span> {__('riskLevel')}
               </label>
               <select
                 value={form.risk_level}
@@ -377,7 +380,7 @@ export default function ComposeModal({ onClose, onPublished }) {
             </div>
             <div>
               <label className="compose-label" style={{ color: t.textMuted }}>
-                <span style={{ marginRight: 4 }}>📍</span> Governorate
+                <span style={{ marginRight: 4 }}>📍</span> {__('governorate')}
               </label>
               <select
                 value={form.governorate}
@@ -387,7 +390,7 @@ export default function ComposeModal({ onClose, onPublished }) {
                 onFocus={(e) => e.target.style.borderColor = t.accent}
                 onBlur={(e) => e.target.style.borderColor = t.border}
               >
-                <option value="">All governorates</option>
+                <option value="">{__('allGovernorates')}</option>
                 {GOVERNORATES.map((g) => (
                   <option key={g} value={g}>{g}</option>
                 ))}
@@ -398,7 +401,7 @@ export default function ComposeModal({ onClose, onPublished }) {
           {/* Media Upload */}
           <div className="compose-section">
             <label className="compose-label" style={{ color: t.textMuted }}>
-              <span style={{ marginRight: 4 }}>📎</span> Photos & Videos ({mediaFiles.length}/{MAX_FILES})
+              <span style={{ marginRight: 4 }}>📎</span> {__('photosVideos')} ({mediaFiles.length}/{MAX_FILES})
             </label>
 
             {/* Drop zone */}
@@ -429,15 +432,15 @@ export default function ComposeModal({ onClose, onPublished }) {
                 <div>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
                   <div style={{ fontSize: 14, color: t.textSecondary, fontWeight: 600 }}>
-                    Drag & drop photos/videos here
+                    {__('dragDropHere')}
                   </div>
                   <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>
-                    or click to browse • JPG, PNG, GIF, WebP, MP4, WebM • Max 50 MB
+                    {__('clickBrowse')}
                   </div>
                 </div>
               ) : (
                 <div style={{ fontSize: 12, color: t.textMuted }}>
-                  + Click or drop to add more files
+                  {__('clickDropMore')}
                 </div>
               )}
             </div>
@@ -589,7 +592,7 @@ export default function ComposeModal({ onClose, onPublished }) {
               </span>
               <div>
                 <div style={{ fontWeight: 600, color: aiStatus.approved ? t.accent : t.danger, marginBottom: 4 }}>
-                  {aiStatus.approved ? "Approved by AI moderation" : "Not approved"}
+                  {aiStatus.approved ? __('approvedByAI') : __('notApproved')}
                 </div>
                 <div style={{ color: t.textSecondary, fontSize: 12 }}>
                   {aiStatus.reason}
@@ -613,7 +616,7 @@ export default function ComposeModal({ onClose, onPublished }) {
               }}
             >
               <div style={{ width: 20, height: 20, border: `2px solid ${t.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              <span style={{ color: t.accent }}>AI is reviewing your post for relevance…</span>
+              <span style={{ color: t.accent }}>{__('aiReviewing')}</span>
             </div>
           )}
 
@@ -659,7 +662,7 @@ export default function ComposeModal({ onClose, onPublished }) {
             onMouseEnter={(e) => { e.target.style.background = t.bgHover; e.target.style.borderColor = t.textMuted; e.target.style.color = t.text; }}
             onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.borderColor = t.border; e.target.style.color = t.textMuted; }}
           >
-            Cancel
+            {__('cancel')}
           </button>
 
           <button
@@ -675,7 +678,7 @@ export default function ComposeModal({ onClose, onPublished }) {
             onMouseEnter={(e) => { if (aiStatus !== "checking" && !uploadInProgress) { e.target.style.background = t.accentBg; e.target.style.transform = "translateY(-1px)"; } }}
             onMouseLeave={(e) => { if (aiStatus !== "checking" && !uploadInProgress) { e.target.style.background = "transparent"; e.target.style.transform = "translateY(0)"; } }}
           >
-            🤖 Check with AI
+            🤖 {__('checkWithAI')}
           </button>
 
           <button
@@ -692,7 +695,7 @@ export default function ComposeModal({ onClose, onPublished }) {
             onMouseEnter={(e) => { if (!submitting && aiStatus && aiStatus !== "checking" && aiStatus.approved && !uploadInProgress) e.target.style.transform = "translateY(-1px)"; }}
             onMouseLeave={(e) => { if (!submitting && aiStatus && aiStatus !== "checking" && aiStatus.approved && !uploadInProgress) e.target.style.transform = "translateY(0)"; }}
           >
-            {submitting ? "Publishing…" : `📮 Publish${uploadedUrls.length > 0 ? ` (${uploadedUrls.length} file${uploadedUrls.length > 1 ? "s" : ""})` : ""}`}
+            {submitting ? __('publishing') : `📮 ${__('publishFiles')}${uploadedUrls.length > 0 ? ` (${uploadedUrls.length} file${uploadedUrls.length > 1 ? "s" : ""})` : ""}`}
           </button>
         </div>
       </div>

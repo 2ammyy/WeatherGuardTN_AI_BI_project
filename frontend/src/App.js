@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { LanguageProvider, useTranslation } from './contexts/LanguageContext';
 
 import VigilanceMap from './components/VigilanceMap';
 import Login from './components/Login';
@@ -104,6 +105,7 @@ function getWeatherIcon(code) {
 
 function MainApp() {
   const { theme, t, toggleTheme } = useTheme();
+  const { t: __, dir } = useTranslation();
   const isDark = theme === 'dark';
 
   const [user, setUser] = useState(null);
@@ -286,7 +288,7 @@ function MainApp() {
 
   if (!user) {
     return (
-      <div style={{
+      <div dir={dir} style={{
         minHeight: '100vh',
         background: isDark ? 'linear-gradient(135deg, #020617 0%, #0f172a 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%)',
         display: 'flex',
@@ -358,7 +360,7 @@ function MainApp() {
   const clearAll = () => setSelectedCities([]);
 
   return (
-    <div style={{
+    <div dir={dir} style={{
       minHeight: '100vh',
       background: t.bg,
       color: t.text,
@@ -425,7 +427,7 @@ function MainApp() {
               }}>
                 WeatherGuard<span style={{ color: '#16a34a' }}>TN</span>
               </h1>
-              <p style={{ fontSize: 10, color: '#94a3b8', margin: 0, lineHeight: 1 }}>AI Weather Intelligence</p>
+              <p style={{ fontSize: 10, color: '#94a3b8', margin: 0, lineHeight: 1 }}>{__('appSubtitle')}</p>
             </div>
           </div>
 
@@ -461,9 +463,9 @@ function MainApp() {
             <div style={{ width: 1, height: 24, background: t.border }} />
 
             {[
-              { icon: ICONS.users, label: 'Forum', action: () => setShowForum(true), bg: t.accent, border: null, color: '#fff' },
-              { icon: ICONS.news, label: 'News', action: () => setShowNews(true), bg: 'transparent', border: t.border, color: t.textSecondary },
-              { icon: ICONS.route, label: 'Routes', action: () => setShowRoute(true), bg: 'transparent', border: t.border, color: t.textSecondary },
+              { icon: ICONS.users, label: __('forum'), action: () => setShowForum(true), bg: t.accent, border: null, color: '#fff' },
+              { icon: ICONS.news, label: __('news'), action: () => setShowNews(true), bg: 'transparent', border: t.border, color: t.textSecondary },
+              { icon: ICONS.route, label: __('routes'), action: () => setShowRoute(true), bg: 'transparent', border: t.border, color: t.textSecondary },
             ].map(btn => (
               <button
                 key={btn.label}
@@ -905,9 +907,11 @@ function MainApp() {
 
 function AppWrapper() {
   return (
-    <ThemeProvider>
-      <MainApp />
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <MainApp />
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

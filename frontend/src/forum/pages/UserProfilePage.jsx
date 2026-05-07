@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { usersAPI, activityAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 import ConversationModal from "../components/ConversationModal";
 import UserListModal from "../components/UserListModal";
 
 export default function UserProfilePage({ username, onBack, isOwn, onEditProfile }) {
   const { t } = useTheme();
+  const { t: __, dir } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,9 +87,9 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
     }
   };
 
-  if (!username) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No user specified</div>;
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading...</div>;
-  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>User not found</div>;
+  if (!username) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>{__('noUser')}</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>{__('loadingProfile')}</div>;
+  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>{__('noUser')}</div>;
 
   const initials = (profile.display_name || profile.username).charAt(0).toUpperCase();
   const colors = ["#9FE1CB", "#B5D4F4", "#FAC775", "#F5C4B3", "#F4C0D1", "#CECBF6"];
@@ -102,11 +104,11 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
   };
 
   const ACTIVITY_LABELS = {
-    post: "Posted",
-    comment: "Commented",
-    like: "Liked a post",
-    share: "Shared a post",
-    follow: "Followed",
+    post: __('posted'),
+    comment: __('commented'),
+    like: __('likedPost'),
+    share: __('sharedPost'),
+    follow: __('followed'),
   };
 
   const TABS = [
@@ -125,7 +127,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
   const filtered = activeTab === "all" ? activity : activity.filter((a) => a.type === activeTab);
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
+    <div dir={dir} style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
       {toast && (
         <div style={{
           position: "fixed", top: 20, right: 20, zIndex: 1000,
@@ -152,7 +154,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
 
       <button onClick={onBack}
         style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text, marginBottom: 16 }}>
-        ← Back
+        ← {__('back')}
       </button>
 
       {/* Profile Header */}
@@ -175,10 +177,10 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
             <div style={{ display: "flex", gap: 16, fontSize: 13, color: t.textMuted, flexWrap: "wrap" }}>
               <span><strong style={{ color: t.text }}>{profile.posts_count}</strong> posts</span>
               <span onClick={() => setListModal("followers")} style={{ cursor: "pointer" }} onMouseEnter={(e) => e.target.style.color = t.accent} onMouseLeave={(e) => e.target.style.color = t.textMuted}>
-                <strong style={{ color: t.text }}>{profile.followers_count}</strong> followers
+                <strong style={{ color: t.text }}>{profile.followers_count}</strong> {__('followers')}
               </span>
               <span onClick={() => setListModal("following")} style={{ cursor: "pointer" }} onMouseEnter={(e) => e.target.style.color = t.accent} onMouseLeave={(e) => e.target.style.color = t.textMuted}>
-                <strong style={{ color: t.text }}>{profile.following_count}</strong> following
+                <strong style={{ color: t.text }}>{profile.following_count}</strong> {__('following')}
               </span>
               {profile.governorate && <span>📍 {profile.governorate}</span>}
             </div>
@@ -187,32 +189,32 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
             {isOwn ? (
               <button onClick={onEditProfile}
                 style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-                ✏ Edit Profile
+                ✏ {__('editProfile')}
               </button>
             ) : (
               <>
                 {profile.is_following ? (
                   <button onClick={handleFollow} disabled={actionLoading}
                     style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-                    ✓ Following
+                    {__('followingBtn')}
                   </button>
                 ) : (
                   <button onClick={handleFollow} disabled={actionLoading}
                     style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: t.accent, color: t.accentText, cursor: "pointer", fontSize: 13 }}>
-                    + Follow
+                    {__('followBtn')}
                   </button>
                 )}
                 <button onClick={() => setShowConversation(true)}
                   style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-                  ✉ Message
+                  {__('message')}
                 </button>
                 <button onClick={handleBlock} disabled={actionLoading}
                   style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${profile.is_blocked ? t.danger : t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
-                  {profile.is_blocked ? "Unblock" : "Block"}
+                  {profile.is_blocked ? __('unblock') : __('block')}
                 </button>
                 <button onClick={handleReport}
                   style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.textMuted }}>
-                  ⚑ Report
+                  {__('report')}
                 </button>
               </>
             )}
@@ -257,7 +259,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
 
       {filtered.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: t.textMuted, background: t.bgCard, borderRadius: 12, border: `1px solid ${t.border}` }}>
-          {activeTab === "all" ? "No activity yet." : `No ${ACTIVITY_LABELS[activeTab]?.toLowerCase() || activeTab} activity.`}
+          {activeTab === "all" ? __('noActivity') : `No ${__(activeTab)}`}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

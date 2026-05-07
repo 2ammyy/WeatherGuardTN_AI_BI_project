@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const GOVERNORATES = [
   "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
@@ -212,8 +213,8 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMsg, setProfileMsg] = useState(null);
 
-  // Preferences (saved locally for now)
-  const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
+  // Preferences
+  const { lang, setLanguage, t: __ } = useTranslation();
   const [prefMsg, setPrefMsg] = useState(null);
 
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -246,7 +247,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
   // Preferences Save
   // ────────────────────────────────────────────────────────────────────────────
   const handlePrefSave = () => {
-    localStorage.setItem('language', language);
+    localStorage.setItem('language', lang);
     setPrefMsg({ type: 'success', text: '✅ Preferences saved!' });
     setTimeout(() => setPrefMsg(null), 3000);
   };
@@ -696,23 +697,23 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
                 </label>
                 <div style={{ display: 'flex', gap: 10 }}>
                   {[
-                    { value: 'en', label: '🇬🇧', name: 'English' },
-                    { value: 'fr', label: '🇫🇷', name: 'Français' },
-                    { value: 'ar', label: '🇹🇳', name: 'العربية' },
+                    { value: 'en', label: '🇬🇧', name: __('english') },
+                    { value: 'fr', label: '🇫🇷', name: __('french') },
+                    { value: 'ar-tn', label: '🇹🇳', name: __('arabic') },
                   ].map(opt => (
                     <div
                       key={opt.value}
-                      className={`pref-option ${language === opt.value ? 'selected' : ''}`}
-                      onClick={() => setLanguage(opt.value)}
+                      className={`pref-option ${lang === opt.value ? 'selected' : ''}`}
+                      onClick={() => { setLanguage(opt.value); setPrefMsg({ type: 'success', text: '✅ ' + (opt.value === 'en' ? 'Language changed' : opt.value === 'fr' ? 'Langue changée' : 'تم تغيير اللغة') }); setTimeout(() => setPrefMsg(null), 2000); }}
                       style={{
                         flex: 1,
                         padding: '14px 10px',
-                        background: language === opt.value ? t.accentBg : t.bgMuted,
-                        borderColor: language === opt.value ? t.accent : t.border,
+                        background: lang === opt.value ? t.accentBg : t.bgMuted,
+                        borderColor: lang === opt.value ? t.accent : t.border,
                       }}
                     >
                       <div style={{ fontSize: 20, marginBottom: 4 }}>{opt.label}</div>
-                      <div style={{ fontWeight: 700, fontSize: 12, color: language === opt.value ? t.accent : t.text }}>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: lang === opt.value ? t.accent : t.text }}>
                         {opt.name}
                       </div>
                     </div>

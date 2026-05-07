@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { messagesAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 import ConversationModal from "./ConversationModal";
 
 export default function InboxModal({ onClose, onNavigateToProfile }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -38,17 +40,17 @@ export default function InboxModal({ onClose, onNavigateToProfile }) {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>
-            ✉ Messages {totalUnread > 0 && <span style={{ color: t.accent, fontSize: 13 }}>({totalUnread})</span>}
+            ✉ {__('messagesTitle')} {totalUnread > 0 && <span style={{ color: t.accent, fontSize: 13 }}>({totalUnread})</span>}
           </span>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", fontSize: 20, padding: 4 }}>✕</button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", minHeight: 200 }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: "center", color: t.textMuted, fontSize: 13 }}>Loading...</div>
+            <div style={{ padding: 40, textAlign: "center", color: t.textMuted, fontSize: 13 }}>{__('loading')}</div>
           ) : conversations.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: t.textMuted, fontSize: 13 }}>
-              No conversations yet. Visit a user's profile to send a message.
+              {__('noConversations')}
             </div>
           ) : (
             conversations.map((c) => (

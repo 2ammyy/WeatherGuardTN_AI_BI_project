@@ -7,16 +7,9 @@ import NotificationBell from "../components/NotificationBell";
 import InboxModal from "../components/InboxModal";
 import SearchBar from "../components/SearchBar";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
-const CATEGORIES = [
-  { value: "", label: "All posts", icon: "📰" },
-  { value: "school_closure", label: "School closures", icon: "🏫" },
-  { value: "community_aid", label: "Community aid", icon: "🤝" },
-  { value: "infrastructure", label: "Infrastructure", icon: "🏗" },
-  { value: "weather_alert", label: "Weather alerts", icon: "⚠️" },
-];
-
-const GOVERNORATES = [
+  const GOVERNORATES = [
   "", "Tunis", "Ariana", "Ben Arous", "Nabeul", "Sfax", "Sousse",
   "Bizerte", "Jendouba", "Monastir", "Mahdia", "Kairouan", "Gafsa",
 ];
@@ -24,6 +17,15 @@ const GOVERNORATES = [
 // ── Forum content (user already authenticated by platform) ───────────────────────────────
 function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
   const { t } = useTheme();
+  const { t: __, dir } = useTranslation();
+
+  const CATEGORIES = [
+    { value: "", label: __("allPosts"), icon: "📰" },
+    { value: "school_closure", label: __("schoolClosure"), icon: "🏫" },
+    { value: "community_aid", label: __("communityAid"), icon: "🤝" },
+    { value: "infrastructure", label: __("infrastructure"), icon: "🏗" },
+    { value: "weather_alert", label: __("weatherAlert"), icon: "⚠️" },
+  ];
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -89,7 +91,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "sans-serif" }}>
+    <div dir={dir} style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "sans-serif" }}>
       {/* CSS Animations */}
       <style>
         {`
@@ -120,15 +122,15 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
           style={{ background: "transparent", border: `1px solid ${t.border}`, color: t.textMuted, cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "8px 12px", borderRadius: 10, transition: "all 0.2s" }}
           onMouseEnter={(e) => { e.target.style.background = t.bgHover; e.target.style.color = t.text; }}
           onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.color = t.textMuted; }}
-          title="Back to dashboard"
+          title={__('backToDashboard')}
         >
           ←
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ background: `linear-gradient(135deg, ${t.accent}, ${t.isDark ? '#0f6e56' : '#15803d'})`, width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌦</div>
           <div>
-            <span style={{ fontWeight: 700, fontSize: 16, color: t.text }}>WeatherGuard Forum</span>
-            <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 8 }}>Community Hub</span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: t.text }}>{__('communityForum')}</span>
+            <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 8 }}>{__('forumDesc')}</span>
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -136,7 +138,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowInbox(true)}
           style={{ background: "transparent", border: `1px solid ${t.border}`, color: t.textMuted, cursor: "pointer", fontSize: 16, padding: "8px 10px", borderRadius: 10, lineHeight: 1 }}
-          title="Messages">✉</button>
+          title={__('messages')}>✉</button>
         <NotificationBell />
         <button
           onClick={handleCompose}
@@ -144,9 +146,9 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
           onMouseEnter={(e) => e.target.style.transform = "translateY(-1px)"}
           onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
         >
-          <span>✏️</span> New post
+          <span>✏️</span> {__('newPost')}
         </button>
-        <div onClick={onMyProfile} style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4, cursor: "pointer" }} title="My Profile">
+        <div onClick={onMyProfile} style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4, cursor: "pointer" }} title={__('myProfile')}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${t.accent}40, ${t.accent}20)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: t.accent }}>
             {(user?.display_name ?? user?.username ?? user?.name ?? "?")[0].toUpperCase()}
           </div>
@@ -156,8 +158,8 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "2rem 1rem" }}>
         {/* Hero Section */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: 32, fontWeight: 700, background: `linear-gradient(135deg, ${t.text}, ${t.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}>Community Forum</h1>
-          <p style={{ color: t.textMuted, fontSize: 14 }}>Share updates, ask questions, and help your neighbors stay informed</p>
+          <h1 style={{ fontSize: 32, fontWeight: 700, background: `linear-gradient(135deg, ${t.text}, ${t.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 8 }}>{__('communityForum')}</h1>
+          <p style={{ color: t.textMuted, fontSize: 14 }}>{__('forumDesc')}</p>
         </div>
 
         {/* Filters */}
@@ -168,7 +170,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
             ))}
           </select>
           <select value={governorate} onChange={(e) => { setGovernorate(e.target.value); setPage(1); }} style={{ ...sel, flex: 1 }}>
-            <option value="">📍 All governorates</option>
+            <option value="">📍 {__('allGovernorates')}</option>
             {GOVERNORATES.filter(Boolean).map((g) => (
               <option key={g} value={g}>{g}</option>
             ))}
@@ -179,7 +181,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
             onMouseEnter={(e) => e.target.style.background = t.accentBg}
             onMouseLeave={(e) => e.target.style.background = t.bgMuted}
           >
-            🔄 Refresh
+            🔄 {__('refresh')}
           </button>
         </div>
 
@@ -226,7 +228,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
               disabled={page === 1}
               style={{ ...sel, opacity: page === 1 ? 0.4 : 1, display: "flex", alignItems: "center", gap: 6 }}
             >
-              ← Prev
+              ← {__('prev')}
             </button>
             <div style={{ display: "flex", gap: 6 }}>
               {[...Array(Math.min(5, totalPages))].map((_, i) => {
@@ -258,7 +260,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
               disabled={page === totalPages}
               style={{ ...sel, opacity: page === totalPages ? 0.4 : 1, display: "flex", alignItems: "center", gap: 6 }}
             >
-              Next →
+              {__('next')} →
             </button>
           </div>
         )}

@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { messagesAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function ConversationModal({ otherUser, onClose }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -78,7 +80,7 @@ export default function ConversationModal({ otherUser, onClose }) {
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
           {messages.length === 0 && (
             <div style={{ textAlign: "center", color: t.textMuted, fontSize: 13, marginTop: 40 }}>
-              No messages yet. Start a conversation!
+              {__('startConversation')}
             </div>
           )}
           {messages.map((m) => {
@@ -110,7 +112,7 @@ export default function ConversationModal({ otherUser, onClose }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder={__('typeMessage')}
             style={{
               flex: 1, padding: "10px 14px", borderRadius: 12,
               border: `1px solid ${t.border}`,
@@ -124,7 +126,7 @@ export default function ConversationModal({ otherUser, onClose }) {
               background: t.accent, color: t.accentText, cursor: "pointer",
               fontSize: 14, fontWeight: 600, opacity: sending || !text.trim() ? 0.6 : 1,
             }}>
-            {sending ? "..." : "Send"}
+            {sending ? __('sending') : __('send')}
           </button>
         </div>
       </div>

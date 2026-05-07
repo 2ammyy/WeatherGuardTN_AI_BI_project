@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { followsAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function UserListModal({ username, type, onClose, onNavigateToProfile }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,15 +37,15 @@ export default function UserListModal({ username, type, onClose, onNavigateToPro
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>
-            {type === "followers" ? "Followers" : "Following"}
+            {type === "followers" ? __('followersList') : __('followingList')}
           </span>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", fontSize: 18, padding: 2 }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", minHeight: 120 }}>
           {loading ? (
-            <div style={{ padding: 30, textAlign: "center", color: t.textMuted, fontSize: 13 }}>Loading...</div>
+            <div style={{ padding: 30, textAlign: "center", color: t.textMuted, fontSize: 13 }}>{__('loading')}</div>
           ) : users.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: t.textMuted, fontSize: 13 }}>None yet.</div>
+            <div style={{ padding: 30, textAlign: "center", color: t.textMuted, fontSize: 13 }}>{__('noneYet')}</div>
           ) : (
             users.map((u) => (
               <div key={u.id} onClick={() => { onNavigateToProfile?.(u.username); onClose?.(); }}

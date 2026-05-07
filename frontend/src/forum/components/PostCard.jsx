@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { postsAPI } from "../api/client";
 import CommentsSection from "./CommentsSection";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const RISK_STYLES = {
   green:  { bg: "#E1F5EE", color: "#0F6E56", dot: "🟢" },
@@ -111,6 +112,7 @@ function InteractionPopover({ open, users, onClose, t }) {
 
 export default function PostCard({ post: initial, onProfileClick, user }) {
   const { t } = useTheme();
+  const { t: __ } = useTranslation();
   const [post,          setPost]          = useState(initial);
   const [showComments,  setShowComments]  = useState(false);
   const [reportReason,  setReportReason]  = useState("");
@@ -165,24 +167,23 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
   const handleShare = async () => {
     try {
       await postsAPI.share(post.id);
-      showToast("Post shared!");
-      // Refresh post to get updated shared_by list
+      showToast(__('postShared'));
       const updated = await postsAPI.get(post.id);
       setPost(updated);
-    } catch { showToast("Error sharing post"); }
+    } catch { showToast(__('shareError')); }
   };
 
   const handleReport = async () => {
     try {
       await postsAPI.report(post.id, reportReason);
       setShowReport(false);
-      showToast("Report submitted — our moderators will review it.");
-    } catch { showToast("Error submitting report"); }
+      showToast(__('reportSubmitted'));
+    } catch { showToast(__('reportError')); }
   };
 
   const risk  = RISK_STYLES[post.risk_level]  ?? RISK_STYLES.green;
   const cat   = CAT_STYLES[post.category]     ?? CAT_STYLES.other;
-  const label = CAT_LABELS[post.category]     ?? "Other";
+  const label = __(post.category === "school_closure" ? "schoolClosureSingle" : post.category === "community_aid" ? "communityAidSingle" : post.category === "infrastructure" ? "infrastructureSingle" : post.category === "weather_alert" ? "weatherAlertSingle" : "other");
 
   return (
     <div style={{
@@ -305,7 +306,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
             {post.is_liked ? "♥" : "♡"} {post.likes_count}
           </button>
           <span onClick={() => fetchInteractions("likes")}
-            title="View who liked this post"
+            title={__('viewLikers')}
             style={{ cursor: "pointer", fontSize: 11, color: t.textMuted, marginLeft: -5, opacity: 0.7 }}>
             ({post.liked_by?.length || post.likes_count})
           </span>
@@ -324,7 +325,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
             ↗ {post.shares_count}
           </button>
           <span onClick={() => fetchInteractions("shares")}
-            title="View who shared this post"
+            title={__('viewSharers')}
             style={{ cursor: "pointer", fontSize: 11, color: t.textMuted, marginLeft: -5, opacity: 0.7 }}>
             ({post.shared_by?.length || post.shares_count})
           </span>
@@ -332,23 +333,23 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowReport((s) => !s)}
           style={{ padding:"5px 8px", border:"none", background:"transparent", cursor:"pointer", fontSize:12, color: t.textMuted }}>
-          ⚑ Report
+          {__('report')}
         </button>
       </div>
 
       {/* Report form */}
       {showReport && (
         <div style={{ padding:"0.75rem 1.25rem", borderTop:`1px solid ${t.border}`, background: t.bgMuted }}>
-          <div style={{ fontSize:13, fontWeight:500, marginBottom:6, color: t.text }}>Why are you reporting this post?</div>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:6, color: t.text }}>{__('reportReasonTitle')}</div>
           <textarea
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
-            placeholder="Optional reason…"
+            placeholder={__('optionalReason')}
             style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:`1px solid ${t.border}`, fontSize:13, resize:"none", height:70, background: t.bgInput, color: t.text }}
           />
           <div style={{ display:"flex", gap:8, marginTop:8 }}>
-            <button onClick={handleReport} style={{ padding:"6px 16px", borderRadius:8, background: t.danger, color:"white", border:"none", cursor:"pointer", fontSize:13 }}>Submit report</button>
-            <button onClick={() => setShowReport(false)} style={{ padding:"6px 12px", borderRadius:8, background:"transparent", border:`1px solid ${t.border}`, cursor:"pointer", fontSize:13, color: t.text }}>Cancel</button>
+            <button onClick={handleReport} style={{ padding:"6px 16px", borderRadius:8, background: t.danger, color:"white", border:"none", cursor:"pointer", fontSize:13 }}>{__('submitReport')}</button>
+            <button onClick={() => setShowReport(false)} style={{ padding:"6px 12px", borderRadius:8, background:"transparent", border:`1px solid ${t.border}`, cursor:"pointer", fontSize:13, color: t.text }}>{__('cancel')}</button>
           </div>
         </div>
       )}
