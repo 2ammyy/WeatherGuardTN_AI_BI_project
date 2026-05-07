@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.database import engine, Base
 import app.models.user
@@ -116,6 +117,8 @@ fastapi_app.add_middleware(
     allow_headers=['*'],
 )
 
+fastapi_app.add_middleware(SessionMiddleware, secret_key=os.getenv('FORUM_SECRET_KEY', 'weatherguardtn-admin-secret-2026'))
+
 setup_admin(fastapi_app)
 
 @fastapi_app.exception_handler(Exception)
@@ -132,6 +135,11 @@ fastapi_app.include_router(news.router)
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'forum')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 fastapi_app.mount('/api/forum/uploads', StaticFiles(directory=UPLOAD_DIR), name='forum-uploads')
+
+# Serve custom static files (admin CSS)
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+os.makedirs(STATIC_DIR, exist_ok=True)
+fastapi_app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
 
 @fastapi_app.get('/')
 def root():

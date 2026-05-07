@@ -1,0 +1,162 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="container-fluid px-0">
+  {% if error %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <div class="dashboard-grid" id="stats-grid">
+    <div class="stat-card green">
+      <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+      <div class="stat-value" id="stat-users">—</div>
+      <div class="stat-label">Forum Users</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon"><i class="fa-solid fa-newspaper"></i></div>
+      <div class="stat-value" id="stat-posts">—</div>
+      <div class="stat-label">Total Posts</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
+      <div class="stat-value" id="stat-comments">—</div>
+      <div class="stat-label">Comments</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon"><i class="fa-solid fa-brain"></i></div>
+      <div class="stat-value" id="stat-models">—</div>
+      <div class="stat-label">ML Models</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon"><i class="fa-solid fa-flag"></i></div>
+      <div class="stat-value" id="stat-reports">—</div>
+      <div class="stat-label">Reports ({{ "pending" }})</div>
+    </div>
+    <div class="stat-card pink">
+      <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
+      <div class="stat-value" id="stat-news">—</div>
+      <div class="stat-label">News Articles</div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="fa-solid fa-clock-rotate-left me-2" style="color:var(--wg-primary)"></i>Recent Activity</span>
+        </div>
+        <div class="card-body p-0">
+          <ul class="activity-list" id="activity-list">
+            <li class="activity-item" style="padding:1rem;text-align:center;color:var(--wg-text-muted)">
+              <em>Loading activity...</em>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card mb-3">
+        <div class="card-header">
+          <span class="card-title"><i class="fa-solid fa-circle-check me-2" style="color:var(--wg-primary)"></i>System Health</span>
+        </div>
+        <div class="card-body">
+          <div class="health-item">
+            <span><span class="health-indicator online"></span>Database</span>
+            <span style="font-size:0.75rem;color:var(--wg-text-muted)">Connected</span>
+          </div>
+          <div class="health-item">
+            <span><span class="health-indicator online"></span>MLflow Tracking</span>
+            <span style="font-size:0.75rem;color:var(--wg-text-muted)" id="health-mlflow">Checking...</span>
+          </div>
+          <div class="health-item">
+            <span><span class="health-indicator online"></span>API Server</span>
+            <span style="font-size:0.75rem;color:var(--wg-text-muted)">Running</span>
+          </div>
+          <div class="health-item">
+            <span><span class="health-indicator online"></span>Auth Service</span>
+            <span style="font-size:0.75rem;color:var(--wg-text-muted)">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="fa-solid fa-gauge-high me-2" style="color:var(--wg-primary)"></i>Quick Actions</span>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('admin:list', identity='forum-post') }}" class="btn btn-outline-primary btn-sm">
+              <i class="fa-solid fa-newspaper"></i> Manage Posts
+            </a>
+            <a href="{{ url_for('admin:list', identity='post-report') }}" class="btn btn-outline-primary btn-sm">
+              <i class="fa-solid fa-flag"></i> Review Reports
+            </a>
+            <a href="{{ url_for('admin:list', identity='forum-user') }}" class="btn btn-outline-primary btn-sm">
+              <i class="fa-solid fa-users"></i> Manage Users
+            </a>
+            <a href="{{ url_for('admin:list', identity='ml-model') }}" class="btn btn-outline-primary btn-sm">
+              <i class="fa-solid fa-brain"></i> ML Models
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/admin/stats');
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+
+      document.getElementById('stat-users').textContent = data.users.total.toLocaleString();
+      document.getElementById('stat-posts').textContent = data.posts.total.toLocaleString();
+      document.getElementById('stat-comments').textContent = data.comments.total.toLocaleString();
+      document.getElementById('stat-models').textContent = data.models?.total || 0;
+      document.getElementById('stat-reports').textContent = data.reports.total.toLocaleString();
+      document.getElementById('stat-news').textContent = data.news.total.toLocaleString();
+    } catch(e) {
+      console.warn('Stats load error:', e);
+    }
+  }
+
+  async function loadActivity() {
+    try {
+      const res = await fetch('/api/admin/activity/recent');
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      const list = document.getElementById('activity-list');
+      list.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        list.innerHTML = '<li class="activity-item" style="padding:1rem;text-align:center;color:var(--wg-text-muted)"><em>No recent activity</em></li>';
+        return;
+      }
+
+      data.forEach(function(item) {
+        const li = document.createElement('li');
+        li.className = 'activity-item';
+        li.style.padding = '0.75rem 1rem';
+        li.innerHTML = `
+          <div class="activity-icon" style="background:${item.icon_bg || 'rgba(5,150,105,0.1)'};color:${item.icon_color || '#059669'}">
+            <i class="${item.icon || 'fa-solid fa-circle'}"></i>
+          </div>
+          <div class="activity-content">
+            <div class="activity-text">${item.text || ''}</div>
+            <div class="activity-time">${item.time ? new Date(item.time).toLocaleString() : ''}</div>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    } catch(e) {
+      console.warn('Activity load error:', e);
+    }
+  }
+
+  loadStats();
+  loadActivity();
+});
+</script>
+{% endblock %}
