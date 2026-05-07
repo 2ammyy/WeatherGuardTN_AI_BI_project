@@ -1,5 +1,5 @@
 // frontend/src/forum/components/PostCard.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { postsAPI } from "../api/client";
 import CommentsSection from "./CommentsSection";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -50,6 +50,65 @@ function Avatar({ name = "?", size = 32 }) {
   );
 }
 
+function SmallAvatar({ name = "?", size = 24 }) {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .slice(0, 2)
+    .join("");
+  const colors = ["#9FE1CB", "#B5D4F4", "#FAC775", "#F5C4B3", "#F4C0D1", "#CECBF6"];
+  const bg = colors[name.charCodeAt(0) % colors.length];
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: "50%",
+        background: bg, display: "flex", alignItems: "center",
+        justifyContent: "center", fontSize: size * 0.42,
+        fontWeight: 600, flexShrink: 0, color: "#333",
+      }}
+      title={name}
+    >
+      {initials || "?"}
+    </div>
+  );
+}
+
+function InteractionPopover({ open, users, onClose, t }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, onClose]);
+
+  if (!open || !users.length) return null;
+
+  return (
+    <div ref={ref} style={{
+      position: "absolute", bottom: "100%", left: 0, zIndex: 20,
+      background: t.bgCard, border: `1px solid ${t.border}`,
+      borderRadius: 12, padding: "10px 12px", minWidth: 200, maxWidth: 280,
+      boxShadow: t.isDark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 8px 32px rgba(0,0,0,0.12)",
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: t.textMuted }}>
+        {users.length} user{users.length !== 1 ? "s" : ""}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+        {users.map((u) => (
+          <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <SmallAvatar name={u.display_name ?? u.username} size={24} />
+            <span style={{ fontSize: 13, color: t.text }}>{u.display_name ?? u.username}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PostCard({ post: initial, onProfileClick, user }) {
   const { t } = useTheme();
   const [post,          setPost]          = useState(initial);
@@ -58,8 +117,33 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
   const [showReport,    setShowReport]    = useState(false);
   const [toast,         setToast]         = useState(null);
   const [loading,       setLoading]       = useState(false);
+  const [interaction,   setInteraction]   = useState({ type: null, users: [], open: false });
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const fetchInteractions = async (type) => {
+    // Use embedded data if available, otherwise fetch from API
+    if (type === "likes" && post.liked_by?.length) {
+      setInteraction({ type, users: post.liked_by, open: true });
+      return;
+    }
+    if (type === "shares" && post.shared_by?.length) {
+      setInteraction({ type, users: post.shared_by, open: true });
+      return;
+    }
+    try {
+      let users;
+      if (type === "likes") users = await postsAPI.likers(post.id);
+      else if (type === "shares") users = await postsAPI.sharers(post.id);
+      else if (type === "comments") users = await postsAPI.commenters(post.id);
+      else return;
+      setInteraction({ type, users, open: true });
+    } catch {
+      setInteraction({ type, users: [], open: true });
+    }
+  };
+
+  const closeInteraction = () => setInteraction({ type: null, users: [], open: false });
 
   const handleLike = async () => {
     setLoading(true);
@@ -101,7 +185,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
       background: t.bgCard,
       borderRadius: 16,
       border: `1px solid ${t.border}`,
-      overflow: "hidden",
+      overflow: "visible",
       position: "relative",
     }}>
       {/* Toast */}
@@ -203,23 +287,32 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
       </div>
 
       {/* Actions */}
-      <div style={{ borderTop: `1px solid ${t.border}`, padding: "0.5rem 1rem", display: "flex", alignItems: "center", gap: 4 }}>
-        <button onClick={handleLike} disabled={loading}
-          style={{
-            display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
-            borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
-            fontSize: 13, color: post.is_liked ? t.danger : t.textSecondary,
-          }}>
-          {post.is_liked ? "♥" : "♡"} {post.likes_count}
-        </button>
-        <button onClick={() => setShowComments((s) => !s)}
-          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
-          💬 {post.comments_count}
-        </button>
-        <button onClick={handleShare}
-          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
-          ↗ {post.shares_count}
-        </button>
+      <div style={{ borderTop: `1px solid ${t.border}`, padding: "0.5rem 1rem", display: "flex", alignItems: "center", gap: 4, position: "relative" }}>
+        <div style={{ position: "relative" }}>
+          <InteractionPopover open={interaction.open && interaction.type === "likes"} users={interaction.users} onClose={closeInteraction} t={t} />
+          <button onClick={() => fetchInteractions("likes")}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
+              borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
+              fontSize: 13, color: post.is_liked ? t.danger : t.textSecondary,
+            }}>
+            {post.is_liked ? "♥" : "♡"} {post.likes_count}
+          </button>
+        </div>
+        <div style={{ position: "relative" }}>
+          <InteractionPopover open={interaction.open && interaction.type === "comments"} users={interaction.users} onClose={closeInteraction} t={t} />
+          <button onClick={() => { fetchInteractions("comments"); setShowComments((s) => !s); }}
+            style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
+            💬 {post.comments_count}
+          </button>
+        </div>
+        <div style={{ position: "relative" }}>
+          <InteractionPopover open={interaction.open && interaction.type === "shares"} users={interaction.users} onClose={closeInteraction} t={t} />
+          <button onClick={() => { fetchInteractions("shares"); handleShare(); }}
+            style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
+            ↗ {post.shares_count}
+          </button>
+        </div>
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowReport((s) => !s)}
           style={{ padding:"5px 8px", border:"none", background:"transparent", cursor:"pointer", fontSize:12, color: t.textMuted }}>

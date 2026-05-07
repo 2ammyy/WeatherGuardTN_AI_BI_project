@@ -61,6 +61,9 @@ export const postsAPI = {
   unlike:  (id)       => api.delete(`/posts/${id}/like`).then((r) => r.data),
   share:   (id)       => api.post(`/posts/${id}/share`).then((r) => r.data),
   report:  (id, reason) => api.post(`/posts/${id}/report`, { reason }).then((r) => r.data),
+  likers:  (id, limit = 10) => api.get(`/posts/${id}/likers`, { params: { limit } }).then((r) => r.data),
+  sharers: (id, limit = 10) => api.get(`/posts/${id}/sharers`, { params: { limit } }).then((r) => r.data),
+  commenters: (id, limit = 10) => api.get(`/posts/${id}/commenters`, { params: { limit } }).then((r) => r.data),
 };
 
 // ── Media Upload ──────────────────────────────────────────────────────

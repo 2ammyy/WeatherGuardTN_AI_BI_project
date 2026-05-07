@@ -288,6 +288,25 @@ def _post_out(post: models.ForumPost, current: Optional[models.ForumUser], db: S
     out.media_items = media_items
     out.media_urls = media_urls
 
+    # Populate liked_by and shared_by user lists
+    likers = (
+        db.query(models.ForumUser)
+        .join(models.PostLike, models.PostLike.user_id == models.ForumUser.id)
+        .filter(models.PostLike.post_id == post.id)
+        .limit(20)
+        .all()
+    )
+    out.liked_by = [schemas.UserPublic.model_validate(u) for u in likers]
+
+    sharers = (
+        db.query(models.ForumUser)
+        .join(models.PostShare, models.PostShare.user_id == models.ForumUser.id)
+        .filter(models.PostShare.post_id == post.id)
+        .limit(20)
+        .all()
+    )
+    out.shared_by = [schemas.UserPublic.model_validate(u) for u in sharers]
+
     return out
 
 
@@ -539,6 +558,58 @@ def report_post(
     return {"message": "Report submitted"}
 
 
+@router.get("/posts/{post_id}/likers")
+def get_post_likers(
+    post_id: UUID,
+    limit:   int = Query(10, ge=1, le=50),
+    db:      Session = Depends(get_db),
+):
+    rows = (
+        db.query(models.ForumUser)
+        .join(models.PostLike, models.PostLike.user_id == models.ForumUser.id)
+        .filter(models.PostLike.post_id == post_id)
+        .order_by(models.PostLike.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(u) for u in rows]
+
+
+@router.get("/posts/{post_id}/sharers")
+def get_post_sharers(
+    post_id: UUID,
+    limit:   int = Query(10, ge=1, le=50),
+    db:      Session = Depends(get_db),
+):
+    rows = (
+        db.query(models.ForumUser)
+        .join(models.PostShare, models.PostShare.user_id == models.ForumUser.id)
+        .filter(models.PostShare.post_id == post_id)
+        .order_by(models.PostShare.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(u) for u in rows]
+
+
+@router.get("/posts/{post_id}/commenters")
+def get_post_commenters(
+    post_id: UUID,
+    limit:   int = Query(10, ge=1, le=50),
+    db:      Session = Depends(get_db),
+):
+    rows = (
+        db.query(models.ForumUser)
+        .join(models.ForumComment, models.ForumComment.author_id == models.ForumUser.id)
+        .filter(models.ForumComment.post_id == post_id, models.ForumComment.is_deleted == False)
+        .distinct()
+        .order_by(models.ForumComment.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(u) for u in rows]
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # COMMENTS
 # ══════════════════════════════════════════════════════════════════════════════
@@ -574,7 +645,6 @@ def get_comments(
     comments = db.query(models.ForumComment).filter(
         models.ForumComment.post_id   == post_id,
         models.ForumComment.is_deleted == False,
-        models.ForumComment.ai_approved == True,
     ).order_by(models.ForumComment.created_at).all()
 
     tree  = _build_comment_tree(comments, current.id if current else None, db)
@@ -594,32 +664,25 @@ async def create_comment(
     if not post:
         raise HTTPException(404, "Post not found")
 
-    # AI moderation for the comment
-    ai_result = await moderate_text(content_type="comment", title=None, body=payload.body)
-
+    # AI moderation disabled for comments
     comment = models.ForumComment(
         post_id     = post_id,
         author_id   = current.id,
         parent_id   = payload.parent_id,
         body        = payload.body,
-        ai_approved = ai_result.approved,
-        ai_reason   = ai_result.reason,
+        ai_approved = True,  # Auto-approve all comments
+        ai_reason   = None,
     )
     db.add(comment)
     db.flush()
 
-    if ai_result.approved and post.author_id != current.id:
+    if post.author_id != current.id:
         send_notification(db, user_id=post.author_id, type="post_comment",
                           actor_id=current.id, actor_name=current.display_name or current.username,
                           post_id=post_id, comment_id=comment.id)
     db.commit()
     db.refresh(comment)
 
-    if not ai_result.approved:
-        raise HTTPException(
-            status_code=422,
-            detail={"message": "Comment not posted: not relevant to the forum.", "ai_reason": ai_result.reason},
-        )
     out = schemas.CommentOut.model_validate(comment)
     out.replies  = []
     out.is_liked = False

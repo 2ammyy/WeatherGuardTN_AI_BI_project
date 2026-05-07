@@ -170,24 +170,15 @@ async def post_comment(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # AI moderation — runs before persisting
-    approved, reason = await moderate_comment(payload.body, article.title)
-
+    # AI moderation disabled — auto-approve all comments
     comment = crud.create_comment(
         db,
         article_id=article_id,
         author_id=current_user.id,
         payload=payload,
-        ai_approved=approved,
-        ai_reason=reason,
+        ai_approved=True,
+        ai_reason=None,
     )
-
-    if not approved:
-        # Return 422 with the moderation reason so the frontend can show it
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Comment not approved: {reason}",
-        )
 
     return CommentOut.model_validate(comment)
 

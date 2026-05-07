@@ -153,6 +153,8 @@ class PostOut(BaseModel):
     created_at:     datetime
     author:         UserPublic
     is_liked:       bool = False
+    liked_by:       List[UserPublic] = []
+    shared_by:      List[UserPublic] = []
 
     model_config = {"from_attributes": True}
 
@@ -317,7 +319,7 @@ class CommentCreate(BaseModel):
     parent_id: Optional[UUID] = None
  
  
-class CommentOut(BaseModel):
+class NewsCommentOut(BaseModel):
     id:          UUID
     article_id:  UUID
     author:      AuthorOut
@@ -328,12 +330,12 @@ class CommentOut(BaseModel):
     is_deleted:  bool
     likes_count: int
     created_at:  datetime
-    replies:     List["CommentOut"] = []
- 
+    replies:     List["NewsCommentOut"] = []
+
     model_config = {"from_attributes": True}
- 
- 
-CommentOut.model_rebuild()
+
+
+NewsCommentOut.model_rebuild()
  
  
 class CommentModerationResult(BaseModel):
