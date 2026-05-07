@@ -66,7 +66,12 @@ class UserReport(Base):
     reported_id = Column(UUID(as_uuid=True), ForeignKey("forum_users.id", ondelete="CASCADE"))
     reason      = Column(Text)
     status      = Column(String(20), default="pending")
+    priority    = Column(String(10), default="medium")
+    priority_score = Column(Integer, default=50)
     created_at  = Column(DateTime(timezone=True), default=utcnow)
+
+    reporter = relationship("ForumUser", foreign_keys=[reporter_id], lazy="joined")
+    reported = relationship("ForumUser", foreign_keys=[reported_id], lazy="joined")
 
 
 # ─────────────────────────────────────────────
@@ -138,8 +143,11 @@ class PostReport(Base):
     reporter_id = Column(UUID(as_uuid=True), ForeignKey("forum_users.id", ondelete="CASCADE"))
     reason      = Column(Text)
     status      = Column(String(20), default="pending")
+    priority    = Column(String(10), default="medium")
+    priority_score = Column(Integer, default=50)
     created_at  = Column(DateTime(timezone=True), default=utcnow)
-    post = relationship("ForumPost", back_populates="reports")
+    post = relationship("ForumPost", back_populates="reports", lazy="joined")
+    reporter = relationship("ForumUser", foreign_keys=[reporter_id], lazy="joined")
 
 
 # ─────────────────────────────────────────────
@@ -181,8 +189,12 @@ class CommentReport(Base):
     reporter_id = Column(UUID(as_uuid=True), ForeignKey("forum_users.id", ondelete="CASCADE"))
     reason      = Column(Text)
     status      = Column(String(20), default="pending")
+    priority    = Column(String(10), default="medium")
+    priority_score = Column(Integer, default=50)
     created_at  = Column(DateTime(timezone=True), default=utcnow)
 
+    reporter = relationship("ForumUser", foreign_keys=[reporter_id], lazy="joined")
+    comment = relationship("ForumComment", foreign_keys=[comment_id], lazy="joined", overlaps="reports")
 
 # ─────────────────────────────────────────────
 # Messages (private user-to-user)

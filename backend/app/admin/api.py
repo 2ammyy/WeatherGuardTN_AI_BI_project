@@ -7,6 +7,7 @@ from app.forum.models import (
     UserReport, ForumUser, Notification, NewsArticle, Message
 )
 from app.models.ml_model import MLModel
+from app.admin.priority import classify_priority, classify_reports_bulk
 from datetime import datetime, timedelta
 import jwt
 import os
@@ -299,5 +300,80 @@ def recent_activity(limit: int = 10, _=Depends(require_admin)):
 
         activities.sort(key=lambda x: x["time"] or "", reverse=True)
         return activities[:limit]
+    finally:
+        db.close()
+
+@router.post("/priority/classify")
+def classify_report_priority(report_type: str, report_id: str, _=Depends(require_admin)):
+    """Run AI priority classification on a single report."""
+    db = SessionLocal()
+    try:
+        model_map = {
+            "post": PostReport,
+            "comment": CommentReport,
+            "user": UserReport,
+        }
+        model_cls = model_map.get(report_type)
+        if not model_cls:
+            raise HTTPException(400, f"Invalid report type: {report_type}")
+
+        report = db.query(model_cls).filter(model_cls.id == report_id).first()
+        if not report:
+            raise HTTPException(404, "Report not found")
+
+        result = classify_priority(report.reason or "")
+        report.priority = result["priority"]
+        report.priority_score = result["score"]
+        db.commit()
+
+        return {"success": True, "id": str(report.id), "priority": result["priority"], "score": result["score"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, str(e))
+    finally:
+        db.close()
+
+@router.post("/priority/classify-all")
+def classify_all_report_priorities(_=Depends(require_admin)):
+    """Run AI priority classification on ALL pending reports."""
+    db = SessionLocal()
+    try:
+        results = {"post": 0, "comment": 0, "user": 0, "total": 0}
+        for model_cls, key in [(PostReport, "post"), (CommentReport, "comment"), (UserReport, "user")]:
+            reports = db.query(model_cls).filter(model_cls.status == "pending").all()
+            for r in reports:
+                result = classify_priority(r.reason or "")
+                r.priority = result["priority"]
+                r.priority_score = result["score"]
+                results[key] += 1
+                results["total"] += 1
+        db.commit()
+        return {"success": True, "classified": results}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, str(e))
+    finally:
+        db.close()
+
+@router.get("/reports/summary")
+def reports_summary(_=Depends(require_admin)):
+    """Get a summary of all reports grouped by type, status, and priority."""
+    db = SessionLocal()
+    try:
+        def get_counts(model):
+            total = db.query(model).count()
+            pending = db.query(model).filter(model.status == "pending").count()
+            high = db.query(model).filter(model.priority == "high").count()
+            medium = db.query(model).filter(model.priority == "medium").count()
+            low = db.query(model).filter(model.priority == "low").count()
+            return {"total": total, "pending": pending, "high": high, "medium": medium, "low": low}
+
+        return {
+            "post_reports": get_counts(PostReport),
+            "comment_reports": get_counts(CommentReport),
+            "user_reports": get_counts(UserReport),
+        }
     finally:
         db.close()

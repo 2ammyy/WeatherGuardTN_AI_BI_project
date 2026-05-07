@@ -26,6 +26,23 @@ def risk_badge(level):
     c = colors.get(level, "#64748b")
     return Markup(f'<span style="background:{c}22;color:{c};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">{level.upper()}</span>')
 
+def priority_badge(priority, score=None):
+    colors = {"high": "#ef4444", "medium": "#f59e0b", "low": "#6b7280"}
+    icons = {"high": "fa-solid fa-circle-exclamation", "medium": "fa-solid fa-circle", "low": "fa-solid fa-circle-down"}
+    c = colors.get(priority, "#6b7280")
+    icon = icons.get(priority, "fa-solid fa-circle")
+    score_html = f' <span style="font-size:10px;opacity:0.7">({score}%)</span>' if score is not None else ""
+    return Markup(f'<span style="display:inline-flex;align-items:center;gap:4px;background:{c}18;color:{c};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600"><i class="{icon}" style="font-size:10px"></i>{priority.upper()}{score_html}</span>')
+
+def user_link(uid, username=None):
+    if not uid:
+        return Markup('<span style="color:#9ca3af">—</span>')
+    name = username or str(uid)[:8]
+    return Markup(f'<a href="/admin/forum-user/details/{uid}" style="color:#059669;text-decoration:none;font-weight:500" title="{uid}"><i class="fa-solid fa-user me-1" style="font-size:10px"></i>{name}</a>')
+    colors = {"green": "#22c55e", "yellow": "#eab308", "orange": "#f97316", "red": "#ef4444", "purple": "#a855f7"}
+    c = colors.get(level, "#64748b")
+    return Markup(f'<span style="background:{c}22;color:{c};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">{level.upper()}</span>')
+
 def truncate(val, max=60):
     if not val:
         return "—"
@@ -150,19 +167,32 @@ class PostShareAdmin(ModelView, model=PostShare):
 
 
 class PostReportAdmin(ModelView, model=PostReport):
-    column_list = ['id', 'post_id', 'reporter_id', 'reason', 'status', 'created_at']
+    column_list = ['id', 'post_id', 'reporter_id', 'reason', 'priority', 'status', 'created_at']
     column_searchable_list = ['reason']
-    column_editable_list = ['status']
-    column_sortable_list = ['created_at', 'status']
+    column_editable_list = ['status', 'priority']
+    column_sortable_list = ['created_at', 'status', 'priority', 'priority_score']
     name = 'Post Report'
     name_plural = 'Post Reports'
     icon = 'fa-solid fa-flag'
     page_size = 25
+    column_labels = {
+        'post_id': 'Post',
+        'reporter_id': 'Reporter',
+        'priority': 'Prio',
+    }
     column_formatters = {
+        'post_id': lambda o, p: Markup(
+            f'<a href="/admin/forum-post/details/{o.post_id}" style="color:#059669;text-decoration:none;font-weight:500">'
+            f'<i class="fa-solid fa-newspaper me-1" style="font-size:10px"></i>{truncate(o.post.title, 50) if o.post and o.post.title else "Deleted post"}</a>'
+        ) if o.post_id else Markup('<span style="color:#9ca3af">—</span>'),
+        'reporter_id': lambda o, p: (
+            user_link(o.reporter_id, o.reporter.username if o.reporter else None)
+        ) if o.reporter_id else Markup('<span style="color:#9ca3af">—</span>'),
         'reason': fmt_truncate(80),
+        'priority': lambda o, p: priority_badge(o.priority, o.priority_score),
         'status': lambda o, p: {
             "pending": badge("Pending", "#eab308"),
-            "approved": badge("Approved", "#10b981"),
+            "reviewed": badge("Reviewed", "#10b981"),
             "dismissed": badge("Dismissed", "#64748b"),
         }.get(o.status, badge(str(o.status or "Pending"), "#eab308")),
         'created_at': fmt_dt,
@@ -183,18 +213,32 @@ class CommentLikeAdmin(ModelView, model=CommentLike):
 
 
 class CommentReportAdmin(ModelView, model=CommentReport):
-    column_list = ['id', 'comment_id', 'reporter_id', 'reason', 'status', 'created_at']
-    column_sortable_list = ['created_at', 'status']
+    column_list = ['id', 'comment_id', 'reporter_id', 'reason', 'priority', 'status', 'created_at']
+    column_sortable_list = ['created_at', 'status', 'priority', 'priority_score']
     column_searchable_list = ['reason']
+    column_editable_list = ['status', 'priority']
     name = 'Comment Report'
     name_plural = 'Comment Reports'
     icon = 'fa-solid fa-flag'
     page_size = 25
+    column_labels = {
+        'comment_id': 'Comment',
+        'reporter_id': 'Reporter',
+        'priority': 'Prio',
+    }
     column_formatters = {
+        'comment_id': lambda o, p: Markup(
+            f'<span style="color:#374151;font-size:11px"><i class="fa-solid fa-comment me-1" style="font-size:10px;color:#9ca3af"></i>'
+            f'{truncate(o.comment.body if o.comment else "Deleted comment", 60)}</span>'
+        ) if o.comment_id else Markup('<span style="color:#9ca3af">—</span>'),
+        'reporter_id': lambda o, p: (
+            user_link(o.reporter_id, o.reporter.username if o.reporter else None)
+        ) if o.reporter_id else Markup('<span style="color:#9ca3af">—</span>'),
         'reason': fmt_truncate(80),
+        'priority': lambda o, p: priority_badge(o.priority, o.priority_score),
         'status': lambda o, p: {
             "pending": badge("Pending", "#eab308"),
-            "approved": badge("Approved", "#10b981"),
+            "reviewed": badge("Reviewed", "#10b981"),
             "dismissed": badge("Dismissed", "#64748b"),
         }.get(o.status, badge(str(o.status or "Pending"), "#eab308")),
         'created_at': fmt_dt,
@@ -330,19 +374,31 @@ class UserBlockAdmin(ModelView, model=UserBlock):
 
 
 class UserReportAdmin(ModelView, model=UserReport):
-    column_list = ['id', 'reporter_id', 'reported_id', 'reason', 'status', 'created_at']
+    column_list = ['id', 'reporter_id', 'reported_id', 'reason', 'priority', 'status', 'created_at']
     column_searchable_list = ['reason']
-    column_editable_list = ['status']
-    column_sortable_list = ['created_at', 'status']
+    column_editable_list = ['status', 'priority']
+    column_sortable_list = ['created_at', 'status', 'priority', 'priority_score']
     name = 'User Report'
     name_plural = 'User Reports'
     icon = 'fa-solid fa-triangle-exclamation'
     page_size = 25
+    column_labels = {
+        'reporter_id': 'Reporter',
+        'reported_id': 'Reported User',
+        'priority': 'Prio',
+    }
     column_formatters = {
+        'reporter_id': lambda o, p: (
+            user_link(o.reporter_id, o.reporter.username if o.reporter else None)
+        ) if o.reporter_id else Markup('<span style="color:#9ca3af">—</span>'),
+        'reported_id': lambda o, p: (
+            user_link(o.reported_id, o.reported.username if o.reported else None)
+        ) if o.reported_id else Markup('<span style="color:#9ca3af">—</span>'),
         'reason': fmt_truncate(80),
+        'priority': lambda o, p: priority_badge(o.priority, o.priority_score),
         'status': lambda o, p: {
             "pending": badge("Pending", "#eab308"),
-            "approved": badge("Approved", "#10b981"),
+            "reviewed": badge("Reviewed", "#10b981"),
             "dismissed": badge("Dismissed", "#64748b"),
         }.get(o.status, badge(str(o.status or "Pending"), "#eab308")),
         'created_at': fmt_dt,
