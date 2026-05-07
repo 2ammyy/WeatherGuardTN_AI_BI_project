@@ -3,7 +3,7 @@ import { usersAPI, activityAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
 import ConversationModal from "../components/ConversationModal";
 
-export default function UserProfilePage({ username, onBack, currentUser }) {
+export default function UserProfilePage({ username, onBack, currentUser, isOwn }) {
   const { t } = useTheme();
   const [profile, setProfile] = useState(null);
   const [activity, setActivity] = useState([]);
@@ -12,11 +12,10 @@ export default function UserProfilePage({ username, onBack, currentUser }) {
   const [toast, setToast] = useState(null);
   const [showConversation, setShowConversation] = useState(false);
 
-  const isOwn = currentUser?.username === username;
-
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   useEffect(() => {
+    if (!username) return;
     const loadData = async () => {
       setLoading(true);
       try {
@@ -83,6 +82,7 @@ export default function UserProfilePage({ username, onBack, currentUser }) {
     }
   };
 
+  if (!username) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No user specified</div>;
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading...</div>;
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>User not found</div>;
 

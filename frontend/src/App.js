@@ -125,6 +125,7 @@ function MainApp() {
   const [showRoute, setShowRoute] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profileUsername, setProfileUsername] = useState('');
+  const [profileIsOwn, setProfileIsOwn] = useState(false);
 
   const riskLevels = useMemo(() => ({
     'GREEN': { color: isDark ? '#22c55e' : '#16a34a', bg: isDark ? '#22c55e18' : '#16a34a12', border: isDark ? '#22c55e33' : '#16a34a30', label: 'Safe' },
@@ -244,9 +245,31 @@ function MainApp() {
     setShowSignup(false);
   };
 
+  const goToMyProfile = async () => {
+    try {
+      const token = localStorage.getItem("forum_access_token");
+      if (!token) throw new Error("no token");
+      const res = await axios.get(`${apiUrl}/api/forum/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfileUsername(res.data.username);
+      setProfileIsOwn(true);
+      setShowProfile(true);
+    } catch {
+      if (user?.name) {
+        setProfileUsername(user.name);
+        setProfileIsOwn(true);
+        setShowProfile(true);
+      }
+    }
+  };
+
   const handleProfileClick = (username) => {
-    setProfileUsername(username);
-    setShowProfile(true);
+    if (username) {
+      setProfileUsername(username);
+      setProfileIsOwn(false);
+      setShowProfile(true);
+    }
   };
 
   const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#64748b';
@@ -273,8 +296,8 @@ function MainApp() {
     );
   }
 
-  if (showProfile) return <UserProfilePage username={profileUsername} onBack={() => setShowProfile(false)} currentUser={user} />;
-  if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} onProfileClick={handleProfileClick} />;
+  if (showProfile) return <UserProfilePage username={profileUsername} onBack={() => setShowProfile(false)} currentUser={user} isOwn={profileIsOwn} />;
+  if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} onProfileClick={handleProfileClick} onMyProfile={goToMyProfile} />;
   if (showNews) return <NewsPage onBack={() => setShowNews(false)} />;
   if (showRoute) return <RoutePage onBack={() => setShowRoute(false)} hazards={hazards} />;
 
@@ -433,7 +456,8 @@ function MainApp() {
 
             <div style={{ width: 1, height: 24, background: t.border }} />
 
-            <div style={{
+            <div onClick={goToMyProfile}
+              style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -441,6 +465,7 @@ function MainApp() {
               background: t.bgTag,
               borderRadius: 20,
               border: `1px solid ${t.border}`,
+              cursor: 'pointer',
             }}>
               <div style={{
                 width: 26,
@@ -454,7 +479,7 @@ function MainApp() {
               }}>
                 {ICONS.user}
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>{user.name || 'User'}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>{(user?.display_name || user?.username || 'User')}</span>
             </div>
 
             <button

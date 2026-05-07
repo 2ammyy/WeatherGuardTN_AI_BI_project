@@ -22,7 +22,7 @@ const GOVERNORATES = [
 ];
 
 // ── Forum content (user already authenticated by platform) ───────────────────────────────
-function ForumInner({ onBack, existingUser, onProfileClick }) {
+function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
   const { t } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +146,7 @@ function ForumInner({ onBack, existingUser, onProfileClick }) {
         >
           <span>✏️</span> New post
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4 }}>
+        <div onClick={onMyProfile} style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4, cursor: "pointer" }} title="My Profile">
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${t.accent}40, ${t.accent}20)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: t.accent }}>
             {(user?.display_name ?? user?.username ?? user?.name ?? "?")[0].toUpperCase()}
           </div>
@@ -297,6 +297,6 @@ function ForumInner({ onBack, existingUser, onProfileClick }) {
 }
 
 // ── Export: forum page (user already authenticated by platform) ──────────────────────────────
-export default function ForumPage({ onBack, existingUser, onProfileClick }) {
-  return <ForumInner onBack={onBack} existingUser={existingUser} onProfileClick={onProfileClick} />;
+export default function ForumPage({ onBack, existingUser, onProfileClick, onMyProfile }) {
+  return <ForumInner onBack={onBack} existingUser={existingUser} onProfileClick={onProfileClick} onMyProfile={onMyProfile} />;
 }
