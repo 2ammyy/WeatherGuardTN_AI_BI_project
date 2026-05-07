@@ -155,6 +155,9 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         await postsAPI.like(post.id);
         setPost((p) => ({ ...p, is_liked: true, likes_count: p.likes_count + 1 }));
       }
+      // Refresh post to get updated liked_by list
+      const updated = await postsAPI.get(post.id);
+      setPost(updated);
     } catch (e) { showToast(e.response?.data?.detail ?? "Error"); }
     finally { setLoading(false); }
   };
@@ -162,9 +165,10 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
   const handleShare = async () => {
     try {
       await postsAPI.share(post.id);
-      setPost((p) => ({ ...p, shares_count: p.shares_count + 1 }));
-      await navigator.clipboard.writeText(window.location.origin + "/forum/posts/" + post.id);
-      showToast("Link copied to clipboard!");
+      showToast("Post shared!");
+      // Refresh post to get updated shared_by list
+      const updated = await postsAPI.get(post.id);
+      setPost(updated);
     } catch { showToast("Error sharing post"); }
   };
 
@@ -290,14 +294,21 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
       <div style={{ borderTop: `1px solid ${t.border}`, padding: "0.5rem 1rem", display: "flex", alignItems: "center", gap: 4, position: "relative" }}>
         <div style={{ position: "relative" }}>
           <InteractionPopover open={interaction.open && interaction.type === "likes"} users={interaction.users} onClose={closeInteraction} t={t} />
-          <button onClick={() => fetchInteractions("likes")}
+          <button onClick={handleLike}
+            disabled={loading}
             style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
-              borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
+              borderRadius: 8, border: "none", background: "transparent", cursor: loading ? "wait" : "pointer",
               fontSize: 13, color: post.is_liked ? t.danger : t.textSecondary,
+              opacity: loading ? 0.6 : 1,
             }}>
             {post.is_liked ? "♥" : "♡"} {post.likes_count}
           </button>
+          <span onClick={() => fetchInteractions("likes")}
+            title="View who liked this post"
+            style={{ cursor: "pointer", fontSize: 11, color: t.textMuted, marginLeft: -5, opacity: 0.7 }}>
+            ({post.liked_by?.length || post.likes_count})
+          </span>
         </div>
         <div style={{ position: "relative" }}>
           <InteractionPopover open={interaction.open && interaction.type === "comments"} users={interaction.users} onClose={closeInteraction} t={t} />
@@ -308,10 +319,15 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
         </div>
         <div style={{ position: "relative" }}>
           <InteractionPopover open={interaction.open && interaction.type === "shares"} users={interaction.users} onClose={closeInteraction} t={t} />
-          <button onClick={() => { fetchInteractions("shares"); handleShare(); }}
+          <button onClick={handleShare}
             style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color: t.textSecondary }}>
             ↗ {post.shares_count}
           </button>
+          <span onClick={() => fetchInteractions("shares")}
+            title="View who shared this post"
+            style={{ cursor: "pointer", fontSize: 11, color: t.textMuted, marginLeft: -5, opacity: 0.7 }}>
+            ({post.shared_by?.length || post.shares_count})
+          </span>
         </div>
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowReport((s) => !s)}
