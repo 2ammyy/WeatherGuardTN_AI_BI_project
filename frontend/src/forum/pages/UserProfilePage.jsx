@@ -13,6 +13,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
   const [toast, setToast] = useState(null);
   const [showConversation, setShowConversation] = useState(false);
   const [listModal, setListModal] = useState(null);
+  const [activeTab, setActiveTab] = useState("all");
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -107,6 +108,21 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
     share: "Shared a post",
     follow: "Followed",
   };
+
+  const TABS = [
+    { key: "all", label: "All", icon: "📋" },
+    { key: "post", label: "Posts", icon: "📝" },
+    { key: "comment", label: "Comments", icon: "💬" },
+    { key: "like", label: "Likes", icon: "♥" },
+    { key: "share", label: "Shares", icon: "↗" },
+    { key: "follow", label: "Follows", icon: "👤" },
+  ];
+
+  const counts = {};
+  activity.forEach((a) => { counts[a.type] = (counts[a.type] || 0) + 1; });
+  counts.all = activity.length;
+
+  const filtered = activeTab === "all" ? activity : activity.filter((a) => a.type === activeTab);
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
@@ -205,14 +221,47 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
       </div>
 
       {/* Activity Feed */}
-      <h3 style={{ color: t.text, fontSize: 16, marginBottom: 12 }}>Activity</h3>
-      {activity.length === 0 ? (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <h3 style={{ color: t.text, fontSize: 16, margin: 0 }}>Activity</h3>
+        <span style={{ fontSize: 12, color: t.textMuted }}>{activity.length} items</span>
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{
+        display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap",
+        background: t.bgCard, padding: "8px 12px", borderRadius: 14, border: `1px solid ${t.border}`,
+      }}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: "6px 14px", borderRadius: 10, border: active ? `1px solid ${t.accent}` : "none",
+                background: active ? t.accentBg : "transparent", cursor: "pointer",
+                fontSize: 12, fontWeight: active ? 600 : 400, color: active ? t.accent : t.textMuted,
+                display: "flex", alignItems: "center", gap: 5, fontFamily: "inherit", transition: "all 0.15s",
+              }}>
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+              {counts[tab.key] > 0 && (
+                <span style={{
+                  fontSize: 10, background: active ? t.accent : t.bgMuted,
+                  color: active ? t.accentText : t.textMuted,
+                  borderRadius: 8, padding: "1px 6px", marginLeft: 2,
+                }}>{counts[tab.key]}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: t.textMuted, background: t.bgCard, borderRadius: 12, border: `1px solid ${t.border}` }}>
-          No activity yet.
+          {activeTab === "all" ? "No activity yet." : `No ${ACTIVITY_LABELS[activeTab]?.toLowerCase() || activeTab} activity.`}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {activity.map((item, i) => (
+          {filtered.map((item, i) => (
             <div key={`${item.type}-${item.post?.id || item.comment?.id || item.target_user?.id || i}`}
               style={{
                 background: t.bgCard, border: `1px solid ${t.border}`,
