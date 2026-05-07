@@ -3,7 +3,7 @@ import { usersAPI, activityAPI } from "../api/client";
 import { useTheme } from "../../contexts/ThemeContext";
 import ConversationModal from "../components/ConversationModal";
 
-export default function UserProfilePage({ username, onBack, currentUser, isOwn }) {
+export default function UserProfilePage({ username, onBack, isOwn, onEditProfile }) {
   const { t } = useTheme();
   const [profile, setProfile] = useState(null);
   const [activity, setActivity] = useState([]);
@@ -138,7 +138,7 @@ export default function UserProfilePage({ username, onBack, currentUser, isOwn }
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {isOwn ? (
-              <button
+              <button onClick={onEditProfile}
                 style={{ padding: "8px 20px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgCard, cursor: "pointer", fontSize: 13, color: t.text }}>
                 ✏ Edit Profile
               </button>

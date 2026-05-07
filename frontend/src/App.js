@@ -126,6 +126,15 @@ function MainApp() {
   const [showProfile, setShowProfile] = useState(false);
   const [profileUsername, setProfileUsername] = useState('');
   const [profileIsOwn, setProfileIsOwn] = useState(false);
+  const [profilePrev, setProfilePrev] = useState(null);
+
+  const handleProfileBack = () => {
+    setShowProfile(false);
+    setShowSettings(false);
+    if (profilePrev === 'forum') setShowForum(true);
+    else if (profilePrev === 'news') setShowNews(true);
+    else if (profilePrev === 'route') setShowRoute(true);
+  };
 
   const riskLevels = useMemo(() => ({
     'GREEN': { color: isDark ? '#22c55e' : '#16a34a', bg: isDark ? '#22c55e18' : '#16a34a12', border: isDark ? '#22c55e33' : '#16a34a30', label: 'Safe' },
@@ -246,30 +255,31 @@ function MainApp() {
   };
 
   const goToMyProfile = async () => {
+    if (showForum) setProfilePrev('forum');
+    else if (showNews) setProfilePrev('news');
+    else if (showRoute) setProfilePrev('route');
+    else setProfilePrev(null);
     try {
       const token = localStorage.getItem("forum_access_token");
-      if (!token) throw new Error("no token");
+      if (!token) return;
       const res = await axios.get(`${apiUrl}/api/forum/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfileUsername(res.data.username);
       setProfileIsOwn(true);
       setShowProfile(true);
-    } catch {
-      if (user?.name) {
-        setProfileUsername(user.name);
-        setProfileIsOwn(true);
-        setShowProfile(true);
-      }
-    }
+    } catch {}
   };
 
   const handleProfileClick = (username) => {
-    if (username) {
-      setProfileUsername(username);
-      setProfileIsOwn(false);
-      setShowProfile(true);
-    }
+    if (!username) return;
+    if (showForum) setProfilePrev('forum');
+    else if (showNews) setProfilePrev('news');
+    else if (showRoute) setProfilePrev('route');
+    else setProfilePrev(null);
+    setProfileUsername(username);
+    setProfileIsOwn(false);
+    setShowProfile(true);
   };
 
   const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#64748b';
@@ -296,7 +306,33 @@ function MainApp() {
     );
   }
 
-  if (showProfile) return <UserProfilePage username={profileUsername} onBack={() => setShowProfile(false)} currentUser={user} isOwn={profileIsOwn} />;
+  if (showProfile) return (
+    <>
+      <UserProfilePage username={profileUsername} onBack={handleProfileBack} isOwn={profileIsOwn} onEditProfile={() => setShowSettings(true)} />
+      {showSettings && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(4px)', zIndex: 999, overflowY: 'auto',
+          animation: 'fadeIn 0.2s ease-out',
+        }}>
+          <div style={{ position: 'relative', minHeight: '100vh' }}>
+            <button onClick={() => setShowSettings(false)}
+              style={{
+                position: 'fixed', top: 16, right: 16, zIndex: 1000,
+                background: t.bgCard, border: `1px solid ${t.border}`,
+                borderRadius: '50%', width: 36, height: 36, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: t.textSecondary, boxShadow: t.shadowCard,
+              }}
+            >{ICONS.x}</button>
+            <Settings user={user} onLogout={handleLogout}
+              onUserUpdate={(updatedUser) => { setUser(updatedUser); setShowSettings(false); }} />
+          </div>
+        </div>
+      )}
+    </>
+  );
   if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} onProfileClick={handleProfileClick} onMyProfile={goToMyProfile} />;
   if (showNews) return <NewsPage onBack={() => setShowNews(false)} />;
   if (showRoute) return <RoutePage onBack={() => setShowRoute(false)} hazards={hazards} />;
