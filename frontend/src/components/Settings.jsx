@@ -754,7 +754,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
                 ⚠️
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: t.danger }}>Danger Zone</h3>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: t.danger }}>Delete Account</h3>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: t.textMuted }}>Irreversible actions — proceed with caution</p>
               </div>
             </div>

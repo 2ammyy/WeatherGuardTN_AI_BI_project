@@ -464,7 +464,6 @@ function MainApp() {
               { icon: ICONS.users, label: 'Forum', action: () => setShowForum(true), bg: t.accent, border: null, color: '#fff' },
               { icon: ICONS.news, label: 'News', action: () => setShowNews(true), bg: 'transparent', border: t.border, color: t.textSecondary },
               { icon: ICONS.route, label: 'Routes', action: () => setShowRoute(true), bg: 'transparent', border: t.border, color: t.textSecondary },
-              { icon: ICONS.settings, label: '', action: () => setShowSettings(true), bg: 'transparent', border: t.border, color: t.textSecondary },
             ].map(btn => (
               <button
                 key={btn.label}
@@ -900,49 +899,6 @@ function MainApp() {
           WeatherGuardTN · Powered by Open-Meteo API · AI Risk Assessment
         </p>
       </footer>
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 999,
-          overflowY: 'auto',
-          animation: 'fadeIn 0.2s ease-out',
-        }}>
-          <div style={{ position: 'relative', minHeight: '100vh' }}>
-            <button
-              onClick={() => setShowSettings(false)}
-              style={{
-                position: 'fixed',
-                top: 16,
-                right: 16,
-                zIndex: 1000,
-                background: t.bgCard,
-                border: `1px solid ${t.border}`,
-                borderRadius: '50%',
-                width: 36,
-                height: 36,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: t.textSecondary,
-                boxShadow: t.shadowCard,
-              }}
-            >
-              {ICONS.x}
-            </button>
-            <Settings
-              user={user}
-              onLogout={handleLogout}
-              onUserUpdate={(updatedUser) => { setUser(updatedUser); setShowSettings(false); }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
