@@ -115,7 +115,7 @@ export default function NotificationBell() {
                 <div
                   key={n.id}
                   className="notif-item-hover"
-                  onClick={() => !n.is_read && markOneRead(n.id)}
+                  onClick={() => { if (!n.is_read) markOneRead(n.id); }}
                   style={{
                     display:"flex", gap:12, padding:"12px 16px", cursor:"pointer",
                     background: n.is_read ? "transparent" : t.accentBg,

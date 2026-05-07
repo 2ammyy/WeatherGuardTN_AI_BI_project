@@ -4,6 +4,7 @@ import { postsAPI } from "../api/client";
 import PostCard from "../components/PostCard";
 import ComposeModal from "../components/ComposeModal";
 import NotificationBell from "../components/NotificationBell";
+import SearchBar from "../components/SearchBar";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const CATEGORIES = [
@@ -20,7 +21,7 @@ const GOVERNORATES = [
 ];
 
 // ── Forum content (user already authenticated by platform) ───────────────────────────────
-function ForumInner({ onBack, existingUser }) {
+function ForumInner({ onBack, existingUser, onProfileClick }) {
   const { t } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +129,8 @@ function ForumInner({ onBack, existingUser }) {
             <span style={{ fontSize: 11, color: t.textMuted, marginLeft: 8 }}>Community Hub</span>
           </div>
         </div>
+        <div style={{ flex: 1 }} />
+        <SearchBar onClose={() => {}} onNavigateToProfile={onProfileClick} />
         <div style={{ flex: 1 }} />
         <NotificationBell />
         <button
@@ -288,6 +291,6 @@ function ForumInner({ onBack, existingUser }) {
 }
 
 // ── Export: forum page (user already authenticated by platform) ──────────────────────────────
-export default function ForumPage({ onBack, existingUser }) {
-  return <ForumInner onBack={onBack} existingUser={existingUser} />;
+export default function ForumPage({ onBack, existingUser, onProfileClick }) {
+  return <ForumInner onBack={onBack} existingUser={existingUser} onProfileClick={onProfileClick} />;
 }

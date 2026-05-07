@@ -39,6 +39,7 @@ export const authAPI = {
 
 // ── Users ─────────────────────────────────────────────────────────────
 export const usersAPI = {
+  search:   (q, limit=10)   => api.get(`/users/search`, { params: { q, limit } }).then((r) => r.data),
   profile:  (username)        => api.get(`/users/${username}`).then((r) => r.data),
   update:   (data)            => api.patch("/users/me", data).then((r) => r.data),
   follow:   (username)        => api.post(`/users/${username}/follow`).then((r) => r.data),

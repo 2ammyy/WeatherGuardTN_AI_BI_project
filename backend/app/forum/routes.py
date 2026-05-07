@@ -80,6 +80,21 @@ def me(current: models.ForumUser = Depends(get_current_user)):
 # USER PROFILES
 # ══════════════════════════════════════════════════════════════════════════════
 
+@router.get("/users/search", response_model=list[schemas.UserPublic])
+def search_users(
+    q:        str = Query(..., min_length=2),
+    limit:    int = Query(10, ge=1, le=50),
+    db:       Session = Depends(get_db),
+):
+    users = (
+        db.query(models.ForumUser)
+        .filter(models.ForumUser.username.ilike(f"%{q}%") | models.ForumUser.display_name.ilike(f"%{q}%"))
+        .limit(limit)
+        .all()
+    )
+    return [schemas.UserPublic.model_validate(u) for u in users]
+
+
 @router.get("/users/{username}", response_model=schemas.UserProfile)
 def get_profile(
     username: str,

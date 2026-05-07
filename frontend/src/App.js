@@ -11,6 +11,7 @@ import Settings from './components/Settings';
 import ForumPage from './forum/pages/ForumPage';
 import NewsPage from './pages/NewsPage';
 import RoutePage from './pages/RoutePage';
+import UserProfilePage from './forum/pages/UserProfilePage';
 
 const ICONS = {
   logo: (
@@ -122,6 +123,8 @@ function MainApp() {
   const [showForum, setShowForum] = useState(false);
   const [showNews, setShowNews] = useState(false);
   const [showRoute, setShowRoute] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileUsername, setProfileUsername] = useState('');
 
   const riskLevels = useMemo(() => ({
     'GREEN': { color: isDark ? '#22c55e' : '#16a34a', bg: isDark ? '#22c55e18' : '#16a34a12', border: isDark ? '#22c55e33' : '#16a34a30', label: 'Safe' },
@@ -241,6 +244,11 @@ function MainApp() {
     setShowSignup(false);
   };
 
+  const handleProfileClick = (username) => {
+    setProfileUsername(username);
+    setShowProfile(true);
+  };
+
   const getRiskColor = (riskLevel) => riskLevels[riskLevel]?.color || '#64748b';
 
   if (!user) {
@@ -265,7 +273,8 @@ function MainApp() {
     );
   }
 
-  if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} />;
+  if (showProfile) return <UserProfilePage username={profileUsername} onBack={() => setShowProfile(false)} currentUser={user} />;
+  if (showForum) return <ForumPage onBack={() => setShowForum(false)} existingUser={user} onProfileClick={handleProfileClick} />;
   if (showNews) return <NewsPage onBack={() => setShowNews(false)} />;
   if (showRoute) return <RoutePage onBack={() => setShowRoute(false)} hazards={hazards} />;
 
