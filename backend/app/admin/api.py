@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import json
 import jwt
 import os
+import requests as http_requests
 
 SECRET_KEY = os.getenv('FORUM_SECRET_KEY', 'weatherguardtn-admin-secret-2026')
 ALGORITHM = 'HS256'
@@ -56,6 +57,76 @@ async def require_admin(request: Request):
         raise HTTPException(401, "Session expired")
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Invalid token")
+
+SUPERSET_BASE = os.getenv("SUPERSET_BASE", "http://superset:8088")
+SUPERSET_LOGIN = os.getenv("SUPERSET_LOGIN_USER", "admin")
+SUPERSET_PASSWORD = os.getenv("SUPERSET_LOGIN_PASSWORD", "admin123")
+SUPERSET_DASHBOARD_ID = os.getenv("SUPERSET_DASHBOARD_ID", "2")
+
+
+@router.get("/superset/guest-token")
+def get_superset_guest_token(_=Depends(require_admin)):
+    """Get an embedded guest token and embedded UUID for the Superset dashboard."""
+    try:
+        sess = http_requests.Session()
+
+        r = sess.post(
+            f"{SUPERSET_BASE}/api/v1/security/login",
+            json={
+                "username": SUPERSET_LOGIN,
+                "password": SUPERSET_PASSWORD,
+                "provider": "db",
+                "refresh": True,
+            },
+            timeout=10,
+        )
+        r.raise_for_status()
+        access_token = r.json()["access_token"]
+
+        sess.headers.update({"Authorization": f"Bearer {access_token}"})
+
+        r = sess.get(f"{SUPERSET_BASE}/api/v1/security/csrf_token", timeout=10)
+        r.raise_for_status()
+        csrf_token = r.json()["result"]
+
+        guest_resp = sess.post(
+            f"{SUPERSET_BASE}/api/v1/security/guest_token/",
+            headers={
+                "X-CSRFToken": csrf_token,
+                "Referer": f"{SUPERSET_BASE}/",
+            },
+            json={
+                "user": {"username": "admin", "first_name": "Admin", "last_name": ""},
+                "resources": [{"type": "dashboard", "id": SUPERSET_DASHBOARD_ID}],
+                "rls": [],
+            },
+            timeout=10,
+        )
+        guest_resp.raise_for_status()
+        guest_token = guest_resp.json()
+
+        embedded_uuid = None
+        try:
+            r = sess.get(
+                f"{SUPERSET_BASE}/api/v1/dashboard/{SUPERSET_DASHBOARD_ID}/embedded",
+                timeout=10,
+            )
+            if r.ok:
+                embedded_data = r.json()
+                if isinstance(embedded_data, dict):
+                    result = embedded_data.get("result") or embedded_data
+                    if isinstance(result, dict):
+                        embedded_uuid = result.get("uuid")
+        except Exception:
+            pass
+
+        return {
+            "token": guest_token.get("token", guest_token),
+            "embedded_uuid": embedded_uuid,
+        }
+    except Exception as e:
+        raise HTTPException(502, f"Superset guest token failed: {str(e)}")
+
 
 def get_stats():
     db = SessionLocal()
