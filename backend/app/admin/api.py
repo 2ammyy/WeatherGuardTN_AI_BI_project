@@ -4,11 +4,12 @@ from app.database import SessionLocal
 from app.models.user import User
 from app.forum.models import (
     ForumPost, ForumComment, PostReport, CommentReport,
-    UserReport, ForumUser, Notification, NewsArticle, Message
+    UserReport, ForumUser, Notification, NewsArticle, Message, PriorityFeedback
 )
 from app.models.ml_model import MLModel
-from app.admin.priority import classify_priority, classify_reports_bulk, evaluate_model, test_custom_text
+from app.admin.priority import classify_priority, classify_reports_bulk, evaluate_model, test_custom_text, retrain_model
 from datetime import datetime, timedelta
+import json
 import jwt
 import os
 
@@ -22,6 +23,15 @@ class DryRunInput(BaseModel):
 
 class BatchTestInput(BaseModel):
     reasons: list[str]
+
+class PriorityFeedbackInput(BaseModel):
+    input_text: str
+    ai_predicted_priority: str
+    ai_predicted_score: int
+    ai_probabilities: str | None = None
+    admin_corrected_priority: str
+    notes: str | None = None
+    admin_email: str | None = None
 
 router = APIRouter()
 
@@ -414,6 +424,77 @@ def batch_test(body: BatchTestInput, _=Depends(require_admin)):
         "avg_confidence": round(sum(r["score"] for r in results) / max(len(results), 1), 1),
         "results": results,
     }
+
+@router.post("/priority/feedback")
+def log_feedback(body: PriorityFeedbackInput, admin=Depends(require_admin)):
+    """Log admin feedback on AI priority classification for model improvement."""
+    db = SessionLocal()
+    try:
+        fb = PriorityFeedback(
+            input_text=body.input_text,
+            ai_predicted_priority=body.ai_predicted_priority,
+            ai_predicted_score=body.ai_predicted_score,
+            ai_probabilities=body.ai_probabilities,
+            admin_corrected_priority=body.admin_corrected_priority,
+            notes=body.notes,
+            admin_email=body.admin_email or admin.email,
+        )
+        db.add(fb)
+        db.commit()
+        db.refresh(fb)
+        return {"success": True, "id": str(fb.id)}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, str(e))
+    finally:
+        db.close()
+
+@router.get("/priority/feedback")
+def list_feedback(limit: int = 50, used: bool | None = None, _=Depends(require_admin)):
+    """List logged priority feedback entries."""
+    db = SessionLocal()
+    try:
+        q = db.query(PriorityFeedback).order_by(PriorityFeedback.created_at.desc())
+        if used is not None:
+            q = q.filter(PriorityFeedback.is_used_in_training == used)
+        entries = q.limit(limit).all()
+        return [{
+            "id": str(e.id),
+            "input_text": e.input_text[:100],
+            "ai_predicted_priority": e.ai_predicted_priority,
+            "ai_predicted_score": e.ai_predicted_score,
+            "admin_corrected_priority": e.admin_corrected_priority,
+            "notes": e.notes,
+            "admin_email": e.admin_email,
+            "is_used_in_training": e.is_used_in_training,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        } for e in entries]
+    finally:
+        db.close()
+
+@router.post("/priority/retrain")
+def retrain_priority_model(_=Depends(require_admin)):
+    """Retrain the priority classifier with all unused feedback data."""
+    db = SessionLocal()
+    try:
+        feedback_entries = db.query(PriorityFeedback).filter(
+            PriorityFeedback.is_used_in_training == False
+        ).all()
+        feedback_data = [
+            {"input_text": fb.input_text, "admin_corrected_priority": fb.admin_corrected_priority}
+            for fb in feedback_entries
+        ]
+        result = retrain_model(feedback_data)
+        if result["success"]:
+            for fb in feedback_entries:
+                fb.is_used_in_training = True
+            db.commit()
+        return result
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, str(e))
+    finally:
+        db.close()
 
 @router.get("/test/demo-cases")
 def demo_test_cases(_=Depends(require_admin)):

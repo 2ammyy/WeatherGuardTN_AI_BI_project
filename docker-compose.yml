@@ -150,6 +150,32 @@ services:
       - climate-network
     restart: unless-stopped
 
+  # Apache Superset — interactive dashboards & analytics
+  superset:
+    image: apache/superset:3.0.0
+    container_name: climate-superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-weatherguard-superset-secret-key-2026}
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+      - superset_home:/app/superset_home
+    networks:
+      - climate-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@weatherguard.com --password admin123 2>/dev/null || echo 'Admin already exists' &&
+        superset db upgrade &&
+        superset init &&
+        echo 'Superset ready on port 8088' &&
+        superset run -p 8088 --host 0.0.0.0 --with-threads --reload
+      "
+
 networks:
   climate-network:
     driver: bridge
@@ -159,3 +185,4 @@ volumes:
   postgres_data:
   ollama_data:                             # persists the qwen2.5:3b model between restarts
   forum_uploads:                           # persists uploaded forum media files
+  superset_home:

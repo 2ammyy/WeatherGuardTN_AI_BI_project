@@ -8,7 +8,7 @@ from app.forum.models import (
     PostLike, PostShare, PostReport, CommentLike,
     UserFollow, UserBlock, UserReport,
     NewsReaction, NewsShare, NewsComment, NewsCommentLike,
-    PostMedia, CommentReport, Message,
+    PostMedia, CommentReport, Message, PriorityFeedback,
 )
 from app.models.ml_model import MLModel
 
@@ -422,39 +422,45 @@ class NotificationAdmin(ModelView, model=Notification):
 
 
 class MLModelAdmin(ModelView, model=MLModel):
-    column_list = ['id', 'name', 'algorithm', 'version', 'status', 'score', 'mlflow_run_id', 'is_active', 'created_at']
-    column_searchable_list = ['name', 'algorithm', 'description']
-    column_sortable_list = ['name', 'version', 'score', 'created_at', 'status']
-    column_editable_list = ['status', 'description', 'is_active']
-    can_create = True
+    name = "ML Model"
+    name_plural = "ML Models"
+    icon = "fa-solid fa-brain"
+    category = "AI & ML"
+
+    column_list = [MLModel.name, MLModel.version, MLModel.algorithm, MLModel.status,
+                   MLModel.score, MLModel.is_active, MLModel.updated_at]
+    column_sortable_list = [MLModel.name, MLModel.version, MLModel.score, MLModel.is_active, MLModel.updated_at]
+    column_default_sort = (MLModel.updated_at, True)
+
+    column_formatters = {
+        MLModel.status: lambda m, _: status_badge(m.status == "active", "ACTIVE", m.status.upper() if m.status else "N/A", "#10b981", "#f59e0b"),
+        MLModel.is_active: lambda m, _: status_badge(m.is_active),
+        MLModel.score: lambda m, _: f'<span style="font-weight:600">{m.score:.1f}%</span>' if m.score else "—",
+        MLModel.updated_at: lambda m, _: m.updated_at.strftime("%Y-%m-%d %H:%M") if m.updated_at else "—",
+    }
+
+
+class PriorityFeedbackAdmin(ModelView, model=PriorityFeedback):
+    name = "AI Feedback"
+    name_plural = "AI Priority Feedback"
+    icon = "fa-solid fa-message"
+    category = "AI & ML"
+
+    column_list = [PriorityFeedback.input_text, PriorityFeedback.ai_predicted_priority,
+                   PriorityFeedback.admin_corrected_priority, PriorityFeedback.is_used_in_training,
+                   PriorityFeedback.admin_email, PriorityFeedback.created_at]
+    column_sortable_list = [PriorityFeedback.created_at, PriorityFeedback.is_used_in_training]
+    column_default_sort = (PriorityFeedback.created_at, True)
+    can_create = False
     can_edit = True
     can_delete = True
-    name = 'ML Model'
-    name_plural = 'ML Models'
-    icon = 'fa-solid fa-brain'
-    page_size = 25
-    column_labels = {
-        'mlflow_run_id': 'MLflow Run',
-        'is_active': 'Active',
-        'mlflow_model_uri': 'MLflow URI',
-    }
+
     column_formatters = {
-        'status': lambda o, p: {
-            "production": badge("Production", "#10b981"),
-            "staging": badge("Staging", "#06b6d4"),
-            "active": badge("Active", "#22c55e"),
-            "archived": badge("Archived", "#64748b"),
-            "failed": badge("Failed", "#ef4444"),
-        }.get(o.status, badge(str(o.status or "Draft").capitalize(), "#eab308")),
-        'score': lambda o, p: Markup(f'<span style="font-weight:700;color:{"#10b981" if o.score and o.score > 0.8 else "#eab308" if o.score and o.score > 0.6 else "#ef4444"}">{o.score:.4f}</span>') if o.score is not None else "—",
-        'is_active': lambda o, p: status_badge(o.is_active, "Active", "Inactive", yes_color="#10b981", no_color="#64748b"),
-        'mlflow_run_id': lambda o, p: truncate(o.mlflow_run_id, 20) if o.mlflow_run_id else "—",
-        'created_at': fmt_dt,
-    }
-    form_widget_args = {
-        'description': {'rows': 4},
-        'metrics': {'rows': 4},
-        'hyperparams': {'rows': 4},
+        PriorityFeedback.input_text: lambda m, _: truncate(m.input_text, 80),
+        PriorityFeedback.ai_predicted_priority: lambda m, _: priority_badge(m.ai_predicted_priority, m.ai_predicted_score),
+        PriorityFeedback.admin_corrected_priority: lambda m, _: priority_badge(m.admin_corrected_priority, None),
+        PriorityFeedback.is_used_in_training: lambda m, _: status_badge(m.is_used_in_training, "USED", "PENDING"),
+        PriorityFeedback.created_at: lambda m, _: m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else "—",
     }
 
 
@@ -480,5 +486,6 @@ def register_views(admin):
     admin.add_view(UserReportAdmin)
     admin.add_view(NotificationAdmin)
     admin.add_view(MLModelAdmin)
+    admin.add_view(PriorityFeedbackAdmin)
 
-    print('✅ All 21 admin views registered (enhanced)')
+    print('✅ All 22 admin views registered (enhanced)')

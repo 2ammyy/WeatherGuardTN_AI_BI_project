@@ -286,3 +286,52 @@ def test_custom_text(text: str) -> dict:
     result["input"] = text
     result["input_length"] = len(text)
     return result
+
+
+def retrain_model(feedback_data: list = None) -> dict:
+    """
+    Retrain priority classifier with seed data plus optional admin feedback.
+    feedback_data: list of {'input_text': str, 'admin_corrected_priority': str} dicts
+    """
+    global _PIPELINE
+
+    texts = [t for t, _ in SEED_DATA]
+    labels = [l for _, l in SEED_DATA]
+
+    added = 0
+    if feedback_data:
+        valid = [fb for fb in feedback_data if fb.get("input_text") and fb.get("admin_corrected_priority") in _LABELS]
+        for fb in valid:
+            texts.append(fb["input_text"])
+            labels.append(fb["admin_corrected_priority"])
+            added += 1
+
+    pipe = Pipeline([
+        ("tfidf", TfidfVectorizer(
+            max_features=5000,
+            ngram_range=(1, 3),
+            analyzer="char_wb",
+            strip_accents="unicode",
+            lowercase=True,
+        )),
+        ("clf", LogisticRegression(
+            C=1.0,
+            class_weight="balanced",
+            solver="lbfgs",
+            max_iter=1000,
+            random_state=42,
+        )),
+    ])
+    pipe.fit(texts, labels)
+    _PIPELINE = pipe
+
+    preds = pipe.predict(texts[:len(SEED_DATA)])
+    seed_accuracy = sum(1 for p, l in zip(preds, [l for _, l in SEED_DATA]) if p == l) / len(SEED_DATA)
+
+    return {
+        "success": True,
+        "seed_examples": len(SEED_DATA),
+        "feedback_added": added,
+        "total_training_examples": len(texts),
+        "seed_accuracy": round(seed_accuracy, 4),
+    }

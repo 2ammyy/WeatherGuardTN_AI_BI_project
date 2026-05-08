@@ -234,6 +234,21 @@ class Notification(Base):
     actor     = relationship("ForumUser", foreign_keys=[actor_id])
     news_article = relationship("NewsArticle", foreign_keys=[news_article_id])
 
+class PriorityFeedback(Base):
+    __tablename__ = "priority_feedback"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    input_text = Column(Text, nullable=False)
+    ai_predicted_priority = Column(String(10), nullable=False)
+    ai_predicted_score = Column(Integer, nullable=False)
+    ai_probabilities = Column(Text, nullable=True)
+    admin_corrected_priority = Column(String(10), nullable=False)
+    notes = Column(Text, nullable=True)
+    admin_email = Column(String(255), nullable=True)
+    is_used_in_training = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
 # ─────────────────────────────────────────────
 # News Articles (scraped from external sources)
 # ─────────────────────────────────────────────
