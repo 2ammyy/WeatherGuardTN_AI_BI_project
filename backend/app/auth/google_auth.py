@@ -7,6 +7,7 @@ import psycopg2
 from jose import jwt
 from datetime import timedelta, timezone
 from datetime import datetime
+from app.services.email_service import send_welcome_email, send_account_deleted
 
 router = APIRouter()
 
@@ -97,6 +98,7 @@ async def google_auth(request: GoogleAuthRequest):
         conn.commit()
         cur.close()
         conn.close()
+        send_welcome_email(row[1], row[2])
         return {
             "id": row[0], "email": row[1], "name": row[2],
             "picture": row[3], "governorate": row[4],
@@ -128,6 +130,7 @@ async def register(request: EmailAuthRequest):
         conn.commit()
         cur.close()
         conn.close()
+        send_welcome_email(row[1], row[2])
         return {"id": row[0], "email": row[1], "name": row[2], "governorate": row[3], "user_type": row[4]}
     except psycopg2.errors.UniqueViolation:
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
@@ -213,6 +216,7 @@ async def delete_account(request: DeleteRequest):
         conn.close()
         if not row:
             raise HTTPException(status_code=404, detail="User not found.")
+        send_account_deleted(request.email)
         return {"message": "Account deleted successfully."}
     except HTTPException:
         raise

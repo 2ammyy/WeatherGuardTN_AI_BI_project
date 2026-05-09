@@ -24,6 +24,7 @@ from app.forum.auth import (
     hash_password, verify_password,
 )
 from app.forum.notifications import send_notification
+from app.services.email_service import send_report_confirmation
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
@@ -232,6 +233,7 @@ def report_user(
         raise HTTPException(404, "User not found")
     db.add(models.UserReport(reporter_id=current.id, reported_id=target.id, reason=payload.reason))
     db.commit()
+    send_report_confirmation(current.email)
     return {"message": "Report submitted and will be reviewed by our moderation team."}
 
 
@@ -823,6 +825,7 @@ def report_post(
         raise HTTPException(404, "Post not found")
     db.add(models.PostReport(post_id=post_id, reporter_id=current.id, reason=payload.reason))
     db.commit()
+    send_report_confirmation(current.email)
     return {"message": "Report submitted"}
 
 
@@ -1019,6 +1022,7 @@ def report_comment(
         raise HTTPException(404, "Comment not found")
     db.add(models.CommentReport(comment_id=comment_id, reporter_id=current.id, reason=payload.reason))
     db.commit()
+    send_report_confirmation(current.email)
     return {"message": "Report submitted"}
 
 
