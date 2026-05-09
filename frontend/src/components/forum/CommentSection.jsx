@@ -3,10 +3,12 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "../../contexts/LanguageContext";
 import CommentForm from "./CommentForm";
 
 function CommentItem({ comment, articleId, depth = 0 }) {
   const { isLoggedIn, authFetch, user } = useAuth();
+  const { tGovernorate } = useTranslation();
   const [showReply, setShowReply]       = useState(false);
   const [likes, setLikes]               = useState(comment.likes_count || 0);
   const [liked, setLiked]               = useState(false);
@@ -56,7 +58,7 @@ function CommentItem({ comment, articleId, depth = 0 }) {
         <div className="comment-header">
           <strong className="comment-author">{comment.author?.display_name || comment.author?.username}</strong>
           {comment.author?.governorate && (
-            <span className="comment-gov">📍 {comment.author.governorate}</span>
+            <span className="comment-gov">📍 {tGovernorate(comment.author.governorate)}</span>
           )}
           {comment.author?.occupation && comment.author.occupation !== "general" && (
             <span className="comment-occ">{comment.author.occupation}</span>

@@ -1,6 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const NewsSection = () => {
+  const { tGovernorate } = useTranslation();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -347,7 +349,7 @@ const NewsSection = () => {
                     alignItems: "center",
                     gap: 4,
                   }}>
-                    <span>📍</span> {gov}
+                    <span>📍</span> {tGovernorate(gov)}
                   </span>
                 ))}
                 {article.governorates.length > 3 && (

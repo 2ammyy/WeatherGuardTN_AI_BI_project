@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { tmapsAPI } from '../services/tmaps';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const GOVERNORATES = [
   { name: 'Tunis', lat: 36.8065, lng: 10.1815 },
@@ -32,6 +33,7 @@ const GOVERNORATES = [
 const HAZARD_RADIUS_KM = 20;
 
 const RouteChecker = ({ hazards = [] }) => {
+  const { tGovernorate } = useTranslation();
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [originCoords, setOriginCoords] = useState(null);
@@ -352,7 +354,7 @@ const RouteChecker = ({ hazards = [] }) => {
                 <div style={{ width: 1, background: "#334155" }} />
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>ROUTE</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{routeSafety.origin} → {routeSafety.destination}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{tGovernorate(routeSafety.origin)} → {tGovernorate(routeSafety.destination)}</div>
                 </div>
               </div>
             )}

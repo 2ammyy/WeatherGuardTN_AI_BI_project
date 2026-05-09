@@ -7,7 +7,7 @@ import UserListModal from "../components/UserListModal";
 
 export default function UserProfilePage({ username, onBack, isOwn, onEditProfile }) {
   const { t } = useTheme();
-  const { t: __, dir } = useTranslation();
+  const { t: __, dir, tGovernorate } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -182,7 +182,7 @@ export default function UserProfilePage({ username, onBack, isOwn, onEditProfile
               <span onClick={() => setListModal("following")} style={{ cursor: "pointer" }} onMouseEnter={(e) => e.target.style.color = t.accent} onMouseLeave={(e) => e.target.style.color = t.textMuted}>
                 <strong style={{ color: t.text }}>{profile.following_count}</strong> {__('following')}
               </span>
-              {profile.governorate && <span>📍 {profile.governorate}</span>}
+              {profile.governorate && <span>📍 {tGovernorate(profile.governorate)}</span>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

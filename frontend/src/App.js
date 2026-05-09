@@ -105,7 +105,7 @@ function getWeatherIcon(code) {
 
 function MainApp() {
   const { theme, t, toggleTheme } = useTheme();
-  const { t: __, dir } = useTranslation();
+  const { t: __, dir, tGovernorate } = useTranslation();
   const isDark = theme === 'dark';
 
   const [user, setUser] = useState(null);
@@ -684,7 +684,7 @@ function MainApp() {
               }}>
                 {ICONS.shield}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Governorates</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{__('allGovernorates')}</span>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               <button onClick={selectAll} style={{ fontSize: 10, color: t.accent, background: t.accentBg, border: `1px solid ${t.accentBorder}`, borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>All</button>
@@ -720,7 +720,7 @@ function MainApp() {
                     {isSelected && (
                       <div style={{ color: t.accent }}>{ICONS.check}</div>
                     )}
-                    <span style={{ fontSize: 12, fontWeight: 500, color: isSelected ? t.text : t.textSecondary }}>{city}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: isSelected ? t.text : t.textSecondary }}>{tGovernorate(city)}</span>
                   </div>
                   {risk && (
                     <div style={{

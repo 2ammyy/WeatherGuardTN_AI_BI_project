@@ -267,6 +267,34 @@ const en = {
   commentNotApproved: "Comment not approved by AI moderation.",
   errorPostingComment: "Error posting comment",
   commentCount: "{n} comment(s)",
+
+  // Governorate names translated
+  governorates: {
+    Tunis: "Tunis",
+    Sfax: "Sfax",
+    Sousse: "Sousse",
+    Bizerte: "Bizerte",
+    Jendouba: "Jendouba",
+    Nabeul: "Nabeul",
+    Gabes: "Gabes",
+    Medenine: "Medenine",
+    Kairouan: "Kairouan",
+    Monastir: "Monastir",
+    Mahdia: "Mahdia",
+    Gafsa: "Gafsa",
+    Tozeur: "Tozeur",
+    Kebili: "Kebili",
+    Tataouine: "Tataouine",
+    Kasserine: "Kasserine",
+    Beja: "Beja",
+    Kef: "Kef",
+    Siliana: "Siliana",
+    Zaghouan: "Zaghouan",
+    Ariana: "Ariana",
+    "Ben Arous": "Ben Arous",
+    Manouba: "Manouba",
+    "Sidi Bouzid": "Sidi Bouzid",
+  },
 };
 
 export default en;

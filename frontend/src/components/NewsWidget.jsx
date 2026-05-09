@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const CATEGORY_LABELS = {
   weather: 'Météo',
@@ -251,7 +252,7 @@ const NewsCard = ({ article }) => {
                 color: '#94a3b8',
                 fontWeight: 500,
               }}>
-                📍 {gov}
+                📍 {tGovernorate(gov)}
               </span>
             ))}
             {article.governorates.length > 5 && (
@@ -320,6 +321,7 @@ const NewsCard = ({ article }) => {
 };
 
 const NewsWidget = () => {
+  const { tGovernorate } = useTranslation();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

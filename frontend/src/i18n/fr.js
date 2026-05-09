@@ -246,6 +246,33 @@ const fr = {
   commentNotApproved: "Commentaire non approuvé par la modération IA.",
   errorPostingComment: "Erreur lors de la publication du commentaire",
   commentCount: "{n} commentaire(s)",
+
+  governorates: {
+    Tunis: "Tunis",
+    Sfax: "Sfax",
+    Sousse: "Sousse",
+    Bizerte: "Bizerte",
+    Jendouba: "Jendouba",
+    Nabeul: "Nabeul",
+    Gabes: "Gabès",
+    Medenine: "Médenine",
+    Kairouan: "Kairouan",
+    Monastir: "Monastir",
+    Mahdia: "Mahdia",
+    Gafsa: "Gafsa",
+    Tozeur: "Tozeur",
+    Kebili: "Kébili",
+    Tataouine: "Tataouine",
+    Kasserine: "Kasserine",
+    Beja: "Béja",
+    Kef: "Le Kef",
+    Siliana: "Siliana",
+    Zaghouan: "Zaghouan",
+    Ariana: "Ariana",
+    "Ben Arous": "Ben Arous",
+    Manouba: "La Manouba",
+    "Sidi Bouzid": "Sidi Bouzid",
+  },
 };
 
 export default fr;

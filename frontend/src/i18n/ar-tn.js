@@ -246,6 +246,33 @@ const arTn = {
   commentNotApproved: "التعليق غير موافق عليه من الذكاء الاصطناعي.",
   errorPostingComment: "خطأ في نشر التعليق",
   commentCount: "{n} تعليق",
+
+  governorates: {
+    Tunis: "تونس",
+    Sfax: "صفاقس",
+    Sousse: "سوسة",
+    Bizerte: "بنزرت",
+    Jendouba: "جندوبة",
+    Nabeul: "نابل",
+    Gabes: "قابس",
+    Medenine: "مدنين",
+    Kairouan: "القيروان",
+    Monastir: "المنستير",
+    Mahdia: "المهدية",
+    Gafsa: "قفصة",
+    Tozeur: "توزر",
+    Kebili: "قبلي",
+    Tataouine: "تطاوين",
+    Kasserine: "القصرين",
+    Beja: "باجة",
+    Kef: "الكاف",
+    Siliana: "سليانة",
+    Zaghouan: "زغوان",
+    Ariana: "أريانة",
+    "Ben Arous": "بن عروس",
+    Manouba: "منوبة",
+    "Sidi Bouzid": "سيدي بوزيد",
+  },
 };
 
 export default arTn;

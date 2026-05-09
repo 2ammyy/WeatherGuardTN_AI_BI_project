@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const OCCUPATION_CONFIG = {
   fisherman: { label: "Fisherman", emoji: "⚓", color: "#0288d1", bg: "#e1f5fe" },
@@ -22,13 +23,14 @@ const TUNISIAN_GOVERNORATES = [
 ];
 
 export function ProfileTag({ user, compact = false }) {
+  const { tGovernorate } = useTranslation();
   const cfg = OCCUPATION_CONFIG[user?.occupation] || OCCUPATION_CONFIG.general;
   const gov = user?.governorate;
 
   if (compact) {
     return (
       <span className="profile-tag-compact" style={{ background: cfg.bg, color: cfg.color }}>
-        {cfg.emoji} {cfg.label}{gov ? ` · ${gov}` : ""}
+        {cfg.emoji} {cfg.label}{gov ? ` · ${tGovernorate(gov)}` : ""}
         <style>{`
           .profile-tag-compact {
             display: inline-flex; align-items: center; gap: 4px;
@@ -45,7 +47,7 @@ export function ProfileTag({ user, compact = false }) {
       <span className="pt-emoji">{cfg.emoji}</span>
       <div className="pt-info">
         <span className="pt-occ" style={{ color: cfg.color }}>{cfg.label}</span>
-        {gov && <span className="pt-gov">📍 {gov}</span>}
+        {gov && <span className="pt-gov">📍 {tGovernorate(gov)}</span>}
       </div>
       <style>{`
         .profile-tag-full {
@@ -66,6 +68,7 @@ export function ProfileTag({ user, compact = false }) {
 // ─── Profile Setup Modal ──────────────────────────────────────────────────
 export function ProfileSetupPrompt() {
   const { user, authFetch } = useAuth();
+  const { tGovernorate } = useTranslation();
   const [open, setOpen]       = useState(!user?.occupation || user.occupation === "general");
   const [occupation, setOcc]  = useState(user?.occupation || "general");
   const [governorate, setGov] = useState(user?.governorate || "");
@@ -104,7 +107,7 @@ export function ProfileSetupPrompt() {
           </select>
           <select value={governorate} onChange={(e) => setGov(e.target.value)} className="psb-select">
             <option value="">All governorates</option>
-            {TUNISIAN_GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+            {TUNISIAN_GOVERNORATES.map((g) => <option key={g} value={g}>{tGovernorate(g)}</option>)}
           </select>
           <button onClick={handleSave} disabled={saving} className="psb-save">
             {saving ? "Saving…" : "Save"}

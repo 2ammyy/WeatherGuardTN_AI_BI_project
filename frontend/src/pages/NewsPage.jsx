@@ -86,6 +86,7 @@ const timeAgo = (dateStr) => {
 
 const NewsCard = ({ article }) => {
   const { t } = useTheme();
+  const { tGovernorate } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   if (!article) return null;
@@ -205,7 +206,7 @@ const NewsCard = ({ article }) => {
                 color: t.textMuted,
                 fontWeight: 500,
               }}>
-                📍 {gov}
+                📍 {tGovernorate(gov)}
               </span>
             ))}
           </div>

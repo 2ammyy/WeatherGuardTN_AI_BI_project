@@ -13,7 +13,7 @@ const MAX_FILES = 5;
 
 export default function ComposeModal({ onClose, onPublished }) {
   const { t } = useTheme();
-  const { t: __ } = useTranslation();
+  const { t: __, tGovernorate } = useTranslation();
 
   const CATEGORIES = [
     { value: "school_closure",  label: __("schoolClosureSingle"), icon: "🏫" },
@@ -392,7 +392,7 @@ export default function ComposeModal({ onClose, onPublished }) {
               >
                 <option value="">{__('allGovernorates')}</option>
                 {GOVERNORATES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g} value={g}>{tGovernorate(g)}</option>
                 ))}
               </select>
             </div>

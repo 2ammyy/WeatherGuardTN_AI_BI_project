@@ -21,7 +21,7 @@ const USER_TYPES = [
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
 const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => {
-  const { t: __ } = useTranslation();
+  const { t: __, tGovernorate } = useTranslation();
   return (
     <div className="auth-card" style={{ textAlign: 'center' }}>
     <div style={{ fontSize: 64, marginBottom: 12 }}>ðŸŽ‰</div>
@@ -33,7 +33,7 @@ const SuccessScreen = ({ name, governorate, onSwitchToLogin }) => {
       background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12,
       padding: '16px 20px', marginBottom: 20, textAlign: 'left'
     }}>
-      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“ {__('region')}: <strong>{governorate}</strong></p>
+      <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“ {__('region')}: <strong>{tGovernorate(governorate)}</strong></p>
       <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ“§ {__('welcomeEmailSent')}</p>
       <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸŒ¦ï¸ {__('weatherAlertsForRegion')}</p>
       <p style={{ margin: '6px 0', fontSize: 14 }}>ðŸ›¡ï¸ {__('earlyDangerPredictions')}</p>
@@ -52,7 +52,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const { t: __ } = useTranslation();
+  const { t: __, tGovernorate } = useTranslation();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -129,7 +129,7 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
           <label>ðŸ“ {__('governorate')}</label>
           <select name="governorate" value={formData.governorate} onChange={handleChange} required style={selectStyle}>
             <option value="">{__('selectGovernorate')}</option>
-            {GOVERNORATES.map(g => <option key={g} value={g}>{g}</option>)}
+            {GOVERNORATES.map(g => <option key={g} value={g}>{tGovernorate(g)}</option>)}
           </select>
         </div>
         <div className="input-group">

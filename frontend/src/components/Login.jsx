@@ -21,7 +21,7 @@ const USER_TYPES = [
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
 const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
-  const { t: __ } = useTranslation();
+  const { t: __, tGovernorate } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -264,7 +264,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
               onBlur={(e) => e.target.style.borderColor = '#334155'}
             >
               <option value="" style={{ color: '#94a3b8' }}>{__('selectGovernorate')}</option>
-              {GOVERNORATES.map(g => <option key={g} value={g} style={{ color: 'white' }}>{g}</option>)}
+              {GOVERNORATES.map(g => <option key={g} value={g} style={{ color: 'white' }}>{tGovernorate(g)}</option>)}
             </select>
           </div>
 

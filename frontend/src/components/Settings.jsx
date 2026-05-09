@@ -214,7 +214,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
   const [profileMsg, setProfileMsg] = useState(null);
 
   // Preferences
-  const { lang, setLanguage, t: __ } = useTranslation();
+  const { lang, setLanguage, t: __, tGovernorate } = useTranslation();
   const [prefMsg, setPrefMsg] = useState(null);
 
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -578,7 +578,7 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
 
                 <div className="field-group">
                   <label className="field-label" style={{ color: t.textMuted }}>
-                    📍 Governorate
+                    📍 {__('governorate')}
                   </label>
                   <select
                     className="select-field"
@@ -588,8 +588,8 @@ const Settings = ({ user, onLogout, onUserUpdate }) => {
                     onFocus={(e) => { e.target.style.borderColor = t.accent; }}
                     onBlur={(e) => { e.target.style.borderColor = t.border; }}
                   >
-                    <option value="">-- Select --</option>
-                    {GOVERNORATES.map(g => <option key={g} value={g}>{g}</option>)}
+                    <option value="">-- {__('selectGovernorate')} --</option>
+                    {GOVERNORATES.map(g => <option key={g} value={g}>{tGovernorate(g)}</option>)}
                   </select>
                 </div>
 

@@ -9,6 +9,7 @@ import NotificationBell from "../components/forum/NotificationBell";
 import { ProfileTag, ProfileSetupPrompt } from "../components/forum/ProfileTag";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
+import { useTranslation } from "../contexts/LanguageContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
@@ -39,6 +40,7 @@ const TUNISIAN_GOVS = [
 export default function Forum() {
   const { isLoggedIn, user, authFetch } = useAuth();
   const { t } = useTheme();
+  const { tGovernorate } = useTranslation();
 
   // Feed state
   const [articles, setArticles]   = useState([]);
@@ -191,7 +193,7 @@ export default function Forum() {
           >
             <option value="">All governorates</option>
             {TUNISIAN_GOVS.filter(Boolean).map((g) => (
-              <option key={g} value={g}>{g}</option>
+              <option key={g} value={g}>{tGovernorate(g)}</option>
             ))}
           </select>
 

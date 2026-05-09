@@ -112,7 +112,7 @@ function InteractionPopover({ open, users, onClose, t }) {
 
 export default function PostCard({ post: initial, onProfileClick, user }) {
   const { t } = useTheme();
-  const { t: __ } = useTranslation();
+  const { t: __, tGovernorate } = useTranslation();
   const [post,          setPost]          = useState(initial);
   const [showComments,  setShowComments]  = useState(false);
   const [reportReason,  setReportReason]  = useState("");
@@ -223,7 +223,7 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
             </span>
             {post.governorate && (
               <span style={{ fontSize: 12, color: t.textSecondary, background: t.bgMuted, padding: "2px 7px", borderRadius: 10 }}>
-                📍 {post.governorate}
+                📍 {tGovernorate(post.governorate)}
               </span>
             )}
           </div>

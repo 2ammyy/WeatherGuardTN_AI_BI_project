@@ -6,6 +6,7 @@ import ReactionBar from "./ReactionBar";
 import CommentSection from "./CommentSection";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const RISK_CONFIG = {
   green:  { label: "Safe",    color: "#2e7d32", bg: "#e8f5e9", emoji: "🟢" },
@@ -24,6 +25,7 @@ const SOURCE_LABEL = {
 export default function NewsCard({ article }) {
   const { isLoggedIn, authFetch } = useAuth();
   const { t } = useTheme();
+  const { tGovernorate } = useTranslation();
   const [showComments, setShowComments] = useState(false);
   const [shareCount, setShareCount]     = useState(article.shares_count || 0);
   const [shareDone, setShareDone]       = useState(false);
@@ -69,7 +71,7 @@ export default function NewsCard({ article }) {
         </div>
         {article.governorates?.length > 0 && (
           <div className="govs">
-            📍 {article.governorates.slice(0, 3).join(", ")}
+            📍 {article.governorates.slice(0, 3).map(g => tGovernorate(g)).join(", ")}
             {article.governorates.length > 3 && ` +${article.governorates.length - 3}`}
           </div>
         )}

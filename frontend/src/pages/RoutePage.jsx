@@ -34,7 +34,7 @@ const HAZARD_RADIUS_KM = 20;
 
 const RoutePage = ({ onBack, hazards = [] }) => {
   const { t } = useTheme();
-  const { t: __, dir } = useTranslation();
+  const { t: __, dir, tGovernorate } = useTranslation();
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [checking, setChecking] = useState(false);
@@ -487,7 +487,7 @@ const RoutePage = ({ onBack, hazards = [] }) => {
                     <div style={{ width: 1, background: t.border }} />
                     <div style={{ flex: 1, textAlign: 'center' }}>
                       <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{__('route')}</div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{routeSafety.origin} → {routeSafety.destination}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{tGovernorate(routeSafety.origin)} → {tGovernorate(routeSafety.destination)}</div>
                     </div>
                   </div>
                 )}

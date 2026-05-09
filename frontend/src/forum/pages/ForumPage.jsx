@@ -17,7 +17,7 @@ import { useTranslation } from "../../contexts/LanguageContext";
 // ── Forum content (user already authenticated by platform) ───────────────────────────────
 function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
   const { t } = useTheme();
-  const { t: __, dir } = useTranslation();
+  const { t: __, dir, tGovernorate } = useTranslation();
 
   const CATEGORIES = [
     { value: "", label: __("allPosts"), icon: "📰" },
@@ -172,7 +172,7 @@ function ForumInner({ onBack, existingUser, onProfileClick, onMyProfile }) {
           <select value={governorate} onChange={(e) => { setGovernorate(e.target.value); setPage(1); }} style={{ ...sel, flex: 1 }}>
             <option value="">📍 {__('allGovernorates')}</option>
             {GOVERNORATES.filter(Boolean).map((g) => (
-              <option key={g} value={g}>{g}</option>
+              <option key={g} value={g}>{tGovernorate(g)}</option>
             ))}
           </select>
           <button
