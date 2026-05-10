@@ -1,0 +1,4 @@
+﻿# Add this line with your other imports
+from app.routes import public_news
+# Then add this line where other routers are included
+app.include_router(public_news.router)

@@ -1,3 +1,44 @@
+<<<<<<< HEAD
+﻿# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Dependencies
+node_modules/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Build outputs
+build/
+dist/
+
+# MLflow artifacts
+mlruns/
+mlartifacts/
+backend/mlruns/
+backend/mlartifacts/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes
+db-data/
+
+# Logs
+*.log
+=======
 node_modules/
 build/
 dist/
@@ -13,3 +54,4 @@ cookies.txt
 desktop.ini
 climat_AI_BI_project/
 WeatherGuardTN_AI_BI_project/
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd

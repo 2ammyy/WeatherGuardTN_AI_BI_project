@@ -1,7 +1,45 @@
 version: '3.8'
 
 services:
+<<<<<<< HEAD
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15
+    container_name: climate-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: weatheruser
+      POSTGRES_PASSWORD: weatherpass
+      POSTGRES_DB: weatherguard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - climate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weatheruser -d weatherguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin Service
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: climate-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - climate-network
+    restart: unless-stopped
+
+  # MLflow Service
+=======
   # Service MLflow
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
     container_name: climate-mlflow
@@ -22,7 +60,52 @@ services:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
+  # Ollama Service (local LLM for AI moderation)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: climate-ollama
+    # ports:
+    #   - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama          # persists downloaded models across restarts
+    networks:
+      - climate-network
+    restart: unless-stopped
+    # If you have an NVIDIA GPU and nvidia-container-toolkit installed, uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Ollama model bootstrapper — pulls qwen2.5:3b once then exits
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: climate-ollama-init
+    depends_on:
+      - ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - climate-network
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...' &&
+        sleep 5 &&
+        ollama pull qwen2.5:3b &&
+        echo 'Model ready.'
+      "
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    restart: "no"                          # run once and exit
+
+  # Backend Service (FastAPI)
+=======
   # Service Backend
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   backend:
     build:
       context: .
@@ -33,6 +116,34 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - PYTHONPATH=/app
+<<<<<<< HEAD
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - DATABASE_URL=postgresql://weatheruser:weatherpass@db:5432/weatherguard
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # Forum JWT
+      - FORUM_SECRET_KEY=${FORUM_SECRET_KEY:-change-me-to-a-long-random-secret}
+      # Email (SMTP)
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      # Ollama — uses the service name as hostname inside Docker network
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      - OLLAMA_TIMEOUT_SECONDS=60
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+      - forum_uploads:/app/uploads/forum
+    depends_on:
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+      ollama:
+        condition: service_started
+=======
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -40,29 +151,80 @@ services:
       - ./mlartifacts:/mlartifacts
     depends_on:
       - mlflow
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
     networks:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
+  # Frontend Service (React + Nginx)
+=======
   # Service Frontend
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+<<<<<<< HEAD
+      args:
+        - REACT_APP_API_URL=http://backend:8000
+        - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+    container_name: climate-frontend
+    ports:
+      - "3000:80"
+=======
     container_name: climate-frontend
     ports:
       - "3000:80"
     environment:
       - REACT_APP_API_URL=http://localhost:8001
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
     depends_on:
       - backend
     networks:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
+  # Apache Superset — interactive dashboards & analytics
+  superset:
+    image: apache/superset:3.0.0
+    container_name: climate-superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-weatherguard-superset-secret-key-2026}
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+      - superset_home:/app/superset_home
+    networks:
+      - climate-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@weatherguard.com --password admin123 2>/dev/null || echo 'Admin already exists' &&
+        superset db upgrade &&
+        superset init &&
+        echo 'Superset ready on port 8088' &&
+        superset run -p 8088 --host 0.0.0.0 --with-threads --reload
+      "
+
+=======
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
 networks:
   climate-network:
     driver: bridge
 
 volumes:
+<<<<<<< HEAD
   mlflow_db:
+  postgres_data:
+  ollama_data:                             # persists the qwen2.5:3b model between restarts
+  forum_uploads:                           # persists uploaded forum media files
+  superset_home:
+=======
+  mlflow_db:
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd

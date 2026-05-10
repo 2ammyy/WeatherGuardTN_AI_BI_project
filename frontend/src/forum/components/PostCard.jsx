@@ -264,7 +264,11 @@ export default function PostCard({ post: initial, onProfileClick, user }) {
                 const url = item.file_url;
                 if (!url) return null;
                 const isVideo = item.file_type === "video" || url.match(/\.(mp4|webm|mov)(\?|$)/i);
+<<<<<<< HEAD
+                const fullUrl = url.startsWith("/") ? `http://localhost:8001${url}` : url;
+=======
                 const fullUrl = url.startsWith("/") ? `${process.env.REACT_APP_API_URL || 'http://localhost:8001'}${url}` : url;
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
                 if (isVideo) {
                   return (
                     <video
