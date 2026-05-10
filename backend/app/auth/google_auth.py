@@ -15,8 +15,9 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "932539718184-1rrvuua9t4907c8nk
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://weatheruser:weatherpass@db:5432/weatherguard")
 
 def get_db():
-    return psycopg2.connect(DATABASE_URL, connect_timeout=10)
+    return psycopg2.connect(DATABASE_URL, connect_timeout=10, sslmode='require')
 
+import traceback
 import secrets
 from passlib.context import CryptContext
 _pwd_ctx = CryptContext(schemes=['bcrypt_sha256'], deprecated='auto')
@@ -109,6 +110,8 @@ async def google_auth(request: GoogleAuthRequest):
         print(f"CRITICAL AUTH ERROR: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
     except Exception as e:
+        traceback.print_exc()
+        print(f"AUTH 500 ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Auth error: {str(e)}")
 
 # ─── REGISTER ─────────────────────────────────────────────────────────────────
