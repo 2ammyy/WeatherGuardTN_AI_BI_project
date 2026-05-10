@@ -31,7 +31,7 @@ services:
   - type: web
     name: weatherguard-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && npx react-scripts build
     staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_URL
