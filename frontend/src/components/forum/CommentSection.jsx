@@ -144,7 +144,7 @@ export default function CommentSection({ articleId, initialCount = 0 }) {
   const [count, setCount]         = useState(initialCount);
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8000"}/api/forum/news/${articleId}/comments`)
+    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8001"}/api/forum/news/${articleId}/comments`)
       .then((r) => r.json())
       .then((data) => { setComments(data); setCount(data.length); })
       .catch(() => {})

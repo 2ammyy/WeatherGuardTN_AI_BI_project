@@ -8,7 +8,7 @@ const WeatherNews = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axios.get('http://localhost:8001/api/news');
+        const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8001'}/api/news`);
         if (response.data.success) {
           setNews(response.data.articles);
         }

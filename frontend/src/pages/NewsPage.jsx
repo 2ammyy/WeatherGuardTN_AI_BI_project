@@ -274,7 +274,7 @@ const NewsPage = ({ onBack }) => {
 
   const loadNews = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/news/relevant');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8001'}/api/news/relevant`);
       const data = await response.json();
       if (data.success && data.articles && data.articles.length > 0) {
         setNews(data.articles);

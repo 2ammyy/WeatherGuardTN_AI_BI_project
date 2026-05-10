@@ -335,7 +335,7 @@ const NewsWidget = () => {
 
   const loadNews = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/news/relevant');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8001'}/api/news/relevant`);
       const data = await response.json();
       if (data.success && data.articles && data.articles.length > 0) {
         console.log('Loaded', data.articles.length, 'articles:', data.articles.map(a => ({ id: a.id, title: a.title?.substring(0, 30), bodyLen: a.body?.length })));

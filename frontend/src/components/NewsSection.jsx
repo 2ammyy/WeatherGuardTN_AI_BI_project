@@ -11,7 +11,7 @@ const NewsSection = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch('http://localhost:8001/api/news');
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8001'}/api/news`);
         const data = await response.json();
         
         if (data.success) {
