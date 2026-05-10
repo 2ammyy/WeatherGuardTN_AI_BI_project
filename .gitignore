@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+mlruns/
+mlartifacts/
+superset_home/
+cookies.txt
+desktop.ini
+climat_AI_BI_project/
+WeatherGuardTN_AI_BI_project/

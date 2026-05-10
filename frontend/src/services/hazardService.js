@@ -1,61 +1,33 @@
 import axios from 'axios';
 
-const HAZARD_API = 'https://api.openeventdatabase.org/event';
-
-// Tunisia bounding box
-const TUNISIA_BBOX = '7,30,12,38';
-
-export const fetchHazards = async () => {
+export const fetchHazards = async (baseUrl) => {
+  const API = baseUrl || process.env.REACT_APP_API_URL || 'http://localhost:8001';
   try {
-    const response = await axios.get(HAZARD_API, {
-      params: {
-        what: 'weather.flood,weather.storm,traffic.accident,traffic.roadwork',
-        bbox: TUNISIA_BBOX,
-        limit: 100
-      }
-    });
-    
-    return response.data.features || [];
+    const response = await axios.get(`${API}/api/hazards/realtime`, { timeout: 10000 });
+    return response.data.hazards || [];
   } catch (error) {
     console.error('Error fetching hazards:', error);
     return [];
   }
 };
 
-export const fetchHazardsByRegion = async (bbox) => {
-  try {
-    const response = await axios.get(HAZARD_API, {
-      params: {
-        what: 'weather,traffic',
-        bbox: bbox,
-        limit: 50
-      }
-    });
-    return response.data.features || [];
-  } catch (error) {
-    console.error('Error fetching regional hazards:', error);
-    return [];
-  }
+export const fetchHazardsByRegion = async () => {
+  return fetchHazards();
 };
 
 export const getHazardIcon = (hazardType) => {
-  const icons = {
-    'weather.flood': '🌊',
-    'weather.storm': '⛈️',
-    'traffic.accident': '🚗💥',
-    'traffic.roadwork': '🚧',
-    'default': '⚠️'
-  };
-  return icons[hazardType] || icons.default;
+  const lower = (hazardType || '').toLowerCase();
+  if (lower.includes('rain') || lower.includes('flood')) return '🌊';
+  if (lower.includes('thunderstorm') || lower.includes('storm') || lower.includes('orage')) return '⛈️';
+  if (lower.includes('earthquake') || lower.includes('sism') || lower.includes('secous')) return '🔴';
+  if (lower.includes('wind') || lower.includes('vent')) return '💨';
+  if (lower.includes('heat') || lower.includes('chaleur') || lower.includes('canicule')) return '🔥';
+  if (lower.includes('snow') || lower.includes('neige') || lower.includes('frost')) return '❄️';
+  if (lower.includes('disaster')) return '⚠️';
+  return '⚠️';
 };
 
-export const getHazardColor = (hazardType) => {
-  const colors = {
-    'weather.flood': '#3b82f6',
-    'weather.storm': '#8b5cf6',
-    'traffic.accident': '#ef4444',
-    'traffic.roadwork': '#f59e0b',
-    'default': '#94a3b8'
-  };
-  return colors[hazardType] || colors.default;
+export const getHazardColor = (severity) => {
+  const colors = { 1: '#22c55e', 2: '#eab308', 3: '#f97316', 4: '#ef4444', 5: '#a855f7' };
+  return colors[severity] || '#94a3b8';
 };

@@ -1,0 +1,452 @@
+﻿// frontend/src/pages/Forum.jsx
+// Main WeatherGuardTN Forum / News Feed page.
+// Shows scraped weather news with filters, reactions, comments, shares.
+// Authenticated users get personalised feed + notifications.
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import NewsCard from "../components/forum/NewsCard";
+import NotificationBell from "../components/forum/NotificationBell";
+import { ProfileTag, ProfileSetupPrompt } from "../components/forum/ProfileTag";
+import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../contexts/ThemeContext";
+import { useTranslation } from "../contexts/LanguageContext";
+
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8001";
+
+const RISK_FILTERS = [
+  { value: "",       label: "All",    emoji: "ðŸ“‹" },
+  { value: "green",  label: "Safe",   emoji: "ðŸŸ¢" },
+  { value: "yellow", label: "Watch",  emoji: "ðŸŸ¡" },
+  { value: "orange", label: "Alert",  emoji: "ðŸŸ " },
+  { value: "red",    label: "Danger", emoji: "ðŸ”´" },
+  { value: "purple", label: "Extreme",emoji: "ðŸŸ£" },
+];
+
+const CATEGORY_FILTERS = [
+  { value: "",               label: "All categories" },
+  { value: "meteo",          label: "ðŸŒ¤ MÃ©tÃ©o" },
+  { value: "alert",          label: "ðŸš¨ Alerts" },
+  { value: "impact",         label: "ðŸŒŠ Impacts" },
+  { value: "infrastructure", label: "ðŸ›£ Infrastructure" },
+];
+
+const TUNISIAN_GOVS = [
+  "", "Tunis","Ariana","Ben Arous","Manouba","Nabeul","Zaghouan","Bizerte",
+  "BÃ©ja","Jendouba","Le Kef","Siliana","Sousse","Monastir","Mahdia",
+  "Sfax","Kairouan","Kasserine","Sidi Bouzid","GabÃ¨s","MÃ©denine",
+  "Tataouine","Gafsa","Tozeur","KÃ©bili",
+];
+
+export default function Forum() {
+  const { isLoggedIn, user, authFetch } = useAuth();
+  const { t } = useTheme();
+  const { tGovernorate } = useTranslation();
+
+  // Feed state
+  const [articles, setArticles]   = useState([]);
+  const [total, setTotal]         = useState(0);
+  const [page, setPage]           = useState(1);
+  const [loading, setLoading]     = useState(false);
+  const [hasMore, setHasMore]     = useState(true);
+
+  // Filters
+  const [riskLevel,   setRiskLevel]   = useState("");
+  const [governorate, setGovernorate] = useState("");
+  const [category,    setCategory]    = useState("");
+  const [search,      setSearch]      = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset when filters change
+  useEffect(() => {
+    setArticles([]);
+    setPage(1);
+    setHasMore(true);
+  }, [riskLevel, governorate, category, debouncedSearch]);
+
+  // Fetch articles
+  const fetchArticles = useCallback(async (pageNum = 1, append = false) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: pageNum, per_page: 15 });
+      if (riskLevel)        params.set("risk_level",  riskLevel);
+      if (governorate)      params.set("governorate", governorate);
+      if (category)         params.set("category",    category);
+      if (debouncedSearch)  params.set("search",      debouncedSearch);
+
+      const fetchFn = isLoggedIn ? authFetch : (url) => fetch(`${API_BASE}${url}`);
+      const res  = await fetchFn(`/api/forum/news?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch news");
+      const data = await res.json();
+
+      setTotal(data.total);
+      setArticles((prev) => append ? [...prev, ...data.items] : data.items);
+      setHasMore(data.items.length === 15);
+    } catch (e) {
+      console.error("Forum fetch error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [riskLevel, governorate, category, debouncedSearch, isLoggedIn, authFetch]);
+
+  useEffect(() => {
+    fetchArticles(1, false);
+  }, [fetchArticles]);
+
+  // Infinite scroll
+  const loaderRef = useRef(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchArticles(nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, page, fetchArticles]);
+
+  const handleFilterReset = () => {
+    setRiskLevel("");
+    setGovernorate("");
+    setCategory("");
+    setSearch("");
+  };
+
+  const hasActiveFilters = riskLevel || governorate || category || debouncedSearch;
+
+  return (
+    <div className="forum-page">
+      {/* â”€â”€ Top bar â”€â”€ */}
+      <div className="forum-topbar">
+        <div className="forum-title-wrap">
+          <h1 className="forum-title">â›ˆ WeatherGuard News</h1>
+          <span className="forum-subtitle">Live weather news & alerts for Tunisia</span>
+        </div>
+        <div className="forum-topbar-right">
+          {isLoggedIn && user && <ProfileTag user={user} compact />}
+          <NotificationBell />
+          {!isLoggedIn && (
+            <a href="/login" className="sign-in-link">Sign in for personalised alerts</a>
+          )}
+        </div>
+      </div>
+
+      {/* â”€â”€ Profile setup prompt (only for logged-in users without profile) â”€â”€ */}
+      {isLoggedIn && <ProfileSetupPrompt />}
+
+      {/* â”€â”€ Filters â”€â”€ */}
+      <div className="forum-filters">
+        {/* Search */}
+        <div className="search-wrap">
+          <span className="search-icon">ðŸ”</span>
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search newsâ€¦"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch("")}>âœ•</button>
+          )}
+        </div>
+
+        {/* Risk level pills */}
+        <div className="filter-row">
+          {RISK_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              className={`filter-pill ${riskLevel === f.value ? "active" : ""}`}
+              onClick={() => setRiskLevel(riskLevel === f.value ? "" : f.value)}
+            >
+              {f.emoji} {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Category + governorate */}
+        <div className="filter-row filter-row-selects">
+          <select
+            className="filter-select"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {CATEGORY_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+
+          <select
+            className="filter-select"
+            value={governorate}
+            onChange={(e) => setGovernorate(e.target.value)}
+          >
+            <option value="">All governorates</option>
+            {TUNISIAN_GOVS.filter(Boolean).map((g) => (
+              <option key={g} value={g}>{tGovernorate(g)}</option>
+            ))}
+          </select>
+
+          {hasActiveFilters && (
+            <button className="filter-reset" onClick={handleFilterReset}>
+              âœ• Clear filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* â”€â”€ Stats bar â”€â”€ */}
+      <div className="forum-stats">
+        <span>{total} article{total !== 1 ? "s" : ""} found</span>
+        {hasActiveFilters && <span className="filter-active-note">Â· Filters active</span>}
+        <button className="refresh-btn" onClick={() => fetchArticles(1, false)} disabled={loading}>
+          ðŸ”„ Refresh
+        </button>
+      </div>
+
+      {/* â”€â”€ News Feed â”€â”€ */}
+      <div className="forum-feed">
+        {!loading && articles.length === 0 && (
+          <div className="empty-state">
+            <span className="empty-icon">ðŸŒ¤</span>
+            <h3>No articles found</h3>
+            <p>Try adjusting your filters or check back later.</p>
+            {hasActiveFilters && (
+              <button className="btn-reset-filters" onClick={handleFilterReset}>
+                Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+
+        {articles.map((article) => (
+          <NewsCard key={article.id} article={article} />
+        ))}
+
+        {/* Infinite scroll loader */}
+        <div ref={loaderRef} className="scroll-loader">
+          {loading && (
+            <div className="loading-spinner">
+              <span className="spinner" />
+              Loading articlesâ€¦
+            </div>
+          )}
+          {!loading && !hasMore && articles.length > 0 && (
+            <p className="end-of-feed">You've seen all articles Â· {total} total</p>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        * { box-sizing: border-box; }
+
+        .forum-page {
+          max-width: 780px;
+          margin: 0 auto;
+          padding: 20px 16px 60px;
+          font-family: system-ui, -apple-system, sans-serif;
+          background: ${t.bg};
+          min-height: 100vh;
+        }
+
+        /* ── Top bar ── */
+        .forum-topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        .forum-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: ${t.text};
+          margin: 0;
+        }
+        .forum-subtitle {
+          display: block;
+          font-size: 13px;
+          color: ${t.textMuted};
+          margin-top: 2px;
+        }
+        .forum-topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .sign-in-link {
+          font-size: 13px;
+          color: ${t.accent};
+          text-decoration: none;
+          padding: 5px 12px;
+          border: 1px solid ${t.accentBorder};
+          border-radius: 20px;
+          transition: all 0.15s;
+        }
+        .sign-in-link:hover { background: ${t.accentBg}; }
+
+        /* ── Filters ── */
+        .forum-filters {
+          background: ${t.bgCard};
+          border-radius: 12px;
+          padding: 14px 16px;
+          box-shadow: ${t.shadowCard};
+          margin-bottom: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .search-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: ${t.bgMuted};
+          border-radius: 8px;
+          padding: 6px 12px;
+        }
+        .search-icon { font-size: 16px; color: ${t.textMuted}; }
+        .search-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-size: 14px;
+          outline: none;
+          color: ${t.text};
+        }
+        .search-clear {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: ${t.textMuted};
+          font-size: 14px;
+        }
+        .filter-row {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .filter-pill {
+          padding: 5px 12px;
+          border-radius: 20px;
+          border: 1.5px solid ${t.border};
+          background: ${t.bgCard};
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          transition: all 0.15s;
+          color: ${t.textSecondary};
+        }
+        .filter-pill:hover { border-color: ${t.accentBorder}; color: ${t.accent}; background: ${t.accentBg}; }
+        .filter-pill.active { background: ${t.accent}; color: #fff; border-color: ${t.accent}; }
+        .filter-row-selects { align-items: center; }
+        .filter-select {
+          padding: 6px 10px;
+          border: 1.5px solid ${t.border};
+          border-radius: 8px;
+          font-size: 13px;
+          background: ${t.bgCard};
+          cursor: pointer;
+          color: ${t.text};
+        }
+        .filter-reset {
+          padding: 5px 12px;
+          border: 1px solid ${t.dangerBorder};
+          border-radius: 20px;
+          background: ${t.bgCard};
+          color: ${t.danger};
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        /* ── Stats bar ── */
+        .forum-stats {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: ${t.textMuted};
+          margin-bottom: 12px;
+          padding: 0 4px;
+        }
+        .filter-active-note { color: ${t.accent}; }
+        .refresh-btn {
+          margin-left: auto;
+          background: none;
+          border: 1px solid ${t.border};
+          border-radius: 20px;
+          padding: 4px 12px;
+          cursor: pointer;
+          font-size: 12px;
+          color: ${t.textSecondary};
+          transition: all 0.15s;
+        }
+        .refresh-btn:hover { border-color: ${t.accentBorder}; color: ${t.accent}; }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Feed ── */
+        .forum-feed { display: flex; flex-direction: column; }
+
+        /* ── Empty state ── */
+        .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+          color: ${t.textDisabled};
+        }
+        .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+        .empty-state h3 { color: ${t.textSecondary}; margin: 0 0 8px; }
+        .empty-state p  { margin: 0 0 16px; font-size: 14px; }
+        .btn-reset-filters {
+          padding: 8px 20px;
+          background: ${t.accent};
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        /* ── Loader ── */
+        .scroll-loader { padding: 20px; text-align: center; }
+        .loading-spinner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: ${t.textMuted};
+          font-size: 14px;
+        }
+        .spinner {
+          display: inline-block;
+          width: 18px; height: 18px;
+          border: 2px solid ${t.border};
+          border-top-color: ${t.accent};
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .end-of-feed { color: ${t.textDisabled}; font-size: 13px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+          .forum-title { font-size: 20px; }
+          .forum-topbar { flex-direction: column; }
+          .filter-row-selects { flex-direction: column; align-items: flex-start; }
+          .filter-select { width: 100%; }
+        }
+      `}</style>
+    </div>
+  );
+}

@@ -1,0 +1,45 @@
+{% extends "sqladmin/layout.html" %}
+{% from 'sqladmin/_macros.html' import render_form_fields %}
+{% block content %}
+<div class="col-12">
+  <div class="card fade-in">
+    <div class="card-header">
+      <span class="card-title">
+        <i class="fa-solid fa-plus-circle me-2" style="color:var(--wg-primary)"></i>
+        New {{ model_view.name }}
+      </span>
+    </div>
+    <div class="card-body">
+      {% block create_form %}
+      <form action="{{ url_for('admin:create', identity=model_view.identity) }}" method="POST"
+        enctype="multipart/form-data">
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+          <i class="fa-solid fa-circle-exclamation me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+        <fieldset class="form-fieldset">
+          {{ render_form_fields(form, form_opts=form_opts, ajax_lookup_url=url_for('admin:ajax_lookup', identity=model_view.identity)) }}
+        </fieldset>
+        <div class="d-flex gap-2 mt-4">
+          <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn btn-secondary">
+            <i class="fa-solid fa-times me-1"></i> Cancel
+          </a>
+          <button type="submit" name="save" value="Save" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Save
+          </button>
+          {% if model_view.can_edit %}
+          <button type="submit" name="save" value="Save and continue editing" class="btn btn-outline-primary">
+            <i class="fa-solid fa-pen me-1"></i> Save &amp; Continue
+          </button>
+          {% endif %}
+          <button type="submit" name="save" value="Save and add another" class="btn btn-outline-primary">
+            <i class="fa-solid fa-plus me-1"></i> Save &amp; Add Another
+          </button>
+        </div>
+      </form>
+      {% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
