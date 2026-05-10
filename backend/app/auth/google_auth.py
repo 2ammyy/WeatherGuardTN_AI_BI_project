@@ -3,18 +3,19 @@ from pydantic import BaseModel
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import os
+import psycopg2
 from jose import jwt
 from datetime import timedelta, timezone
 from datetime import datetime
-from app.database import engine
 from app.services.email_service import send_welcome_email, send_account_deleted
 
 router = APIRouter()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "932539718184-1rrvuua9t4907c8nkirk8n18cglm17hk.apps.googleusercontent.com")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://weatheruser:weatherpass@db:5432/weatherguard")
 
 def get_db():
-    return engine.raw_connection()
+    return psycopg2.connect(DATABASE_URL, connect_timeout=10)
 
 import secrets
 from passlib.context import CryptContext
