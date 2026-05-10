@@ -2,7 +2,11 @@
 import os
 from contextlib import asynccontextmanager
 
-import mlflow
+try:
+    import mlflow
+except ImportError:
+    mlflow = None
+    print('⚠️ mlflow not installed — MLflow features disabled')
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -66,16 +70,19 @@ async def lifespan(fastapi_app: FastAPI):
     except Exception as e:
         print(f'⚠️ Could not migrate notifications table: {e}')
 
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    try:
-        experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
-        if experiment is None:
-            mlflow.create_experiment(EXPERIMENT_NAME)
-        mlflow.set_experiment(EXPERIMENT_NAME)
-        mlflow.search_experiments()
-        print('✅ Connexion à MLflow établie')
-    except Exception as e:
-        print(f'⚠️ MLflow non connecté ou erreur : {e}')
+    if mlflow is not None:
+        try:
+            mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+            experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
+            if experiment is None:
+                mlflow.create_experiment(EXPERIMENT_NAME)
+            mlflow.set_experiment(EXPERIMENT_NAME)
+            mlflow.search_experiments()
+            print('✅ Connexion à MLflow établie')
+        except Exception as e:
+            print(f'⚠️ MLflow non connecté ou erreur : {e}')
+    else:
+        print('⚠️ MLflow module not available — skipping MLflow setup')
 
     # Start news scraper scheduler
     try:
@@ -156,6 +163,8 @@ def health_check():
     return {'status': 'healthy', 'mlflow_connected': test_mlflow_connection()}
 
 def test_mlflow_connection():
+    if mlflow is None:
+        return False
     try:
         mlflow.search_experiments()
         return True
