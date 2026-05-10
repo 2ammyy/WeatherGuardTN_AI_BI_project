@@ -9,7 +9,11 @@ const NotificationBell = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
         
+<<<<<<< HEAD
         const response = await fetch('http://localhost:8001/api/forum/notifications/mine', {
+=======
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8001'}/api/forum/notifications/mine`, {
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
           headers: { 'Authorization': `Bearer ${token}` }
         });
         

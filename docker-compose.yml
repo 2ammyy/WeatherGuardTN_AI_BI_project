@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+<<<<<<< HEAD
   # Database Service (PostgreSQL)
   db:
     image: postgres:15
@@ -36,6 +37,9 @@ services:
     restart: unless-stopped
 
   # MLflow Service
+=======
+  # Service MLflow
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.9.2
     container_name: climate-mlflow
@@ -56,6 +60,7 @@ services:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
   # Ollama Service (local LLM for AI moderation)
   ollama:
     image: ollama/ollama:latest
@@ -98,6 +103,9 @@ services:
     restart: "no"                          # run once and exit
 
   # Backend Service (FastAPI)
+=======
+  # Service Backend
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   backend:
     build:
       context: .
@@ -108,6 +116,7 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - PYTHONPATH=/app
+<<<<<<< HEAD
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
       - DATABASE_URL=postgresql://weatheruser:weatherpass@db:5432/weatherguard
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -134,27 +143,49 @@ services:
         condition: service_started
       ollama:
         condition: service_started
+=======
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+      - ./mlruns:/mlruns
+      - ./mlartifacts:/mlartifacts
+    depends_on:
+      - mlflow
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
     networks:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
   # Frontend Service (React + Nginx)
+=======
+  # Service Frontend
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+<<<<<<< HEAD
       args:
         - REACT_APP_API_URL=http://backend:8000
         - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     container_name: climate-frontend
     ports:
       - "3000:80"
+=======
+    container_name: climate-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
     depends_on:
       - backend
     networks:
       - climate-network
     restart: unless-stopped
 
+<<<<<<< HEAD
   # Apache Superset — interactive dashboards & analytics
   superset:
     image: apache/superset:3.0.0
@@ -181,13 +212,19 @@ services:
         superset run -p 8088 --host 0.0.0.0 --with-threads --reload
       "
 
+=======
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
 networks:
   climate-network:
     driver: bridge
 
 volumes:
+<<<<<<< HEAD
   mlflow_db:
   postgres_data:
   ollama_data:                             # persists the qwen2.5:3b model between restarts
   forum_uploads:                           # persists uploaded forum media files
   superset_home:
+=======
+  mlflow_db:
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd

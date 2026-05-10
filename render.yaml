@@ -12,7 +12,11 @@ services:
     runtime: python
     region: frankfurt
     plan: free
+<<<<<<< HEAD
     buildCommand: pip install -r backend/requirements.txt uvicorn
+=======
+    buildCommand: cd backend && pip install -r requirements.txt uvicorn
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:

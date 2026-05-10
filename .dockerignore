@@ -1,6 +1,10 @@
 # Python
+<<<<<<< HEAD
 __pycache__/
 **/__pycache__/
+=======
+__pycache__
+>>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
 *.pyc
 *.pyo
 *.pyd
