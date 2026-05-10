@@ -106,14 +106,6 @@ fastapi_app = FastAPI(
     openapi_url='/openapi.json'
 )
 
-class COOPMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
-        return response
-
-fastapi_app.add_middleware(COOPMiddleware)
-
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173,http://localhost:80,http://frontend:80').split(',')
 
 fastapi_app.add_middleware(
