@@ -129,6 +129,13 @@ function MainApp() {
   const [profileUsername, setProfileUsername] = useState('');
   const [profileIsOwn, setProfileIsOwn] = useState(false);
   const [profilePrev, setProfilePrev] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleProfileBack = () => {
     setShowProfile(false);
@@ -383,6 +390,11 @@ function MainApp() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${t.scrollbar}; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: ${t.scrollbarHover}; }
+        @media (max-width: 768px) {
+          input[type="date"] { min-width: unset !important; }
+          .gov-btn { padding: 3px 5px !important; font-size: 10px !important; }
+          .gov-btn svg { width: 12px !important; height: 12px !important; }
+        }
       `}</style>
 
       {/* Header */}
@@ -398,48 +410,54 @@ function MainApp() {
         <div style={{
           maxWidth: 1440,
           margin: '0 auto',
-          padding: '0 24px',
-          height: 60,
+          padding: isMobile ? '0 8px' : '0 24px',
+          height: isMobile ? 48 : 60,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: isMobile ? 4 : 0,
+          overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, flexShrink: 0 }}>
             <div style={{
               background: 'linear-gradient(135deg, #16a34a, #15803d)',
-              width: 34,
-              height: 34,
+              width: isMobile ? 28 : 34,
+              height: isMobile ? 28 : 34,
               borderRadius: 10,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
+              flexShrink: 0,
             }}>
               {ICONS.logo}
             </div>
-            <div>
-              <h1 style={{
-                fontSize: 16,
-                fontWeight: 700,
-                margin: 0,
-                lineHeight: 1.2,
-                color: '#0f172a',
-              }}>
-                WeatherGuard<span style={{ color: '#16a34a' }}>TN</span>
-              </h1>
-              <p style={{ fontSize: 10, color: '#94a3b8', margin: 0, lineHeight: 1 }}>{__('appSubtitle')}</p>
-            </div>
+            {!isMobile && (
+              <div>
+                <h1 style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  margin: 0,
+                  lineHeight: 1.2,
+                  color: '#0f172a',
+                }}>
+                  WeatherGuard<span style={{ color: '#16a34a' }}>TN</span>
+                </h1>
+                <p style={{ fontSize: 10, color: '#94a3b8', margin: 0, lineHeight: 1 }}>{__('appSubtitle')}</p>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 3 : 8, flexWrap: 'nowrap', overflow: 'auto' }}>
             <div style={{
               background: t.bgMuted,
-              padding: '6px 12px',
+              padding: isMobile ? '4px 6px' : '6px 12px',
               borderRadius: 10,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: isMobile ? 3 : 6,
               color: t.textSecondary,
+              flexShrink: 0,
             }}>
               {ICONS.calendar}
               <input
@@ -460,7 +478,7 @@ function MainApp() {
               />
             </div>
 
-            <div style={{ width: 1, height: 24, background: t.border }} />
+            {!isMobile && <div style={{ width: 1, height: 24, background: t.border }} />}
 
             {[
               { icon: ICONS.users, label: __('forum'), action: () => setShowForum(true), bg: t.accent, border: null, color: '#fff' },
@@ -472,41 +490,44 @@ function MainApp() {
                 onClick={btn.action}
                 className="nav-btn"
                 style={{
-                  padding: '6px 12px',
+                  padding: isMobile ? '4px 6px' : '6px 8px',
                   borderRadius: 8,
                   background: btn.bg,
                   border: btn.border ? `1px solid ${btn.border}` : 'none',
                   color: btn.color || '#fff',
                   cursor: 'pointer',
-                  fontSize: 12,
+                  fontSize: isMobile ? 10 : 12,
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: isMobile ? 0 : 5,
                   fontFamily: 'inherit',
+                  flexShrink: 0,
                 }}
+                title={isMobile ? btn.label : undefined}
               >
                 {btn.icon}
-                {btn.label}
+                {!isMobile && btn.label}
               </button>
             ))}
 
-            <div style={{ width: 1, height: 24, background: t.border }} />
+            {!isMobile && <div style={{ width: 1, height: 24, background: t.border }} />}
 
             <div onClick={goToMyProfile}
               style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '4px 10px 4px 4px',
+              gap: isMobile ? 0 : 8,
+              padding: isMobile ? '4px' : '4px 10px 4px 4px',
               background: t.bgTag,
-              borderRadius: 20,
+              borderRadius: '50%',
               border: `1px solid ${t.border}`,
               cursor: 'pointer',
+              flexShrink: 0,
             }}>
               <div style={{
-                width: 26,
-                height: 26,
+                width: isMobile ? 22 : 26,
+                height: isMobile ? 22 : 26,
                 borderRadius: '50%',
                 background: `linear-gradient(135deg, ${t.accent}, ${isDark ? '#0f6e56' : '#15803d'})`,
                 display: 'flex',
@@ -516,14 +537,14 @@ function MainApp() {
               }}>
                 {ICONS.user}
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>{(user?.display_name || user?.username || 'User')}</span>
+              {!isMobile && <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>{(user?.display_name || user?.username || 'User')}</span>}
             </div>
 
             <button
               onClick={toggleTheme}
               className="nav-btn"
               style={{
-                padding: '6px 10px',
+                padding: isMobile ? '4px 6px' : '6px 10px',
                 borderRadius: 8,
                 background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                 border: `1px solid ${t.border}`,
@@ -535,13 +556,14 @@ function MainApp() {
                 alignItems: 'center',
                 gap: 4,
                 fontFamily: 'inherit',
+                flexShrink: 0,
               }}
               title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
             >
               {isDark ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               )}
             </button>
 
@@ -549,7 +571,7 @@ function MainApp() {
               onClick={handleLogout}
               className="nav-btn"
               style={{
-                padding: '6px 10px',
+                padding: isMobile ? '4px 6px' : '6px 10px',
                 borderRadius: 8,
                 background: 'transparent',
                 border: `1px solid ${t.dangerBorder}`,
@@ -561,12 +583,14 @@ function MainApp() {
                 alignItems: 'center',
                 gap: 4,
                 fontFamily: 'inherit',
+                flexShrink: 0,
               }}
+              title={isMobile ? __('logout') : undefined}
             >
               {ICONS.logout}
             </button>
 
-            <div style={{
+            {!isMobile && <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -585,7 +609,7 @@ function MainApp() {
               <span style={{ fontSize: 10, fontWeight: 700, color: apiStatus === 'connected' ? t.accent : t.danger, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {apiStatus === 'connected' ? 'Live' : 'Offline'}
               </span>
-            </div>
+            </div>}
           </div>
         </div>
       </header>
@@ -648,10 +672,10 @@ function MainApp() {
       <div style={{
         maxWidth: 1440,
         margin: '0 auto',
-        padding: '16px 24px 24px',
+        padding: isMobile ? '8px 8px 16px' : '16px 24px 24px',
         display: 'grid',
-        gridTemplateColumns: '260px 1fr 340px',
-        gap: 16,
+        gridTemplateColumns: isMobile ? '1fr' : '260px 1fr 340px',
+        gap: isMobile ? 8 : 16,
         alignItems: 'start',
       }}>
         {/* Sidebar */}
@@ -660,8 +684,8 @@ function MainApp() {
           borderRadius: 14,
           border: `1px solid ${t.border}`,
           overflow: 'hidden',
-          position: 'sticky',
-          top: 76,
+          position: isMobile ? 'static' : 'sticky',
+          top: isMobile ? 0 : 76,
           transition: 'background 0.3s ease, border-color 0.3s ease',
         }}>
           <div style={{
@@ -787,8 +811,8 @@ function MainApp() {
 
         {/* Weather Cards */}
         <div style={{
-          position: 'sticky',
-          top: 76,
+          position: isMobile ? 'static' : 'sticky',
+          top: isMobile ? 0 : 76,
         }}>
           <div style={{
             background: t.bgCard,
