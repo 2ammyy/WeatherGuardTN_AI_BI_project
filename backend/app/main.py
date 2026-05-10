@@ -78,7 +78,10 @@ async def lifespan(fastapi_app: FastAPI):
         print(f'⚠️ MLflow non connecté ou erreur : {e}')
 
     # Start news scraper scheduler
-    start_scheduler(interval_hours=6)
+    try:
+        start_scheduler(interval_hours=6)
+    except Exception as e:
+        print(f'⚠️ Scheduler could not start: {e}')
 
     yield
 
@@ -104,14 +107,11 @@ class COOPMiddleware(BaseHTTPMiddleware):
 
 fastapi_app.add_middleware(COOPMiddleware)
 
+CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173,http://localhost:80,http://frontend:80').split(',')
+
 fastapi_app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:80',
-        'http://frontend:80',
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
