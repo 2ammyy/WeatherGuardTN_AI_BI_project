@@ -1,4 +1,5 @@
 ﻿from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -70,14 +71,19 @@ class DeleteRequest(BaseModel):
 async def google_auth(request: GoogleAuthRequest):
     try:
         print(f"DEBUG: Received token (first 50 chars): {request.token[:50]}")
+        print("DEBUG: Step 1 - Verifying token...")
         idinfo = id_token.verify_oauth2_token(
             request.token,
             google_requests.Request(),
             GOOGLE_CLIENT_ID,
             clock_skew_in_seconds=10,
         )
+        print(f"DEBUG: Step 2 - Token verified OK, email={idinfo.get('email')}")
+        print("DEBUG: Step 3 - Connecting to database...")
         conn = get_db()
+        print("DEBUG: Step 4 - Connected, creating cursor...")
         cur = conn.cursor()
+        print("DEBUG: Step 5 - Executing INSERT...")
         cur.execute("""
             INSERT INTO users (google_id, email, name, picture, governorate, user_type, last_login)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -92,14 +98,22 @@ async def google_auth(request: GoogleAuthRequest):
             datetime.now(),
             datetime.now(), request.governorate, request.user_type
         ))
+        print("DEBUG: Step 6 - Fetching result...")
         row = cur.fetchone()
+        print(f"DEBUG: Step 7 - User row: id={row[0] if row else None}")
+        print("DEBUG: Step 8 - Ensuring forum user...")
         _ensure_forum_user(cur, row[1], row[2], row[4])
+        print("DEBUG: Step 9 - Fetching forum user...")
         cur.execute("SELECT id FROM forum_users WHERE email = %s", (row[1],))
         frow = cur.fetchone()
+        print("DEBUG: Step 10 - Committing...")
         conn.commit()
+        print("DEBUG: Step 11 - Closing connection...")
         cur.close()
         conn.close()
+        print("DEBUG: Step 12 - Sending welcome email...")
         send_welcome_email(row[1], row[2])
+        print("DEBUG: Step 13 - Returning response...")
         return {
             "id": row[0], "email": row[1], "name": row[2],
             "picture": row[3], "governorate": row[4],
@@ -108,11 +122,15 @@ async def google_auth(request: GoogleAuthRequest):
         }
     except ValueError as e:
         print(f"CRITICAL AUTH ERROR: {str(e)}")
-        raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
+        import traceback as _tb
+        print("TRACEBACK:", _tb.format_exc())
+        return JSONResponse(status_code=401, content={"detail": f"Invalid Google token: {str(e)}"})
     except Exception as e:
-        traceback.print_exc()
+        import traceback as _tb
+        _tb.print_exc()
         print(f"AUTH 500 ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Auth error: {str(e)}")
+        print("TRACEBACK:", _tb.format_exc())
+        return JSONResponse(status_code=500, content={"detail": f"Auth error: {str(e)}"})
 
 # ─── REGISTER ─────────────────────────────────────────────────────────────────
 
