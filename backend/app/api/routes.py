@@ -1,13 +1,15 @@
-# from fastapi import APIRouter, HTTPException
-# from pydantic import BaseModel
-# from typing import Optional, Dict, List
-# from datetime import datetime
-# from ..utils.mlflow_loader import best_model, model_type
-# import numpy as np
-# import logging
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+from typing import Optional, Dict, List
+from datetime import datetime
+import asyncio
+import os
+import httpx
 
-# logger = logging.getLogger(__name__)
-# router = APIRouter(prefix="/api", tags=["predictions"])
+import logging
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["predictions"])
 
 # class PredictRequest(BaseModel):
 #     city: str
@@ -214,14 +216,8 @@ async def test():
 
 @router.get("/governorates")
 async def get_governorates():
-    """Liste des gouvernorats de Tunisie"""
-    governorates = [
-        "Ariana", "Béja", "Ben Arous", "Bizerte", "Gabès", "Gafsa",
-        "Jendouba", "Kairouan", "Kasserine", "Kébili", "Le Kef", "Mahdia",
-        "La Manouba", "Médenine", "Monastir", "Nabeul", "Sfax", "Sidi Bouzid",
-        "Siliana", "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
-    ]
-    return {"governorates": governorates}
+    """Liste des gouvernorats de Tunisie (ASCII keys matching CITY_COORDS)"""
+    return {"governorates": sorted(list(CITY_COORDS.keys()))}
 
 
 
@@ -238,86 +234,405 @@ class ForecastResponse(BaseModel):
     probabilities: Dict[str, int]
     weather: Dict[str, float]
 
+CITY_COORDS = {
+    'Tunis': (36.8065, 10.1815), 'Sfax': (34.7400, 10.7600), 'Sousse': (35.8256, 10.6411),
+    'Bizerte': (37.2744, 9.8739), 'Jendouba': (36.5011, 8.7803), 'Nabeul': (36.4561, 10.7378),
+    'Gabes': (33.8815, 10.0982), 'Medenine': (33.3549, 10.5055), 'Kairouan': (35.6781, 10.0963),
+    'Monastir': (35.7833, 10.8333), 'Mahdia': (35.5047, 11.0622), 'Gafsa': (34.4250, 8.7842),
+    'Tozeur': (33.9197, 8.1335), 'Kebili': (33.7044, 8.9692), 'Tataouine': (32.9297, 10.4518),
+    'Kasserine': (35.1676, 8.8365), 'Beja': (36.7256, 9.1817), 'Kef': (36.1741, 8.7049),
+    'Siliana': (36.0849, 9.3708), 'Zaghouan': (36.4029, 10.1429), 'Ariana': (36.8667, 10.2000),
+    'Ben Arous': (36.7533, 10.2219), 'Manouba': (36.8081, 10.0972),
+}
+
+def _compute_risk_from_weather(weather: dict) -> tuple:
+    temp_max = weather.get('temp_max', 25)
+    wind = weather.get('wind_speed', 15)
+    precip = weather.get('precipitation', 0)
+    humidity = weather.get('humidity', 50)
+    weather_code = weather.get('weather_code', 0)
+
+    score = 0
+    if precip > 30: score += 3
+    elif precip > 15: score += 2
+    elif precip > 5: score += 1
+    if wind > 70: score += 3
+    elif wind > 45: score += 2
+    elif wind > 30: score += 1
+    if weather_code >= 95: score += 3
+    elif weather_code >= 80: score += 2
+    elif weather_code >= 61: score += 1
+    if temp_max > 40: score += 2
+    elif temp_max > 35: score += 1
+    if humidity > 85: score += 1
+
+    if score >= 7: return 'PURPLE', 82
+    if score >= 5: return 'RED', 75
+    if score >= 3: return 'ORANGE', 68
+    if score >= 2: return 'YELLOW', 62
+    return 'GREEN', 78
+
+async def _fetch_city_weather(city: str, date: str, is_today: bool) -> dict:
+    coords = CITY_COORDS.get(city)
+    if not coords:
+        return None
+    lat, lng = coords
+    try:
+        if is_today:
+            url = (f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}'
+                   f'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code'
+                   f'&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto')
+        else:
+            url = (f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}'
+                   f'&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum,weathercode'
+                   f'&start_date={date}&end_date={date}&timezone=auto')
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+
+        if is_today:
+            current = data.get('current', {})
+            daily = data.get('daily', {})
+            weather = {
+                'temp_max': daily.get('temperature_2m_max', [None])[0],
+                'temp_min': daily.get('temperature_2m_min', [None])[0],
+                'temp_avg': current.get('temperature_2m', 0),
+                'wind_speed': current.get('wind_speed_10m', 0),
+                'humidity': current.get('relative_humidity_2m', 0),
+                'precipitation': current.get('precipitation', 0),
+                'weather_code': current.get('weather_code', 0),
+            }
+        else:
+            daily = data.get('daily', {})
+            if not daily.get('temperature_2m_max'):
+                return None
+            weather = {
+                'temp_max': daily['temperature_2m_max'][0],
+                'temp_min': daily['temperature_2m_min'][0],
+                'temp_avg': round((daily['temperature_2m_max'][0] + daily['temperature_2m_min'][0]) / 2, 1),
+                'wind_speed': daily.get('wind_speed_10m_max', [0])[0],
+                'humidity': 60,
+                'precipitation': daily.get('precipitation_sum', [0])[0],
+                'weather_code': daily.get('weathercode', [0])[0],
+            }
+        risk_level, confidence = _compute_risk_from_weather(weather)
+        return {
+            'forecast_date': date,
+            'city': city,
+            'risk_level': risk_level,
+            'confidence': confidence,
+            'probabilities': {risk_level: confidence},
+            'weather': weather,
+        }
+    except Exception:
+        return None
+
+@router.post("/current-weather")
+async def current_weather(request: ForecastRequest):
+    result = await _fetch_city_weather(request.city, request.date or datetime.now().strftime('%Y-%m-%d'), True)
+    if not result:
+        raise HTTPException(status_code=502, detail="Failed to fetch weather data")
+    return result
+
 @router.post("/forecast-by-date", response_model=ForecastResponse)
 async def forecast_by_date(request: ForecastRequest):
-    """
-    Prédiction personnalisée pour une date et une ville spécifiques
-    """
     try:
-        # Valider la date
-        try:
-            parsed_date = datetime.strptime(request.date, "%Y-%m-%d")
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Format de date invalide. Utilisez YYYY-MM-DD")
-        
-        # Ici, vous appellerez votre vrai modèle ML
-        # Pour l'instant, on utilise des données simulées
-        # Mais basées sur la ville et la date pour que ce soit cohérent
-        
-        # Utiliser la ville et la date pour générer une prédiction semi-déterministe
-        city_seed = sum(ord(c) for c in request.city)
-        date_seed = parsed_date.timetuple().tm_yday
-        random.seed(city_seed + date_seed)
-        
-        # Générer les probabilités
-        probs = {
-            "GREEN": random.randint(0, 100),
-            "YELLOW": random.randint(0, 100),
-            "ORANGE": random.randint(0, 100),
-            "RED": random.randint(0, 100),
-            "PURPLE": random.randint(0, 100)
-        }
-        
-        # Normaliser pour que la somme = 100
-        total = sum(probs.values())
-        probs = {k: int(v * 100 / total) for k, v in probs.items()}
-        
-        # Ajuster pour que la somme soit exactement 100
-        diff = 100 - sum(probs.values())
-        if diff != 0:
-            # Ajouter la différence au plus grand
-            max_key = max(probs, key=probs.get)
-            probs[max_key] += diff
-        
-        # Déterminer le niveau de risque dominant
-        risk_level = max(probs, key=probs.get)
-        
-        # Générer les conditions météo (simulées)
-        weather = {
-            "temp_max": round(random.uniform(15, 35), 1),
-            "temp_min": round(random.uniform(5, 20), 1),
-            "temp_avg": round(random.uniform(10, 25), 1),
-            "wind_speed": round(random.uniform(0, 30), 1),
-            "humidity": random.randint(30, 90)
-        }
-        
-        # Réinitialiser le seed aléatoire
-        random.seed()
-        
-        return {
-            "forecast_date": request.date,
-            "city": request.city,
-            "risk_level": risk_level,
-            "confidence": random.randint(65, 95),
-            "probabilities": probs,
-            "weather": weather
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
+        datetime.strptime(request.date, '%Y-%m-%d')
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    result = await _fetch_city_weather(request.city, request.date, False)
+    if not result:
+        raise HTTPException(status_code=502, detail="Failed to fetch forecast data")
+    return result
 
-# Optionnel: endpoint pour les dates disponibles
-@router.get("/available-dates/{city}")
-async def get_available_dates(city: str):
-    """
-    Retourne les dates disponibles pour une ville
-    """
-    from datetime import datetime, timedelta
-    
-    today = datetime.now()
-    dates = []
-    for i in range(5):  # 5 jours à l'avance
-        date = today + timedelta(days=i)
-        dates.append(date.strftime("%Y-%m-%d"))
-    
-    return {"city": city, "available_dates": dates}
+class BatchForecastRequest(BaseModel):
+    cities: List[str]
+    date: str = None
+
+_semaphore = asyncio.Semaphore(6)
+
+async def _fetch_with_semaphore(city: str, date: str, is_today: bool) -> dict:
+    async with _semaphore:
+        return await _fetch_city_weather(city, date, is_today)
+
+@router.post("/weather/batch")
+async def batch_weather(request: BatchForecastRequest):
+    date = request.date or datetime.now().strftime('%Y-%m-%d')
+    is_today = date == datetime.now().strftime('%Y-%m-%d')
+    tasks = [_fetch_with_semaphore(city, date, is_today) for city in request.cities]
+    results = await asyncio.gather(*tasks)
+    forecasts = {r['city']: r for r in results if r is not None}
+    return {'forecasts': forecasts, 'count': len(forecasts), 'date': date}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ROUTING PROXY (OSRM + Photon — free, no key needed)
+# ══════════════════════════════════════════════════════════════════════════════
+
+from urllib.parse import quote as url_quote
+PHOTON_BASE = 'https://photon.komoot.io/api'
+OSRM_BASE = 'https://router.project-osrm.org/route/v1'
+PHOTON_HEADERS = {'User-Agent': 'WeatherGuardTN/1.0'}
+
+
+class RouteRequest(BaseModel):
+    origin: str
+    destination: str
+    profile: str = 'driving'
+
+
+def _build_geocode_url(query: str) -> str:
+    q = f'{query}, Tunisia'
+    return f'{PHOTON_BASE}?q={url_quote(q)}&limit=1'
+
+
+TUNISIAN_CITIES = [
+    {'name': 'Tunis', 'lat': 36.8065, 'lng': 10.1815},
+    {'name': 'Sfax', 'lat': 34.7400, 'lng': 10.7600},
+    {'name': 'Sousse', 'lat': 35.8256, 'lng': 10.6411},
+    {'name': 'Bizerte', 'lat': 37.2744, 'lng': 9.8739},
+    {'name': 'Gabes', 'lat': 33.8815, 'lng': 10.0982},
+    {'name': 'Gafsa', 'lat': 34.4250, 'lng': 8.7842},
+    {'name': 'Kairouan', 'lat': 35.6781, 'lng': 10.0963},
+    {'name': 'Monastir', 'lat': 35.7833, 'lng': 10.8333},
+    {'name': 'Nabeul', 'lat': 36.4561, 'lng': 10.7378},
+    {'name': 'Jendouba', 'lat': 36.5011, 'lng': 8.7803},
+    {'name': 'Kasserine', 'lat': 35.1676, 'lng': 8.8365},
+    {'name': 'Tozeur', 'lat': 33.9197, 'lng': 8.1335},
+    {'name': 'Medenine', 'lat': 33.3549, 'lng': 10.5055},
+    {'name': 'Beja', 'lat': 36.7256, 'lng': 9.1817},
+    {'name': 'Le Kef', 'lat': 36.1741, 'lng': 8.7049},
+]
+
+@router.get('/hazards/realtime')
+async def get_realtime_hazards():
+    """Aggregate real-time hazards from free open sources."""
+    hazards = []
+
+    async with httpx.AsyncClient(timeout=15, headers={'User-Agent': 'WeatherGuardTN/1.0'}) as client:
+        # 1. Open-Meteo severe weather warnings for Tunisia regions
+        open_meteo_regions = [
+            (36.8, 10.2, 'Tunis'), (34.7, 10.8, 'Sfax'), (35.8, 10.6, 'Sousse'),
+            (37.3, 9.9, 'Bizerte'), (33.9, 10.1, 'Gabes'), (34.4, 8.8, 'Gafsa'),
+            (35.7, 10.1, 'Kairouan'), (36.5, 8.8, 'Jendouba'), (35.2, 8.8, 'Kasserine'),
+            (33.9, 8.1, 'Tozeur'), (36.7, 9.2, 'Beja'), (36.2, 8.7, 'Le Kef'),
+        ]
+        for lat, lng, city in open_meteo_regions:
+            try:
+                url = f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}&hourly=wind_speed_10m,precipitation,weathercode&daily=weathercode&forecast_days=1'
+                resp = await client.get(url)
+                data = resp.json()
+                daily_code = data.get('daily', {}).get('weathercode', [])
+                hourly_precip = data.get('hourly', {}).get('precipitation', [])
+                hourly_wind = data.get('hourly', {}).get('wind_speed_10m', [])
+
+                if daily_code and daily_code[0] >= 80:
+                    sev = 4 if daily_code[0] >= 95 else 3
+                    evt = 'Thunderstorm' if daily_code[0] >= 95 else 'Heavy Rain'
+                    hazards.append({
+                        'properties': {'what': f'{evt} warning — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'weather',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+
+                max_wind = max(hourly_wind) if hourly_wind else 0
+                if max_wind > 60:
+                    sev = 4 if max_wind > 80 else 3
+                    hazards.append({
+                        'properties': {'what': f'Strong wind warning ({max_wind:.0f} km/h) — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'wind',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+
+                max_precip = max(hourly_precip) if hourly_precip else 0
+                if max_precip > 20:
+                    sev = 4 if max_precip > 40 else 3
+                    hazards.append({
+                        'properties': {'what': f'Heavy precipitation ({max_precip:.0f} mm/h) — {city}', 'severity': sev},
+                        'geometry': {'coordinates': [lng, lat]},
+                        'type': 'flood',
+                        'severity': sev,
+                        'source': 'open-meteo',
+                    })
+            except Exception:
+                pass
+
+        # 2. GDACS global disaster alerts (filter for Tunisia/North Africa)
+        try:
+            resp = await client.get('https://www.gdacs.org/gdacs/xml/VO_EVENTSONLY.xml')
+            if resp.status_code == 200:
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(resp.text)
+                for event in root.findall('.//{http://gdacs.org}event'):
+                    country = event.find('{http://gdacs.org}country')
+                    if country is not None and country.text and any(c in country.text.upper() for c in ['TN', 'TUN', 'DZ', 'LY']):
+                        event_type = event.find('{http://gdacs.org}eventtype')
+                        subtype = event.find('{http://gdacs.org}subtype')
+                        alert = event.find('{http://gdacs.org}alertlevel')
+                        lat_el = event.find('{http://gdacs.org}eventlatitude')
+                        lng_el = event.find('{http://gdacs.org}eventlongitude')
+                        lat = float(lat_el.text) if lat_el is not None and lat_el.text else 34.0
+                        lng = float(lng_el.text) if lng_el is not None and lng_el.text else 9.0
+                        sev_map = {'Red': 5, 'Orange': 4, 'Green': 3}
+                        sev = sev_map.get(alert.text if alert is not None else '', 2)
+                        hazards.append({
+                            'properties': {'what': f'{event_type.text or "Disaster"} — {subtype.text or ""}', 'severity': sev},
+                            'geometry': {'coordinates': [lng, lat]},
+                            'type': (event_type.text or 'disaster').lower(),
+                            'severity': sev,
+                            'source': 'gdacs',
+                        })
+        except Exception:
+            pass
+
+        # 3. EMSC earthquakes (Mediterranean region)
+        try:
+            url = 'https://www.seismicportal.eu/fdsnws/event/1/query'
+            params = {'format': 'geojson', 'minlatitude': 30, 'maxlatitude': 40, 'minlongitude': 5, 'maxlongitude': 15, 'orderby': 'time', 'limit': 30, 'minmagnitude': 2.0}
+            resp = await client.get(url, params=params)
+            data = resp.json()
+            for feat in data.get('features', []):
+                mag = feat.get('properties', {}).get('mag', 0) or 0
+                if mag >= 2.0:
+                    coords = feat.get('geometry', {}).get('coordinates', [0, 0, 0])
+                    sev = min(5, max(1, int(mag)))
+                    place = feat.get('properties', {}).get('flynn_region', 'Mediterranean')
+                    hazards.append({
+                        'properties': {'what': f'Earthquake M{mag:.1f} — {place}', 'severity': sev},
+                        'geometry': {'coordinates': [coords[0], coords[1]]},
+                        'type': 'earthquake',
+                        'severity': sev,
+                        'source': 'emsc',
+                        'timestamp': feat.get('properties', {}).get('time', 0),
+                    })
+        except Exception:
+            pass
+
+    return {'hazards': hazards, 'count': len(hazards), 'sources': ['open-meteo', 'gdacs', 'emsc'], 'timestamp': datetime.now().isoformat()}
+
+
+@router.get('/tmaps/geocode')
+async def tmaps_geocode(q: str = Query(..., min_length=1)):
+    """Proxy Photon geocoding endpoint."""
+    url = _build_geocode_url(q)
+    async with httpx.AsyncClient(timeout=10, headers=PHOTON_HEADERS) as client:
+        try:
+            resp = await client.get(url)
+            data = resp.json()
+            results = []
+            for feat in data.get('features', []):
+                p = feat.get('properties', {})
+                coords = feat.get('geometry', {}).get('coordinates', [])
+                if p.get('countrycode') == 'TN':
+                    results.append({
+                        'lat': coords[1] if len(coords) > 1 else 0,
+                        'lng': coords[0] if len(coords) > 0 else 0,
+                        'formatted': p.get('name', ''),
+                        'confidence': 0.9,
+                    })
+            return {'results': results}
+        except Exception as e:
+            raise HTTPException(502, f'Geocoding failed: {str(e)}')
+
+
+@router.post('/tmaps/route')
+async def tmaps_route(req: RouteRequest):
+    """Proxy OSRM routing endpoint with city name resolution via Photon."""
+    CITY_COORDS = {
+        'tunis': (36.8065, 10.1815), 'ariana': (36.8625, 10.1956),
+        'ben arous': (36.7459, 10.2214), 'manouba': (36.8081, 10.0972),
+        'sfax': (34.7400, 10.7600), 'sousse': (35.8256, 10.6411),
+        'bizerte': (37.2744, 9.8739), 'nabeul': (36.4561, 10.7378),
+        'monastir': (35.7833, 10.8333), 'mahdia': (35.5047, 11.0622),
+        'kairouan': (35.6781, 10.0963), 'jendouba': (36.5011, 8.7803),
+        'gafsa': (34.4250, 8.7842), 'gabes': (33.8815, 10.0982),
+        'medenine': (33.3549, 10.5055), 'tataouine': (32.9297, 10.4518),
+        'tozeur': (33.9197, 8.1335), 'kebili': (33.7044, 8.9692),
+        'beja': (36.7256, 9.1817), 'le kef': (36.1741, 8.7049),
+        'siliana': (36.0849, 9.3708), 'zaghouan': (36.4029, 10.1429),
+        'kasserine': (35.1676, 8.8365),
+    }
+
+    def resolve(name):
+        lower = name.lower().strip()
+        if lower in CITY_COORDS:
+            return CITY_COORDS[lower]
+        return None
+
+    async with httpx.AsyncClient(timeout=15, headers=PHOTON_HEADERS) as client:
+        o_coords = resolve(req.origin)
+        d_coords = resolve(req.destination)
+
+        if not o_coords:
+            try:
+                url = _build_geocode_url(req.origin)
+                resp = await client.get(url)
+                data = resp.json()
+                for feat in data.get('features', []):
+                    p = feat.get('properties', {})
+                    coords = feat.get('geometry', {}).get('coordinates', [])
+                    if p.get('countrycode') == 'TN' and len(coords) == 2:
+                        o_coords = (coords[1], coords[0])
+                        break
+            except Exception:
+                pass
+
+        if not d_coords:
+            try:
+                url = _build_geocode_url(req.destination)
+                resp = await client.get(url)
+                data = resp.json()
+                for feat in data.get('features', []):
+                    p = feat.get('properties', {})
+                    coords = feat.get('geometry', {}).get('coordinates', [])
+                    if p.get('countrycode') == 'TN' and len(coords) == 2:
+                        d_coords = (coords[1], coords[0])
+                        break
+            except Exception:
+                pass
+
+    if not o_coords or not d_coords:
+        raise HTTPException(400, f"Could not resolve {'origin' if not o_coords else 'destination'}: {req.origin if not o_coords else req.destination}")
+
+    # OSRM uses lng,lat ordering
+    url = f'{OSRM_BASE}/driving/{o_coords[1]},{o_coords[0]};{d_coords[1]},{d_coords[0]}'
+    params = {'steps': True, 'geometries': 'geojson', 'overview': 'full'}
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url, params=params)
+            data = resp.json()
+
+            routes = data.get('routes', [])
+            if not routes:
+                raise HTTPException(404, f'OSRM: {data.get("code", "No route found")}')
+
+            route = routes[0]
+            coords = route.get('geometry', {}).get('coordinates', [])
+
+            steps = []
+            for leg in route.get('legs', []):
+                for step in leg.get('steps', []):
+                    steps.append({
+                        'instruction': step.get('maneuver', {}).get('instruction', '') or step.get('name', ''),
+                        'distance_m': step.get('distance', 0),
+                        'duration_s': step.get('duration', 0),
+                    })
+
+            return {
+                'distance_km': round(route.get('distance', 0) / 1000, 1),
+                'duration_min': round(route.get('duration', 0) / 60),
+                'coordinates': coords,
+                'origin': {'name': req.origin, 'lat': o_coords[0], 'lng': o_coords[1]},
+                'destination': {'name': req.destination, 'lat': d_coords[0], 'lng': d_coords[1]},
+                'steps': steps,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(502, f'Routing failed: {str(e)}')

@@ -1,5 +1,5 @@
 # Image de base Python
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copier et installer les dépendances Python
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install mlflow
+RUN pip install --no-cache-dir -r requirements.txt mlflow
 
 # Copier tout le code backend
 COPY backend/ /app/
@@ -21,4 +20,4 @@ COPY backend/ /app/
 EXPOSE 8000
 
 # Commande pour lancer l'application - CORRECTED to use weather_risk.py
-CMD ["uvicorn", "app.api.weather_risk:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
