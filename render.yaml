@@ -4,7 +4,6 @@ databases:
     databaseName: weatherguard
     user: weatherguard_user
     plan: free
-    region: frankfurt
 
 services:
   # ── Backend API ──
@@ -22,10 +21,7 @@ services:
           name: weatherguard-db
           property: connectionString
       - key: CORS_ORIGINS
-        fromService:
-          type: web
-          name: weatherguard-frontend
-          property: host
+        value: https://weatherguard-frontend.onrender.com
       - key: FORUM_SECRET_KEY
         generateValue: true
       - key: GOOGLE_CLIENT_ID
@@ -36,27 +32,11 @@ services:
   # ── Frontend Static Site ──
   - type: web
     name: weatherguard-frontend
-    runtime: static
-    region: frankfurt
-    plan: free
+    env: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/build
-    headers:
-      - path: /assets/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
     envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: weatherguard-api
-          property: host
-      - key: VITE_GOOGLE_CLIENT_ID
-        sync: false
       - key: REACT_APP_API_URL
-        fromService:
-          type: web
-          name: weatherguard-api
-          property: host
+        value: https://weatherguard-api.onrender.com
       - key: REACT_APP_GOOGLE_CLIENT_ID
         sync: false
