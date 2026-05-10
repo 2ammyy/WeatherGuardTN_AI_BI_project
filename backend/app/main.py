@@ -112,6 +112,7 @@ CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=r'https://.*\.onrender\.com',
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
