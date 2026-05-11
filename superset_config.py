@@ -1,6 +1,6 @@
 import os
 
-SQLALCHEMY_DATABASE_URI = "sqlite:////app/superset_home/superset.db"
+SQLALCHEMY_DATABASE_URI = "postgresql://weatheruser:weatherpass@climate-db:5432/weatherguard"
 
 SECRET_KEY = os.getenv("SUPERSET_SECRET_KEY", "weatherguard-superset-secret-key-2026")
 
@@ -10,7 +10,7 @@ FEATURE_FLAGS = {
 
 # Guest token role — must have at least can_read on Dashboard
 # Gamma is the standard read-only role in Superset
-GUEST_ROLE_NAME = "Gamma"
+GUEST_ROLE_NAME = "Alpha"
 
 # Disable Talisman security headers to allow iframe embedding
 TALISMAN_ENABLED = False
@@ -31,4 +31,10 @@ SESSION_COOKIE_HTTPONLY = True
 
 ROW_LIMIT = 5000
 SUPERSET_WORKERS = 4
+
+
+
+WTF_CSRF_ENABLED = False
+
+WTF_CSRF_CHECK_DEFAULT = False
 

@@ -54,32 +54,20 @@
             {% endif %}
             {% endmacro %}
 
+            <div class="sidebar-section">Dashboards</div>
+            <a class="nav-link" href="/superset-dashboard">
+              <i class="fa-solid fa-chart-pie"></i>
+              <span class="nav-link-title">Analytics Dashboards</span>
+            </a>
+            <a class="nav-link" href="http://localhost:8088" target="_blank" rel="noopener">
+              <i class="fa-solid fa-external-link-alt"></i>
+              <span class="nav-link-title">Open Superset</span>
+            </a>
             {{ render_section("Management", management_ids) }}
             {{ render_section("Content", content_ids) }}
             {{ render_section("Moderation", moderation_ids) }}
             {{ render_section("Interactions", interaction_ids) }}
             {{ render_section("ML / AI", ml_ids) }}
-            <div class="sidebar-section">External Tools</div>
-            <a class="nav-link" href="/superset-dashboard">
-              <i class="fa-solid fa-chart-bar"></i>
-              <span class="nav-link-title">Superset Dashboards</span>
-            </a>
-            <a class="nav-link" href="http://localhost:8088" target="_blank" rel="noopener">
-              <i class="fa-solid fa-external-link-alt"></i>
-              <span class="nav-link-title">Superset (standalone)</span>
-            </a>
-            <a class="nav-link" href="http://localhost:8088/superset/dashboard/2/" target="_blank" rel="noopener">
-              <i class="fa-solid fa-chart-simple"></i>
-              <span class="nav-link-title">WeatherGuardTN Dashboard</span>
-            </a>
-            <a class="nav-link" href="http://localhost:5001" target="_blank" rel="noopener">
-              <i class="fa-solid fa-flask"></i>
-              <span class="nav-link-title">MLflow Tracking</span>
-            </a>
-            <a class="nav-link" href="http://localhost:5050" target="_blank" rel="noopener">
-              <i class="fa-solid fa-database"></i>
-              <span class="nav-link-title">pgAdmin</span>
-            </a>
             {{ render_section("System", system_ids) }}
           </div>
         </div>

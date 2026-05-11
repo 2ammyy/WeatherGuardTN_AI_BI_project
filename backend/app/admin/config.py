@@ -26,8 +26,8 @@ def setup_admin(app: FastAPI) -> None:
         with open(html_path, encoding='utf-8') as f:
             return HTMLResponse(f.read())
 
-    @app.get('/superset-dashboard')
-    async def superset_dashboard_page(request: Request):
+    @app.get('/superset-charts')
+    async def superset_charts_page(request: Request):
         try:
             await require_admin(request)
         except Exception:
@@ -38,11 +38,10 @@ def setup_admin(app: FastAPI) -> None:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="referrer" content="origin">
-  <title>WeatherGuardTN — Superset Dashboards</title>
+  <title>WeatherGuardTN — Charts</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body { margin:0; padding:0; height:100%; overflow:hidden; }
+    html, body { height:100%; overflow:hidden; }
     body {
       background:#0f172a; color:#e2e8f0; font-family:system-ui,-apple-system,sans-serif;
       display:flex; flex-direction:column;
@@ -50,99 +49,98 @@ def setup_admin(app: FastAPI) -> None:
     .top-bar {
       display:flex; align-items:center; justify-content:space-between;
       padding:16px 24px; background:linear-gradient(135deg,#0f172a,#1e293b);
-      border-bottom:1px solid #334155;
+      border-bottom:1px solid #334155; flex-shrink:0;
     }
-    .top-bar h1 { font-size:20px; font-weight:600; display:flex; align-items:center; gap:10px; }
+    .top-bar h1 { font-size:20px; font-weight:600; }
     .top-bar h1 span { color:#059669; }
-    .top-bar a {
-      color:#94a3b8; text-decoration:none; font-size:13px; padding:6px 14px;
+    .top-bar .nav-links { display:flex; gap:6px; flex-wrap:wrap; }
+    .top-bar .nav-links a {
+      color:#94a3b8; text-decoration:none; font-size:12px; padding:5px 12px;
       border-radius:6px; background:#1e293b; border:1px solid #334155;
-      transition:all .2s;
+      transition:all .2s; white-space:nowrap;
     }
-    .top-bar a:hover { color:#fff; background:#334155; border-color:#475569; }
-    .top-bar { flex-shrink:0; }
-    .content { flex:1; padding:24px 24px 0; margin:0 auto; width:100%; display:flex; flex-direction:column; min-height:0; }
-    .content h2 { font-size:22px; margin-bottom:8px; }
-    .content p { color:#94a3b8; margin-bottom:24px; }
-    #dashboard-container {
-      width:100%; flex:1; min-height:0; border:1px solid #334155;
-      border-radius:12px; overflow:hidden; background:#0f172a; position:relative;
+    .top-bar .nav-links a:hover { color:#fff; background:#334155; }
+    .top-bar .nav-links a.active { color:#fff; background:#059669; border-color:#059669; }
+    .content { flex:1; padding:24px; overflow-y:auto; }
+    .content h2 { font-size:22px; margin-bottom:4px; }
+    .content p { color:#94a3b8; margin-bottom:20px; font-size:14px; }
+    .chart-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      gap:16px;
     }
-    #dashboard-container iframe { width:100%; height:100%; border:none; }
-    .loading {
-      display:flex; align-items:center; justify-content:center; height:75vh;
-      color:#94a3b8; font-size:15px; gap:12px;
+    .chart-card {
+      background:#1e293b; border:1px solid #334155; border-radius:12px;
+      overflow:hidden; transition:all .2s;
     }
-    .spinner {
-      width:24px; height:24px; border:3px solid #334155;
-      border-top-color:#059669; border-radius:50%; animation:spin .8s linear infinite;
+    .chart-card:hover { border-color:#059669; transform:translateY(-2px); }
+    .chart-card .preview {
+      width:100%; height:220px; border:none; background:#0f172a;
     }
+    .chart-card .info {
+      padding:14px 16px; border-top:1px solid #334155;
+    }
+    .chart-card .info h3 { font-size:14px; font-weight:600; margin-bottom:4px; }
+    .chart-card .info .meta { font-size:11px; color:#64748b; display:flex; gap:10px; }
+    .chart-card .info .meta .tag {
+      background:#0f172a; padding:2px 8px; border-radius:4px; color:#059669;
+    }
+    .loading { display:flex; align-items:center; justify-content:center; height:50vh; color:#64748b; gap:10px; }
+    .spinner { width:24px; height:24px; border:3px solid #334155; border-top-color:#059669; border-radius:50%; animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .error-msg {
-      display:none; align-items:center; gap:12px; padding:16px 24px;
-      background:#1e293b; border:1px solid #ef4444; border-radius:10px;
-      color:#fca5a5; font-size:14px; margin-bottom:16px;
-    }
-    .error-msg i { color:#ef4444; font-size:18px; }
   </style>
 </head>
 <body>
   <div class="top-bar">
-    <h1><span>&#9783;</span> WeatherGuard<span style="font-weight:400;color:#64748b">TN</span> Analytics</h1>
-    <a href="/admin"><i class="fa-solid fa-arrow-left"></i> Back to Admin</a>
+    <h1><span>&#9783;</span> Superset Charts</h1>
+    <div class="nav-links">
+      <a href="/admin">Back to Admin</a>
+    </div>
   </div>
   <div class="content">
-    <h2>Superset Dashboards</h2>
-    <p>Interactive analytics embedded directly in the admin panel.</p>
-    <div id="error-msg" class="error-msg">
-      <i class="fa-solid fa-circle-exclamation"></i>
-      <span id="error-text">Failed to load dashboard.</span>
-    </div>
-    <div id="dashboard-container">
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        Loading Superset dashboard...
-      </div>
+    <h2>All Charts</h2>
+    <p>Individual charts from Apache Superset</p>
+    <div class="chart-grid" id="chart-grid">
+      <div class="loading"><div class="spinner"></div><span>Loading charts...</span></div>
     </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@superset-ui/embedded-sdk@0.1.3/bundle/index.js"></script>
   <script>
-    (async function() {
-      try {
-        const resp = await fetch('/api/admin/superset/guest-token');
-        if (!resp.ok) throw new Error('Guest token request failed: ' + resp.status);
-        const data = await resp.json();
-        const uuid = data.embedded_uuid;
-        const token = data.token;
+  (async function() {
+    const grid = document.getElementById('chart-grid');
+    try {
+      const r = await fetch('/api/admin/superset/charts');
+      const data = await r.json();
+      const charts = data.charts || [];
 
-        if (!uuid) throw new Error('No embedded dashboard UUID found. Create one via Superset API.');
-
-        document.getElementById('loading').style.display = 'none';
-
-        const guestToken = typeof token === 'string' ? token : token.token;
-        await supersetEmbeddedSdk.embedDashboard({
-          id: uuid,
-          supersetDomain: 'http://localhost:8088',
-          mountPoint: document.getElementById('dashboard-container'),
-          fetchGuestToken: () => guestToken,
-          dashboardUiConfig: {
-            hideTitle: true,
-            hideTab: true,
-            hideChartControls: true,
-          },
-        });
-      } catch (err) {
-        document.getElementById('loading').style.display = 'none';
-        const el = document.getElementById('error-msg');
-        el.style.display = 'flex';
-        document.getElementById('error-text').textContent = err.message || 'Failed to load dashboard';
-        console.error('Superset embed error:', err);
+      if (charts.length === 0) {
+        grid.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b;">No charts found.</div>';
+        return;
       }
-    })();
+
+      grid.innerHTML = charts.map(c => `
+        <div class="chart-card">
+          <iframe class="preview" src="/api/admin/superset/chart/${c.id}/standalone"
+                  loading="lazy" scrolling="no"></iframe>
+          <div class="info">
+            <h3>${c.name}</h3>
+            <div class="meta">
+              <span class="tag">${c.viz_type}</span>
+              <span>${c.datasource}</span>
+              <a href="http://localhost:8088${c.url}" target="_blank" style="color:#059669;margin-left:auto;">Open &rarr;</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      grid.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Failed to load: ' + e.message + '</div>';
+    }
+  })();
   </script>
 </body>
 </html>
         """)
+
+    @app.get('/superset-dashboard')
+    async def superset_dashboard_page():
+        return RedirectResponse(url="/superset-charts")
 
     print('✅ Admin panel with API mounted at /admin')
