@@ -2,38 +2,48 @@
 {% block content %}
 <div class="container-fluid px-0">
   {% if error %}
-  <div class="alert alert-danger" role="alert">{{ error }}</div>
+  <div class="alert alert-danger" role="alert"><i class="fa-solid fa-circle-exclamation me-2"></i>{{ error }}</div>
   {% endif %}
+
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div></div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="last-updated" id="last-updated"><i class="fa-regular fa-clock"></i> <span id="update-time">Just now</span></span>
+      <button class="btn btn-light btn-sm" onclick="refreshDashboard()" title="Refresh dashboard" style="border-radius:6px;padding:3px 8px;font-size:0.75rem">
+        <i class="fa fa-sync-alt" id="refresh-icon"></i>
+      </button>
+    </div>
+  </div>
 
   <div class="dashboard-grid" id="stats-grid">
     <div class="stat-card green">
       <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-      <div class="stat-value" id="stat-users">—</div>
+      <div class="stat-value" id="stat-users"><span class="skeleton skeleton-stat"></span></div>
       <div class="stat-label">Forum Users</div>
     </div>
     <div class="stat-card blue">
       <div class="stat-icon"><i class="fa-solid fa-newspaper"></i></div>
-      <div class="stat-value" id="stat-posts">—</div>
+      <div class="stat-value" id="stat-posts"><span class="skeleton skeleton-stat"></span></div>
       <div class="stat-label">Total Posts</div>
     </div>
     <div class="stat-card purple">
       <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
-      <div class="stat-value" id="stat-comments">—</div>
+      <div class="stat-value" id="stat-comments"><span class="skeleton skeleton-stat"></span></div>
       <div class="stat-label">Comments</div>
     </div>
     <div class="stat-card orange">
       <div class="stat-icon"><i class="fa-solid fa-brain"></i></div>
-      <div class="stat-value" id="stat-models">—</div>
+      <div class="stat-value" id="stat-models"><span class="skeleton skeleton-stat"></span></div>
       <div class="stat-label">ML Models</div>
     </div>
     <div class="stat-card red">
       <div class="stat-icon"><i class="fa-solid fa-flag"></i></div>
-      <div class="stat-value" id="stat-reports">—</div>
-      <div class="stat-label">Reports ({{ "pending" }})</div>
+      <div class="stat-value" id="stat-reports"><span class="skeleton skeleton-stat"></span></div>
+      <div class="stat-label">Reports (Pending)</div>
     </div>
     <div class="stat-card pink">
       <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
-      <div class="stat-value" id="stat-news">—</div>
+      <div class="stat-value" id="stat-news"><span class="skeleton skeleton-stat"></span></div>
       <div class="stat-label">News Articles</div>
     </div>
   </div>
@@ -106,19 +116,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   async function loadStats() {
+    const els = {
+      users: document.getElementById('stat-users'),
+      posts: document.getElementById('stat-posts'),
+      comments: document.getElementById('stat-comments'),
+      models: document.getElementById('stat-models'),
+      reports: document.getElementById('stat-reports'),
+      news: document.getElementById('stat-news'),
+    };
+
     try {
       const res = await fetch('/api/admin/stats');
       if (!res.ok) throw new Error('Failed to load');
       const data = await res.json();
 
-      document.getElementById('stat-users').textContent = data.users.total.toLocaleString();
-      document.getElementById('stat-posts').textContent = data.posts.total.toLocaleString();
-      document.getElementById('stat-comments').textContent = data.comments.total.toLocaleString();
-      document.getElementById('stat-models').textContent = data.models?.total || 0;
-      document.getElementById('stat-reports').textContent = data.reports.total.toLocaleString();
-      document.getElementById('stat-news').textContent = data.news.total.toLocaleString();
+      els.users.innerHTML = data.users.total.toLocaleString();
+      els.posts.innerHTML = data.posts.total.toLocaleString();
+      els.comments.innerHTML = data.comments.total.toLocaleString();
+      els.models.innerHTML = data.models?.total || 0;
+      els.reports.innerHTML = data.reports.total.toLocaleString();
+      els.news.innerHTML = data.news.total.toLocaleString();
     } catch(e) {
-      console.warn('Stats load error:', e);
+      for (const key in els) {
+        els[key].innerHTML = '<span style="color:var(--wg-danger);font-size:0.75rem">Error</span>';
+      }
     }
   }
 
@@ -151,12 +172,34 @@ document.addEventListener('DOMContentLoaded', function() {
         list.appendChild(li);
       });
     } catch(e) {
-      console.warn('Activity load error:', e);
+      document.getElementById('activity-list').innerHTML = '<li class="activity-item" style="padding:1rem;text-align:center;color:var(--wg-danger)"><i class="fa-solid fa-triangle-exclamation me-2"></i>Failed to load activity</li>';
     }
   }
 
+  function updateTimestamp() {
+    const now = new Date();
+    document.getElementById('update-time').textContent = now.toLocaleTimeString();
+  }
+
+  async function refreshDashboard() {
+    const icon = document.getElementById('refresh-icon');
+    icon.classList.add('fa-spin');
+    await Promise.all([loadStats(), loadActivity()]);
+    updateTimestamp();
+    icon.classList.remove('fa-spin');
+  }
+
+  window.refreshDashboard = refreshDashboard;
+
   loadStats();
   loadActivity();
+  updateTimestamp();
+
+  setInterval(function() {
+    loadStats();
+    loadActivity();
+    updateTimestamp();
+  }, 60000);
 });
 </script>
 {% endblock %}

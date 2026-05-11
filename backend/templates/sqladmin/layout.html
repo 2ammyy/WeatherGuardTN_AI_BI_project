@@ -2,13 +2,12 @@
 {% from 'sqladmin/_macros.html' import display_menu %}
 {% block body %}
 <div class="wrapper">
-  <aside class="navbar navbar-expand-lg navbar-vertical navbar-expand-md navbar-dark d-flex flex-column">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+  <aside class="navbar navbar-expand-lg navbar-vertical navbar-expand-md navbar-dark d-flex flex-column" id="main-sidebar">
     <div class="container-fluid d-flex flex-column h-100 p-0">
       <h1 class="navbar-brand navbar-brand-autodark flex-shrink-0">
         <a href="{{ url_for('admin:index') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-          {% if admin.logo_url %}
-          <img src="{{ admin.logo_url }}" width="36" height="36" alt="{{ admin.title }}" style="border-radius:10px" />
-          {% endif %}
+          <span style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#059669,#0891b2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem;color:#fff;font-weight:700">WG</span>
           <div>
             <h3>WeatherGuard<span style="font-weight:400">TN</span></h3>
             <small>Admin Panel</small>
@@ -55,7 +54,7 @@
             {% endmacro %}
 
             <div class="sidebar-section">Dashboards</div>
-            <a class="nav-link" href="/superset-dashboard">
+            <a class="nav-link {% if request.url.path.startswith('/superset') %}active{% endif %}" href="/superset-dashboard">
               <i class="fa-solid fa-chart-pie"></i>
               <span class="nav-link-title">Analytics Dashboards</span>
             </a>
@@ -88,18 +87,23 @@
   </aside>
   <div class="page-wrapper">
     <header class="top-header">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{{ url_for('admin:index') }}">Dashboard</a></li>
-          {% block breadcrumb %}
-          {% if title %}
-          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
-          {% endif %}
-          {% endblock %}
-        </ol>
-      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+          <i class="fa fa-bars"></i>
+        </button>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin:index') }}">Dashboard</a></li>
+            {% block breadcrumb %}
+            {% if title %}
+            <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+            {% endif %}
+            {% endblock %}
+          </ol>
+        </nav>
+      </div>
       <div class="header-actions">
-        <a href="#" class="btn-icon" title="Refresh" onclick="location.reload()">
+        <a href="#" class="btn-icon" title="Refresh (Ctrl+R)" onclick="location.reload()">
           <i class="fa fa-sync-alt"></i>
         </a>
         <a href="https://weatherguard.tn" target="_blank" class="btn-icon" title="Visit Site">
@@ -127,4 +131,18 @@
     </div>
   </div>
 </div>
+
+<script>
+function toggleSidebar() {
+  document.getElementById('main-sidebar').classList.toggle('navbar-visible');
+  document.getElementById('sidebar-overlay').classList.toggle('visible');
+}
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault();
+    toggleSidebar();
+  }
+});
+</script>
 {% endblock %}
