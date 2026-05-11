@@ -11,7 +11,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTranslation } from "../contexts/LanguageContext";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8001";
 
 const RISK_FILTERS = [
   { value: "",       label: "All",    emoji: "ðŸ“‹" },

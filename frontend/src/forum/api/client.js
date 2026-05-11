@@ -3,7 +3,7 @@
 
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/forum` : "http://localhost:8001/api/forum";
+const BASE = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api/forum` : "http://localhost:8001/api/forum";
 
 const api = axios.create({ baseURL: BASE });
 

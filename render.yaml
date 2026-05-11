@@ -1,0 +1,40 @@
+# Render Blueprint — WeatherGuardTN
+databases:
+  - name: weatherguard-db
+    databaseName: weatherguard
+    user: weatherguard_user
+    plan: free
+
+services:
+  # ── Backend API ──
+  - type: web
+    name: weatherguard-api
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt uvicorn
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: weatherguard-db
+          property: connectionString
+      - key: FORUM_SECRET_KEY
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: MLFLOW_TRACKING_URI
+        value: ""
+
+  # ── Frontend Static Site ──
+  - type: web
+    name: weatherguard-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://weatherguard-api.onrender.com
+      - key: REACT_APP_GOOGLE_CLIENT_ID
+        sync: false
