@@ -661,30 +661,3 @@ def superset_charts(_=Depends(require_admin)):
         return {"charts": charts}
     except Exception as e:
         raise HTTPException(502, f"Failed to list charts: {e}")
-
-
-@router.get("/superset/chart/{chart_id}/standalone")
-def superset_chart_standalone(chart_id: int, _=Depends(require_admin), request: Request = None):
-    """Proxy standalone chart view — injects auth so the HTML/JS/CSS loads correctly."""
-    try:
-        sess = _superset_session()
-    except Exception as e:
-        raise HTTPException(502, f"Cannot connect to Superset: {e}")
-
-    target = f"{SUPERSET_BASE}/explore/?slice_id={chart_id}&standalone=3"
-    try:
-        resp = sess.get(target, timeout=15, stream=True)
-        content_type = resp.headers.get("Content-Type", "text/html; charset=utf-8")
-
-        from fastapi.responses import Response
-        return Response(
-            content=resp.content,
-            status_code=resp.status_code,
-            headers={
-                "Content-Type": content_type,
-                "X-Frame-Options": "SAMEORIGIN",
-                "Content-Security-Policy": "frame-ancestors 'self' http://localhost:8000 http://localhost:8001 http://127.0.0.1:8000",
-            },
-        )
-    except Exception as e:
-        raise HTTPException(502, f"Superset proxy error: {e}")

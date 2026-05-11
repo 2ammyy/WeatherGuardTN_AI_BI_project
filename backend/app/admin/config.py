@@ -98,7 +98,7 @@ def setup_admin(app: FastAPI) -> None:
   </div>
   <div class="content">
     <h2>All Charts</h2>
-    <p>Individual charts from Apache Superset</p>
+    <p>Charts from Apache Superset. Keep Superset open in another tab (<a href="http://localhost:8088" target="_blank" style="color:#059669;">http://localhost:8088</a>) for charts to render.</p>
     <div class="chart-grid" id="chart-grid">
       <div class="loading"><div class="spinner"></div><span>Loading charts...</span></div>
     </div>
@@ -118,7 +118,7 @@ def setup_admin(app: FastAPI) -> None:
 
       grid.innerHTML = charts.map(c => `
         <div class="chart-card">
-          <iframe class="preview" src="/api/admin/superset/chart/${c.id}/standalone"
+          <iframe class="preview" src="http://localhost:8088/explore/?slice_id=${c.id}&standalone=3"
                   loading="lazy" scrolling="no"></iframe>
           <div class="info">
             <h3>${c.name}</h3>
