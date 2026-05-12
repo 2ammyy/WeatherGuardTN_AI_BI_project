@@ -61,71 +61,114 @@ async def require_admin(request: Request):
 SUPERSET_BASE = os.getenv("SUPERSET_BASE", "http://superset:8088")
 SUPERSET_LOGIN = os.getenv("SUPERSET_LOGIN_USER", "admin")
 SUPERSET_PASSWORD = os.getenv("SUPERSET_LOGIN_PASSWORD", "admin123")
-SUPERSET_DASHBOARD_ID = os.getenv("SUPERSET_DASHBOARD_ID", "2")
+
+
+def _superset_session():
+    """Authenticate with Superset and return a requests session with access token."""
+    sess = http_requests.Session()
+    r = sess.post(
+        f"{SUPERSET_BASE}/api/v1/security/login",
+        json={"username": SUPERSET_LOGIN, "password": SUPERSET_PASSWORD, "provider": "db", "refresh": True},
+        timeout=10,
+    )
+    r.raise_for_status()
+    access_token = r.json()["access_token"]
+    sess.headers.update({"Authorization": f"Bearer {access_token}"})
+
+    r = sess.get(f"{SUPERSET_BASE}/api/v1/security/csrf_token", timeout=10)
+    r.raise_for_status()
+    sess.headers.update({"X-CSRFToken": r.json()["result"]})
+    return sess
 
 
 @router.get("/superset/guest-token")
-def get_superset_guest_token(_=Depends(require_admin)):
-    """Get an embedded guest token and embedded UUID for the Superset dashboard."""
+def get_superset_guest_token(dashboard_id: str = None, _=Depends(require_admin)):
+    """Get an embedded guest token and embedded UUID for a Superset dashboard."""
     try:
-        sess = http_requests.Session()
+        sess = _superset_session()
+    except Exception as e:
+        raise HTTPException(502, f"Cannot connect to Superset at {SUPERSET_BASE}: {e}")
 
-        r = sess.post(
-            f"{SUPERSET_BASE}/api/v1/security/login",
-            json={
-                "username": SUPERSET_LOGIN,
-                "password": SUPERSET_PASSWORD,
-                "provider": "db",
-                "refresh": True,
-            },
-            timeout=10,
-        )
-        r.raise_for_status()
-        access_token = r.json()["access_token"]
+    dash_id = dashboard_id
+    if not dash_id:
+        try:
+            r = sess.get(f"{SUPERSET_BASE}/api/v1/dashboard/", params={"q": "(page_size:1)"}, timeout=10)
+            if r.ok:
+                dashboards = r.json().get("result", [])
+                if dashboards:
+                    dash_id = str(dashboards[0]["id"])
+        except Exception:
+            pass
 
-        sess.headers.update({"Authorization": f"Bearer {access_token}"})
+    if not dash_id:
+        raise HTTPException(404, "No dashboards found in Superset. Create a dashboard at http://localhost:8088 first, then enable embedding under the dashboard settings.")
 
-        r = sess.get(f"{SUPERSET_BASE}/api/v1/security/csrf_token", timeout=10)
-        r.raise_for_status()
-        csrf_token = r.json()["result"]
-
+    try:
+        sess.headers["Referer"] = f"{SUPERSET_BASE}/"
         guest_resp = sess.post(
             f"{SUPERSET_BASE}/api/v1/security/guest_token/",
-            headers={
-                "X-CSRFToken": csrf_token,
-                "Referer": f"{SUPERSET_BASE}/",
-            },
             json={
                 "user": {"username": "admin", "first_name": "Admin", "last_name": ""},
-                "resources": [{"type": "dashboard", "id": SUPERSET_DASHBOARD_ID}],
+                "resources": [{"type": "dashboard", "id": dash_id}],
                 "rls": [],
             },
             timeout=10,
         )
+
+        if guest_resp.status_code == 404:
+            raise HTTPException(404, f"Dashboard '{dash_id}' not found in Superset.")
         guest_resp.raise_for_status()
         guest_token = guest_resp.json()
 
         embedded_uuid = None
         try:
-            r = sess.get(
-                f"{SUPERSET_BASE}/api/v1/dashboard/{SUPERSET_DASHBOARD_ID}/embedded",
-                timeout=10,
-            )
-            if r.ok:
-                embedded_data = r.json()
-                if isinstance(embedded_data, dict):
+            r = sess.get(f"{SUPERSET_BASE}/api/v1/dashboard/{dash_id}/embedded", timeout=10)
+            if r.status_code == 404:
+                embed_resp = sess.post(f"{SUPERSET_BASE}/api/v1/dashboard/{dash_id}/embedded", timeout=10)
+                if embed_resp.ok:
+                    embedded_data = embed_resp.json()
                     result = embedded_data.get("result") or embedded_data
                     if isinstance(result, dict):
                         embedded_uuid = result.get("uuid")
+            elif r.ok:
+                embedded_data = r.json()
+                result = embedded_data.get("result") or embedded_data
+                if isinstance(result, dict):
+                    embedded_uuid = result.get("uuid")
         except Exception:
             pass
 
         return {
             "token": guest_token.get("token", guest_token),
             "embedded_uuid": embedded_uuid,
+            "dashboard_id": dash_id,
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(502, f"Superset guest token failed: {str(e)}")
+        raise HTTPException(502, f"Superset guest token failed: {e}")
+
+
+@router.get("/superset/status")
+def superset_status(_=Depends(require_admin)):
+    """Check Superset connectivity and list available dashboards."""
+    try:
+        sess = _superset_session()
+    except Exception as e:
+        return {"connected": False, "error": str(e), "dashboards": []}
+
+    try:
+        r = sess.get(f"{SUPERSET_BASE}/api/v1/dashboard/", params={"q": "(page_size:50)"}, timeout=10)
+        if not r.ok:
+            return {"connected": True, "error": f"Failed to list dashboards: {r.status_code}", "dashboards": []}
+        data = r.json()
+        dashboards = [
+            {"id": str(d["id"]), "title": d.get("dashboard_title", "Untitled"), "url": d.get("url", "")}
+            for d in (data.get("result", []) or data.get("dashboards", []))
+        ]
+        return {"connected": True, "error": None, "dashboards": dashboards}
+    except Exception as e:
+        return {"connected": True, "error": str(e), "dashboards": []}
 
 
 def get_stats():
@@ -588,3 +631,33 @@ def demo_test_cases(_=Depends(require_admin)):
         {"text": "Duplicate post, already been shared by another user last week", "expected": "low"},
     ]
     return [{"id": i + 1, **tc} for i, tc in enumerate(test_cases)]
+
+
+# ── Superset chart gallery ──────────────────────────────────────────────────
+
+
+@router.get("/superset/charts")
+def superset_charts(_=Depends(require_admin)):
+    """List all charts from Superset."""
+    try:
+        sess = _superset_session()
+    except Exception as e:
+        raise HTTPException(502, f"Cannot connect to Superset: {e}")
+
+    try:
+        r = sess.get(f"{SUPERSET_BASE}/api/v1/chart/", params={"q": "(page_size:50)"}, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        charts = [
+            {
+                "id": c["id"],
+                "name": c.get("slice_name", "Untitled"),
+                "viz_type": c.get("viz_type", "unknown"),
+                "url": c.get("url", ""),
+                "datasource": c.get("datasource_name_text", ""),
+            }
+            for c in (data.get("result", []) or [])
+        ]
+        return {"charts": charts}
+    except Exception as e:
+        raise HTTPException(502, f"Failed to list charts: {e}")

@@ -1,7 +1,7 @@
 {% extends "sqladmin/layout.html" %}
 {% block content %}
-<div class="col-12">
-  <div class="card fade-in">
+<div class="col-12 col-lg-10 col-xl-9">
+  <div class="card scale-in">
     <div class="card-header">
       <span class="card-title">
         <i class="fa-solid fa-receipt me-2" style="color:var(--wg-primary)"></i>
@@ -46,7 +46,7 @@
       {% endblock %}
     </div>
     <div class="card-footer">
-      <div class="d-flex gap-2">
+      <div class="d-flex flex-wrap gap-2">
         <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn btn-secondary btn-sm">
           <i class="fa-solid fa-arrow-left me-1"></i> Go Back
         </a>

@@ -132,6 +132,11 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen2.5:3b
       - OLLAMA_TIMEOUT_SECONDS=60
+      # Superset
+      - SUPERSET_URL=http://climate-superset:8088
+      - SUPERSET_ADMIN_USER=admin
+      - SUPERSET_ADMIN_PASSWORD=admin123
+      - SUPERSET_DASHBOARD_ID=2de27162-d5bb-4f30-ab81-1eca1286e2f1
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -197,6 +202,7 @@ services:
     volumes:
       - ./superset_config.py:/app/pythonpath/superset_config.py
       - superset_home:/app/superset_home
+      - ./backend/scripts:/app/scripts
     networks:
       - climate-network
     restart: unless-stopped
@@ -225,6 +231,11 @@ volumes:
   ollama_data:                             # persists the qwen2.5:3b model between restarts
   forum_uploads:                           # persists uploaded forum media files
   superset_home:
+<<<<<<< HEAD
 =======
   mlflow_db:
 >>>>>>> b73e6ba7dde6de6d15f8f3743fa6cd795efb87fd
+=======
+
+
+>>>>>>> zahraBranch

@@ -243,16 +243,26 @@
         </div>
 
         {% if model_view.get_filters() %}
-        <div class="col-md-3" style="width: 300px; flex-shrink: 0;">
-          <div id="filter-sidebar" class="card">
+        <div id="filter-sidebar" style="width:300px;flex-shrink:0">
+          <div class="card">
             <div class="card-header">
               <span class="card-title"><i class="fa-solid fa-filter me-2" style="color:var(--wg-primary)"></i>Filters</span>
+              <button class="btn btn-light btn-sm" onclick="this.closest('#filter-sidebar').style.display='none'" title="Close filters" style="padding:2px 6px;font-size:0.7rem">
+                <i class="fa-solid fa-times"></i>
+              </button>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="max-height:60vh;overflow-y:auto">
               {% for filter in model_view.get_filters() %}
               {% include filter.template %}
               {% endfor %}
             </div>
+            {% if request.query_params.get("filter") %}
+            <div class="card-footer" style="padding:0.5rem 1rem">
+              <a href="{{ request.url.remove_query_params('filter') }}" class="btn btn-light btn-sm w-100" style="font-size:0.75rem">
+                <i class="fa-solid fa-undo me-1"></i> Clear All Filters
+              </a>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endif %}

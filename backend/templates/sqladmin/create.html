@@ -1,13 +1,14 @@
 {% extends "sqladmin/layout.html" %}
 {% from 'sqladmin/_macros.html' import render_form_fields %}
 {% block content %}
-<div class="col-12">
-  <div class="card fade-in">
+<div class="col-12 col-lg-10 col-xl-8">
+  <div class="card scale-in">
     <div class="card-header">
       <span class="card-title">
         <i class="fa-solid fa-plus-circle me-2" style="color:var(--wg-primary)"></i>
         New {{ model_view.name }}
       </span>
+      <span class="text-muted" style="font-size:0.75rem">{{ model_view.name_plural }}</span>
     </div>
     <div class="card-body">
       {% block create_form %}
@@ -21,7 +22,7 @@
         <fieldset class="form-fieldset">
           {{ render_form_fields(form, form_opts=form_opts, ajax_lookup_url=url_for('admin:ajax_lookup', identity=model_view.identity)) }}
         </fieldset>
-        <div class="d-flex gap-2 mt-4">
+        <div class="d-flex flex-wrap gap-2 mt-4">
           <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn btn-secondary">
             <i class="fa-solid fa-times me-1"></i> Cancel
           </a>

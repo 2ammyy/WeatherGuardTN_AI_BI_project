@@ -1,8 +1,8 @@
 {% extends "sqladmin/base.html" %}
 {% block body %}
 <div class="login-page">
-  <div class="login-card">
-    <div class="login-logo">🛡️</div>
+  <div class="login-card" style="animation:fadeIn 0.5s ease">
+    <div class="login-logo" style="font-size:1.5rem">🛡️</div>
     <h2 class="card-title">WeatherGuard<span style="font-weight:400;color:#64748b">TN</span></h2>
     <p class="card-subtitle">Admin Panel &mdash; Sign in to continue</p>
     <form action="{{ url_for('admin:login') }}" method="POST" autocomplete="off">
@@ -10,10 +10,10 @@
         <label class="form-label">Email</label>
         {% if error %}
         <input name="username" type="text" class="form-control is-invalid" placeholder="admin@weatherguard.com"
-          autocomplete="off">
+          autocomplete="off" autofocus>
         <div class="invalid-feedback">{{ error }}</div>
         {% else %}
-        <input name="username" type="text" class="form-control" placeholder="admin@weatherguard.com" autocomplete="off">
+        <input name="username" type="text" class="form-control" placeholder="admin@weatherguard.com" autocomplete="off" autofocus>
         {% endif %}
       </div>
       <div class="mb-3">
